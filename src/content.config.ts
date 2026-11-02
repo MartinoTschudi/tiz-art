@@ -15,6 +15,7 @@
 import { defineCollection, type SchemaContext } from 'astro:content';
 import { glob } from 'astro/loaders';
 import { z } from 'astro/zod';
+import { PAINTS } from './components/lib/composition';
 
 const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const SLUG_MAX = 60;
@@ -23,9 +24,11 @@ const IMAGE_PATH = /^\.\/[a-z0-9][a-z0-9._-]*\.(jpg|jpeg|png|webp)$/;
 
 /**
  * Colour of the brushstroke behind the painting (CSS `var(--tiz-<colore>)`); null = automatic (the site
- * picks one from PAINT_CYCLE by the work's position in the published list, CONTRACTS.md 4.1).
+ * picks one from PAINT_CYCLE by the work's position in the published list, CONTRACTS.md 4.1). The list
+ * is the site's own (composition.ts PAINTS); scripts/test/design-sync.test.mjs keeps it equal to the
+ * admin's, the validator's, the tokens and CONTRACTS.
  */
-const COLORI = ['ocra', 'rosso', 'terracotta', 'ottanio', 'blu'] as const;
+const COLORI = PAINTS;
 
 /** ISO 8601 date-time in UTC ("2023-09-23T12:00:00.000Z"). */
 const isoUtc = () => z.iso.datetime();

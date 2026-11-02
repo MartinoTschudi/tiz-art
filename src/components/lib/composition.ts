@@ -76,16 +76,31 @@ export function hungAt(index: number): HungPlacement {
   };
 }
 
+// ── Page frame (shared by every layout helper: opera.ts and chi.ts import these) ──────────────────
+
+/** --tiz-page-max of tokens.css: the page column (gutters included) never gets wider. */
+export const PAGE_MAX = 1440;
+
+/** --tiz-gutter of tokens.css per breakpoint (px), widest first. */
+export const GUTTERS = [
+  { minWidth: 1024, gutter: 48 },
+  { minWidth: 640, gutter: 32 },
+  { minWidth: 0, gutter: 20 },
+] as const;
+
+/** The page gutter at a viewport width (px). */
+export function gutterAt(viewport: number): number {
+  return (GUTTERS.find(({ minWidth }) => viewport >= minWidth) ?? GUTTERS[GUTTERS.length - 1]).gutter;
+}
+
 /** Real-scale factor k (px per cm) per breakpoint; keep in step with --tiz-k in tokens.css. */
 export const REAL_SCALE = [
-  { minWidth: 1024, k: 2.3, gutter: 48 },
-  { minWidth: 640, k: 2.0, gutter: 32 },
-  { minWidth: 0, k: 2.2, gutter: 20 },
+  { minWidth: 1024, k: 2.3, gutter: gutterAt(1024) },
+  { minWidth: 640, k: 2.0, gutter: gutterAt(640) },
+  { minWidth: 0, k: 2.2, gutter: gutterAt(0) },
 ] as const;
 /** Width used for the layout when a work has no `larghezza` (the size text is then hidden). */
 export const DEFAULT_CM = 100;
-/** --tiz-page-max of tokens.css: the list never gets wider than this minus the gutters. */
-export const PAGE_MAX = 1440;
 
 /**
  * `sizes` for a painting shown at real scale (`min(cm × k px, 100%)` inside a .container), without

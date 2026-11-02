@@ -6,9 +6,14 @@
  * Pure functions on plain data: no `astro:*` imports and only erasable TypeScript, so
  * `scripts/test/opera.test.mjs` imports this file directly through Node's type stripping.
  */
+import { PAGE_MAX, gutterAt } from './composition.ts';
 
-/** --tiz-page-max of tokens.css: the page column stops growing there. */
-export const PAGE_MAX = 1440;
+/** --tiz-page-max of tokens.css (from composition.ts): the page column stops growing there. */
+export { PAGE_MAX };
+
+/** Desktop aside of the artwork page and the gap before it (grid `minmax(0,1fr) 400px`, gap 64). */
+const ASIDE = 400;
+const ASIDE_GAP = 64;
 
 export interface StageLayout {
   /** Breakpoint from which this layout applies (px). */
@@ -29,9 +34,9 @@ export interface StageLayout {
  * - < 640: gutters 20; a 440 px box the painting fills (max-width/max-height 100 %).
  */
 export const STAGE: readonly StageLayout[] = [
-  { minWidth: 1024, off: 2 * 48 + 400 + 64, height: 720, fitW: 0.88, fitH: 0.92 },
-  { minWidth: 640, off: 2 * 32, height: 600, fitW: 0.88, fitH: 0.92 },
-  { minWidth: 0, off: 2 * 20, height: 440, fitW: 1, fitH: 1 },
+  { minWidth: 1024, off: 2 * gutterAt(1024) + ASIDE + ASIDE_GAP, height: 720, fitW: 0.88, fitH: 0.92 },
+  { minWidth: 640, off: 2 * gutterAt(640), height: 600, fitW: 0.88, fitH: 0.92 },
+  { minWidth: 0, off: 2 * gutterAt(0), height: 440, fitW: 1, fitH: 1 },
 ];
 
 /** Height of the extra-photo thumbnails under the stage (px): phone, then from 640 px. */

@@ -10,6 +10,7 @@
  *   the site where cropping is allowed).
  * - A painting is never cropped: it is scaled to fit inside the box at its own ratio ("contain").
  */
+import { gutterAt } from './composition.ts';
 
 export interface ChiBox {
   /** Viewport width (px) from which this box applies. */
@@ -24,9 +25,9 @@ export interface ChiBox {
 }
 
 export const CHI_BOXES: readonly ChiBox[] = [
-  { minWidth: 1024, w: 400, h: 500, indent: 30, gutter: 48 },
-  { minWidth: 640, w: 360, h: 450, indent: 40, gutter: 32 },
-  { minWidth: 0, w: 280, h: 350, indent: 40, gutter: 20 },
+  { minWidth: 1024, w: 400, h: 500, indent: 30, gutter: gutterAt(1024) },
+  { minWidth: 640, w: 360, h: 450, indent: 40, gutter: gutterAt(640) },
+  { minWidth: 0, w: 280, h: 350, indent: 40, gutter: gutterAt(0) },
 ];
 
 /** Width / height of the portrait box (4:5). */

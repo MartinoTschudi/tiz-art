@@ -13,8 +13,8 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import ChiFigure from '../components/chi/ChiFigure.astro';
 import PlainText from '../components/PlainText.astro';
 import { SITE, routes } from '../components/lib/site';
-import { altText, composable, excerpt, getProfilo, getPublishedOpere, operaPaintVar } from '../components/lib/opere';
-import { heroSlots, mottoParts, splitLastWord } from '../components/lib/composition';
+import { altText, excerpt, firstHeroWork, getProfilo, getPublishedOpere, operaPaintVar } from '../components/lib/opere';
+import { mottoParts, splitLastWord } from '../components/lib/composition';
 import { socialImage } from '../components/lib/images';
 import { personJsonLd } from '../components/lib/structured-data';
 
@@ -24,7 +24,7 @@ const portraitAlt = `Ritratto di ${SITE.nome}`;
 const portraitShare = profilo.ritratto ? await socialImage(profilo.ritratto, portraitAlt) : undefined;
 
 // Without a portrait: the first work of the home hero (its first featured work in display order).
-const work = profilo.ritratto ? undefined : heroSlots(composable(published)).picked[0]?.opera;
+const work = profilo.ritratto ? undefined : firstHeroWork(published);
 const workShare = work ? await socialImage(work.data.immagini[0], altText(work.data)) : undefined;
 
 const description = excerpt(profilo.bio || profilo.motto || `${SITE.nome} (${SITE.firma}), pittrice.`);

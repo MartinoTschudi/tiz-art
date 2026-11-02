@@ -3,13 +3,10 @@
  */
 import { getCollection, getEntry, type CollectionEntry } from 'astro:content';
 import { SITE } from './site';
-import { paintName, paintVar, type PaintName } from './composition';
+import { heroSlots, paintName, paintVar, type PaintName } from './composition';
 
 export type Opera = CollectionEntry<'opere'>;
 export type Profilo = CollectionEntry<'profilo'>;
-
-/** Works returned by getFeaturedOpere when none is marked "in evidenza". */
-const FEATURED_FALLBACK = 6;
 
 /** `ordine` ascending; ties: newest `creataIl` first (CONTRACTS 4.1). */
 function byOrder(a: Opera, b: Opera): number {
@@ -27,13 +24,12 @@ export async function getPublishedOpere(): Promise<Opera[]> {
 }
 
 /**
- * The works "in evidenza", or the first few if none is marked. BaseLayout shares the first one when a
- * page has no image of its own (= the first hero work; the home itself composes with heroSlots).
+ * The first work of the home hero (heroSlots: the first one «in evidenza», else the first published
+ * work), or undefined when nothing is published. BaseLayout shares its cover when a page has no image
+ * of its own; Chi sono shows it when there is no portrait. `published` = getPublishedOpere().
  */
-export async function getFeaturedOpere(): Promise<Opera[]> {
-  const published = await getPublishedOpere();
-  const featured = published.filter(({ data }) => data.inEvidenza);
-  return featured.length > 0 ? featured : published.slice(0, FEATURED_FALLBACK);
+export function firstHeroWork(published: readonly Opera[]): Opera | undefined {
+  return heroSlots(composable(published)).picked[0]?.opera;
 }
 
 export async function getProfilo(): Promise<Profilo['data']> {
@@ -119,11 +115,10 @@ export function operaDescription(data: Opera['data']): string {
 /**
  * Colour of the work's brushstroke: its `colore`, or the automatic one from its position in the
  * published list (lib/composition.ts → paintName), so it is the same on every page. `published` =
- * getPublishedOpere(). Reads `colore` defensively: works saved by an older admin have no such key.
+ * getPublishedOpere(). (A file of an older admin without the key reads as null: the schema defaults it.)
  */
 export function operaPaint(opera: Opera, published: readonly Opera[]): PaintName {
-  const colore = (opera.data as Record<string, unknown>).colore;
-  return paintName(typeof colore === 'string' ? colore : null, published.findIndex(({ id }) => id === opera.id));
+  return paintName(opera.data.colore, published.findIndex(({ id }) => id === opera.id));
 }
 
 /** The paint as a CSS value for Stroke: "var(--tiz-ottanio)". */

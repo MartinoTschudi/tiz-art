@@ -8,7 +8,7 @@
  * - `title`: the page name; the layout appends " — Tiziana Tschudi Belloli". Omit it on the home page
  *   ("Tiziana Tschudi Belloli — TIZ").
  * - `path`: route without base path, ending with "/" ("" = home). `null` = no canonical (404).
- * - `ogImage`: sharing image; default = the cover of the first work «in evidenza» (the first hero work).
+ * - `ogImage`: sharing image; default = the cover of the first hero work (lib/opere.ts → firstHeroWork).
  * - `footerVariant`: "home" for the large home footer (SiteFooter).
  * - `headerBack`: phone-only back link in the header instead of the Menu button (SiteHeader `back`).
  *
@@ -23,7 +23,7 @@ import voceFont from '../assets/fonts/bricolage-grotesque.woff2?url';
 import SiteHeader from '../components/SiteHeader.astro';
 import SiteFooter from '../components/SiteFooter.astro';
 import { SITE, IS_PREVIEW, absoluteUrl, withBase } from '../components/lib/site';
-import { altText, getFeaturedOpere } from '../components/lib/opere';
+import { altText, firstHeroWork, getPublishedOpere } from '../components/lib/opere';
 import { socialImage, type SocialImage } from '../components/lib/images';
 import { jsonLdScript, type JsonLd } from '../components/lib/structured-data';
 
@@ -55,7 +55,7 @@ const {
 const fullTitle = title ? `${title} — ${SITE.nome}` : `${SITE.nome} — ${SITE.firma}`;
 const canonical = path === null ? undefined : absoluteUrl(withBase(path));
 
-const fallbackCover = ogImage ? undefined : (await getFeaturedOpere())[0];
+const fallbackCover = ogImage ? undefined : firstHeroWork(await getPublishedOpere());
 const image =
   ogImage ?? (fallbackCover && (await socialImage(fallbackCover.data.immagini[0], altText(fallbackCover.data))));
 ---
