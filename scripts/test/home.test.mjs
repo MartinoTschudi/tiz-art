@@ -45,11 +45,14 @@ describe('hero', () => {
     for (const sizes of [...Object.values(HERO_SIZES), QUOTE_SIZES]) assert.doesNotMatch(sizes, /min\(|max\(/);
   });
 
-  test('the wall formula meets the reference at 1024 and 1280', () => {
-    // large = 400/622 × min(622, 0.5253 × (vw − 96)) between 1024 and 1280: calc(33.78vw − 32px)
-    const large = (vw) => 0.3378 * vw - 32;
-    assert.ok(Math.abs(large(1280) - 400) < 1.5);
-    assert.ok(Math.abs(large(1024) - (400 / 622) * 0.5253 * (1024 - 96)) < 1.5);
+  test('sizes from 1024 to 1280 follow the wall: min(622, 52.53% of vw − 96) × the slot share', () => {
+    const share = { large: 400 / 622, narrow: 150 / 622, small: 230 / 622 };
+    for (const [slot, sizes] of Object.entries(HERO_SIZES)) {
+      const [, a, b] = sizes.match(/\(min-width: 1024px\) calc\(([\d.]+)vw - ([\d.]+)px\)/);
+      const fromSizes = (vw) => (Number(a) * vw) / 100 - Number(b);
+      const rendered = (vw) => share[slot] * Math.min(622, 0.5253 * (vw - 96));
+      for (const vw of [1024, 1152, 1279]) assert.ok(Math.abs(fromSizes(vw) - rendered(vw)) < 1.5, `${slot} at ${vw}px`);
+    }
   });
 
   test('the intro is Italian copy with its typography', () => {
@@ -62,7 +65,6 @@ describe('series and quote', () => {
   test('"Tutte le {n} opere"', () => {
     assert.equal(allWorksLabel(12), 'Tutte le 12 opere');
     assert.equal(allWorksLabel(60), 'Tutte le 60 opere');
-    assert.equal(allWorksLabel(1), 'Vedi l’opera');
   });
 
   test('first name of the artist', () => {

@@ -9,8 +9,9 @@
  *   heights come from the photos, so square, tall or wide works never overlap.
  * - < 1024: flow layout: motto → the large work with its stroke and note → intro. The narrow and the
  *   small work are hidden there (lazy, so never fetched).
- * - Motto lines wipe in at 0 / .5 / 1 s, the beating dot follows the last word (the trailing "." or
- *   "!" of the motto; once per page). An empty motto shows the artist's name instead (no dot).
+ * - Motto lines wipe in at 0 / .5 / 1 s, the beating dot follows the last word in place of the
+ *   trailing "." or "!" (none after "?" or "…"; once per page). An empty motto shows the artist's
+ *   name instead (no dot).
  * - Strokes use the slot colours of the reference (HERO_PAINTS), not the works' own paint.
  */
 import ResponsivePicture from '../ResponsivePicture.astro';
@@ -32,6 +33,8 @@ const parts = fromMotto.lines.length > 0 ? fromMotto : mottoParts(SITE.nome);
 const lines = parts.lines.slice(0, -1);
 const lastLine = parts.lines.at(-1) ?? '';
 const chars = longestLine(parts.lines);
+// mottoParts strips a closing "." / "!": the dot stands for it. A "?" or "…" stays, without a dot.
+const dot = fromMotto.lines.length > 0 && /[\p{L}\p{N}]$/u.test(fromMotto.lastWord);
 
 const slots = (['large', 'narrow', 'small'] as const)
   .map((slot) => ({ slot, work: hero[slot] }))
@@ -43,7 +46,8 @@ const slots = (['large', 'narrow', 'small'] as const)
     sizes: HERO_SIZES[slot],
   }));
 
-// Load choreography of the reference: stroke, then the painting settles, then the note writes.
+// Load choreography of the reference: stroke, then the painting settles (≥ 1024 the note and the
+// intro follow, see the styles).
 const TIMING = {
   large: { stroke: '.3s', settle: '.7s' },
   narrow: { stroke: '.6s', settle: '.9s' },
@@ -67,7 +71,7 @@ const ROTATE = { large: '-6deg', narrow: '8deg', small: '-3deg' } as const;
         ))
       }
       <span class="home-hero__line home-hero__line--last tiz-write" style={`--d: ${lines.length * 0.5}s`}>
-        {lastLine}{fromMotto.lines.length > 0 && <span class="home-hero__dot" aria-hidden="true"></span>}
+        {lastLine}{dot && <span class="home-hero__dot" aria-hidden="true"></span>}
       </span>
     </h1>
 
@@ -90,7 +94,7 @@ const ROTATE = { large: '-6deg', narrow: '8deg', small: '-3deg' } as const;
           </div>
           {
             slot === 'large' && (
-              <p class="home-hero__note tiz-write" style="--d: 1.6s" aria-hidden="true">
+              <p class="home-hero__note" aria-hidden="true">
                 {heroNote(opera.data.titolo, opera.data.anno)}
               </p>
             )
@@ -99,7 +103,7 @@ const ROTATE = { large: '-6deg', narrow: '8deg', small: '-3deg' } as const;
       ))
     }
 
-    <div class="home-hero__intro tiz-settle" style="--d: 1.4s">
+    <div class="home-hero__intro">
       <p class="home-hero__text">{HOME_INTRO}</p>
       {
         slots.length > 0 && (
@@ -135,9 +139,10 @@ const ROTATE = { large: '-6deg', narrow: '8deg', small: '-3deg' } as const;
   .home-hero__motto {
     margin-top: 24px;
     font: 400 92px/0.82 var(--tiz-font-mano);
-    /* 92px, smaller only when the longest line would not fit (TIZ Mano ≈ 0.31 em per character).
-       Browsers without container units keep the 92px above. */
-    font-size: min(92px, calc(290cqi / var(--chars, 11)));
+    /* 92px, smaller only when the longest line would not fit (TIZ Mano ≈ 0.31 em per character),
+       never below the 28px of her hand (a longer line wraps). Browsers without container units keep
+       the 92px above. */
+    font-size: clamp(28px, calc(290cqi / var(--chars, 11)), 92px);
     letter-spacing: 0;
     text-wrap: initial;
     overflow-wrap: anywhere;
@@ -209,12 +214,11 @@ const ROTATE = { large: '-6deg', narrow: '8deg', small: '-3deg' } as const;
 
   .home-hero__note {
     width: fit-content;
-    max-width: 100%;
+    max-width: calc(100% - 8px);
     margin: 10px 0 0 8px;
     font: 400 30px/1 var(--tiz-font-mano);
-    /* Tilted around its top right corner: no part of a long, wrapped title rises onto the painting. */
+    /* Around its middle, as in the frames: even a full-width note rises less than its top margin. */
     transform: rotate(-3deg);
-    transform-origin: 100% 0;
     overflow-wrap: anywhere;
   }
 
@@ -243,6 +247,7 @@ const ROTATE = { large: '-6deg', narrow: '8deg', small: '-3deg' } as const;
     }
 
     .home-hero__note {
+      margin-top: 14px;
       font-size: 34px;
     }
   }
@@ -273,12 +278,12 @@ const ROTATE = { large: '-6deg', narrow: '8deg', small: '-3deg' } as const;
       margin-top: 40px;
       padding-right: 24px;
       /* 150px, smaller when the longest line would not fit in the column. */
-      font-size: min(150px, calc(140cqi / var(--chars, 11)));
+      font-size: clamp(28px, calc(140cqi / var(--chars, 11)), 150px);
     }
 
     @supports not (width: 1cqi) {
       .home-hero__motto {
-        font-size: min(150px, calc((min(100vw, var(--tiz-page-max)) - 2 * var(--tiz-gutter)) * 1.4 / var(--chars, 11)));
+        font-size: clamp(28px, calc((min(100vw, var(--tiz-page-max)) - 2 * var(--tiz-gutter)) * 1.4 / var(--chars, 11)), 150px);
       }
     }
 
@@ -313,8 +318,10 @@ const ROTATE = { large: '-6deg', narrow: '8deg', small: '-3deg' } as const;
       width: calc(var(--wall) * 0.36977);
     }
 
+    /* After the works, the note writes and the intro settles in (frame 1b). In the flow layout
+       they are there at once, as in frame 1c. */
     .home-hero__note {
-      margin: 14px 0 0 8px;
+      animation: tiz-write var(--tiz-dur-write) var(--tiz-ease-brush) 1.6s both;
     }
 
     /* Frame 1b: 520 × 330 at −60 / 70 around 400 px; 230 × 300 at −50 / −30 around 150 × 325;
@@ -346,6 +353,7 @@ const ROTATE = { large: '-6deg', narrow: '8deg', small: '-3deg' } as const;
       gap: 20px;
       max-width: 380px;
       margin-top: 0;
+      animation: tiz-settle var(--tiz-dur-settle) var(--tiz-ease-settle) 1.4s both;
     }
 
     /* No works published: the motto and the intro alone, in one column. */

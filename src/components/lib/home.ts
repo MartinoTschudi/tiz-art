@@ -51,9 +51,12 @@ export function longestLine(lines: readonly string[]): number {
   return Math.max(8, ...lines.map((line) => [...line].length));
 }
 
-/** The link under the series: "Tutte le 12 opere". */
+/**
+ * The link under the series: "Tutte le 12 opere". The series only shows works outside the hero
+ * (up to 3), so there are always at least 4 when the link is on the page.
+ */
 export function allWorksLabel(count: number): string {
-  return count === 1 ? 'Vedi l’opera' : `Tutte le ${count} opere`;
+  return `Tutte le ${count} opere`;
 }
 
 /** "Tiziana Tschudi Belloli" → "Tiziana". */

@@ -40,7 +40,7 @@ const attribution = quoteAttribution(firstName(SITE.nome), opera.data.titolo, fo
         <p>«{quote.before}<span class="home-quote__key">{quote.keyWord}</span>{quote.after}»</p>
       </blockquote>
       <figcaption class="home-quote__by">
-        <a href={href}>{attribution} <span aria-hidden="true">→</span></a>
+        <a href={href}>{attribution}&nbsp;<span aria-hidden="true">→</span></a>
       </figcaption>
     </figure>
   </div>
@@ -112,6 +112,7 @@ const attribution = quoteAttribution(firstName(SITE.nome), opera.data.titolo, fo
     font-size: 15px;
     line-height: 1.4;
     text-decoration: none;
+    overflow-wrap: anywhere;
   }
 
   .home-quote__by a:hover {
