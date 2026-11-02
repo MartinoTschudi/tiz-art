@@ -1,10 +1,28 @@
 ---
 /**
- * Site header: the "TIZ" signature + name (→ home) and the main navigation.
- * The current section gets aria-current="page" (artwork pages count as "Opere").
- * On narrow screens only the signature is visible; the name stays readable for screen readers.
+ * Site header: "TIZ" + name (→ home) and the navigation Opere · Chi sono · Contatti. The current
+ * section gets aria-current="page" and the ocra marker (artwork pages count as "Opere").
+ *
+ * - ≥ 640 px: the nav on the right.
+ * - < 640 px with JS: a "Menu" button opens a full-screen lino overlay (ocra stroke, big links, the
+ *   motto). Esc, the button ("Chiudi") or a link closes it; focus stays inside while it is open, the
+ *   rest of the page is inert and does not scroll, focus returns to the button.
+ * - < 640 px without JS: no button; the three links form a compact row under "TIZ".
+ * - `back` (phone only, e.g. the Opera page, frame 1g): a "← …" link on the left and "TIZ" on the
+ *   right instead of the Menu button. Ignored from 640 px (the page shows its own back link there).
+ *
+ * The root <header> must stay a direct child of <body> (the script makes its siblings inert).
  */
+import Stroke from './Stroke.astro';
 import { SITE, routes } from './lib/site';
+import { getProfilo } from './lib/opere';
+import { splitLastWord } from './lib/composition';
+
+interface Props {
+  back?: { href: string; label: string };
+}
+
+const { back } = Astro.props;
 
 const NAV = [
   { href: routes.opere, label: 'Opere' },
@@ -13,72 +31,223 @@ const NAV = [
 ];
 
 const current = Astro.url.pathname;
+const motto = splitLastWord((await getProfilo()).motto);
 ---
 
-<header class="site-header">
-  <div class="site-header__inner container">
-    <a class="brand" href={routes.home} aria-current={current === routes.home ? 'page' : undefined}>
-      <span class="brand__signature">{SITE.firma}</span>
-      <span class="brand__name">{SITE.nome}</span>
+<header class:list={['tiz-header', back && 'tiz-header--back']} data-tiz-header>
+  <div class="tiz-header__bar container">
+    {
+      back && (
+        <a class="tiz-header__back" href={back.href}>
+          <span aria-hidden="true">←</span> {back.label}
+        </a>
+      )
+    }
+    <a class="tiz-header__brand" href={routes.home} aria-current={current === routes.home ? 'page' : undefined}>
+      <span class="tiz-header__tiz">{SITE.firma}</span>{' '}
+      <span class="tiz-header__name">{SITE.nome}</span>
     </a>
-    <nav class="site-nav" aria-label="Principale">
-      <ul class="site-nav__list" role="list">
-        {
-          NAV.map(({ href, label }) => (
-            <li>
-              <a class="site-nav__link" href={href} aria-current={current.startsWith(href) ? 'page' : undefined}>
-                {label}
-              </a>
-            </li>
-          ))
-        }
-      </ul>
-    </nav>
+    {
+      !back && (
+        <button class="tiz-header__toggle" type="button" aria-expanded="false" aria-controls="tiz-menu" data-menu-toggle>
+          Menu
+        </button>
+      )
+    }
+    <div class="tiz-menu" id="tiz-menu" data-menu>
+      <Stroke class="tiz-menu__stroke" color="var(--tiz-ocra)" top="150px" left="-60px" width="460px" height="330px" rotate="-8deg" />
+      <nav class="tiz-nav" aria-label="Principale">
+        <ul class="tiz-nav__list" role="list">
+          {
+            NAV.map(({ href, label }, i) => (
+              <li class="tiz-nav__item" style={`--i: ${i}`}>
+                <a class="tiz-nav__link" href={href} aria-current={current.startsWith(href) ? 'page' : undefined}>
+                  <span class="tiz-nav__label">{label}</span>
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+      </nav>
+      {
+        motto.word && (
+          <p class="tiz-menu__motto" aria-hidden="true">
+            {motto.before}
+            <span class="tiz-menu__heart">{motto.word}</span>
+            {motto.after}
+          </p>
+        )
+      }
+    </div>
   </div>
 </header>
 
+<script>
+  // Phone menu (< 640 px). Without this script the nav is a plain row of links (see the CSS).
+  const header = document.querySelector<HTMLElement>('[data-tiz-header]');
+  const toggle = header?.querySelector<HTMLButtonElement>('[data-menu-toggle]');
+  const menu = header?.querySelector<HTMLElement>('[data-menu]');
+
+  if (header && toggle && menu) {
+    const desktop = window.matchMedia('(min-width: 640px)');
+    let open = false;
+    let madeInert: HTMLElement[] = [];
+
+    const focusables = () =>
+      [...header.querySelectorAll<HTMLElement>('a[href], button:not([disabled])')].filter((el) => el.getClientRects().length > 0);
+
+    const setOpen = (next: boolean, returnFocus = true) => {
+      if (next === open) return;
+      open = next;
+      header.classList.toggle('is-open', open);
+      toggle.setAttribute('aria-expanded', String(open));
+      toggle.textContent = open ? 'Chiudi' : 'Menu';
+      document.documentElement.classList.toggle('tiz-menu-open', open);
+      if (open) {
+        madeInert = [...document.body.children].filter(
+          (el): el is HTMLElement => el instanceof HTMLElement && el !== header && !(el instanceof HTMLScriptElement) && !el.inert,
+        );
+        madeInert.forEach((el) => (el.inert = true));
+      } else {
+        madeInert.forEach((el) => (el.inert = false));
+        madeInert = [];
+        if (returnFocus) toggle.focus();
+      }
+    };
+
+    toggle.addEventListener('click', () => setOpen(!open));
+
+    // A link closes the menu (also a link to the page already shown).
+    menu.addEventListener('click', (event) => {
+      if (open && (event.target as Element).closest('a')) setOpen(false, false);
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (!open) return;
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        setOpen(false);
+        return;
+      }
+      if (event.key !== 'Tab') return;
+      // Focus trap: Tab and Shift+Tab cycle through the header's links and the button.
+      const items = focusables();
+      if (items.length === 0) return;
+      const first = items[0];
+      const last = items[items.length - 1];
+      const active = document.activeElement;
+      if (!header.contains(active)) {
+        event.preventDefault();
+        (event.shiftKey ? last : first).focus();
+      } else if (event.shiftKey && active === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && active === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    });
+
+    // Growing past the phone layout, or leaving the page (back/forward cache), closes it.
+    desktop.addEventListener('change', (event) => {
+      if (event.matches) setOpen(false, false);
+    });
+    window.addEventListener('pagehide', () => setOpen(false, false));
+  }
+</script>
+
 <style>
-  .site-header {
-    border-bottom: var(--border-width) solid var(--color-line);
+  .tiz-header {
+    position: relative;
+    z-index: var(--tiz-z-header);
   }
 
-  .site-header__inner {
+  .tiz-header__bar {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
-    gap: var(--space-4);
-    min-height: var(--header-height);
+    column-gap: var(--tiz-s4);
+    padding-block: var(--tiz-header-pad);
   }
 
-  .brand {
+  .tiz-header__brand,
+  .tiz-header__toggle,
+  .tiz-header__back {
+    position: relative;
+    z-index: 2;
+  }
+
+  .tiz-header__brand {
     display: inline-flex;
-    align-items: baseline;
-    gap: var(--space-3);
-    padding-block: var(--space-3);
+    align-items: center;
+    gap: 14px;
+    min-height: var(--tiz-hit);
+    color: var(--tiz-terra);
     text-decoration: none;
   }
 
-  .brand__signature {
-    font-family: var(--font-display);
-    font-size: var(--text-xl);
-    font-weight: var(--weight-bold);
-    letter-spacing: 0.08em;
-    color: var(--color-highlight);
-    line-height: 1;
+  .tiz-header__tiz {
+    color: var(--tiz-rosso);
+    font: 400 var(--tiz-signature) / 1 var(--tiz-font-mano);
   }
 
-  .brand__name {
-    font-size: var(--text-sm);
-    color: var(--color-text-muted);
-    letter-spacing: 0.02em;
+  .tiz-header__name {
+    font: 500 15px/1.2 var(--tiz-font-voce);
   }
 
-  .brand:hover .brand__name {
-    color: var(--color-text);
+  .tiz-header__back {
+    display: none;
   }
 
-  @media (max-width: 47.99rem) {
-    .brand__name {
+  .tiz-header__toggle {
+    display: none;
+    align-items: center;
+    height: var(--tiz-hit);
+    padding: 0 18px;
+    border: 0;
+    border-radius: var(--tiz-radius-btn-s);
+    background: var(--tiz-terra);
+    color: var(--tiz-lino);
+    font: 600 15px/1 var(--tiz-font-voce);
+  }
+
+  .tiz-menu :global(.tiz-menu__stroke),
+  .tiz-menu__motto {
+    display: none;
+  }
+
+  .tiz-nav__list {
+    display: flex;
+    flex-wrap: wrap;
+  }
+
+  .tiz-nav__link {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--tiz-hit);
+    color: var(--tiz-terra);
+    font: 500 17px/1 var(--tiz-font-voce);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .tiz-nav__link:hover {
+    color: var(--tiz-rosso);
+  }
+
+  .tiz-nav__link[aria-current='page'] .tiz-nav__label {
+    background: var(--tiz-marker-nav);
+  }
+
+  /* ── Phone ─────────────────────────────────────────────── */
+  @media (max-width: 639.98px) {
+    /* Keeps its place while the bar is fixed (menu open). */
+    .tiz-header {
+      min-height: var(--tiz-header-h);
+    }
+
+    .tiz-header__name {
       position: absolute;
       width: 1px;
       height: 1px;
@@ -86,27 +255,105 @@ const current = Astro.url.pathname;
       clip-path: inset(50%);
       white-space: nowrap;
     }
+
+    /* Without JS: the links as a compact row of their own under "TIZ". */
+    .tiz-menu {
+      flex-basis: 100%;
+    }
+
+    .tiz-nav__list {
+      column-gap: var(--tiz-s4);
+    }
+
+    .tiz-nav__link {
+      font-size: 16px;
+    }
+
+    /* With JS: the Menu button; the links live in the overlay. */
+    :global(.js) .tiz-header__toggle {
+      display: inline-flex;
+    }
+
+    :global(.js) .tiz-menu {
+      display: none;
+    }
+
+    /* "← Opere" on the left, "TIZ" on the right (Opera page). */
+    .tiz-header--back .tiz-header__back {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-height: var(--tiz-hit);
+      color: var(--tiz-terra);
+      font: 500 15px/1 var(--tiz-font-voce);
+      text-decoration: none;
+    }
+
+    .tiz-header--back .tiz-header__brand {
+      margin-left: auto;
+    }
+
+    /* The overlay. The bar is fixed too, so "TIZ" and "Chiudi" stay on screen when the page was scrolled. */
+    .tiz-header.is-open .tiz-header__bar {
+      position: fixed;
+      inset: 0 0 auto;
+      z-index: 2;
+    }
+
+    :global(.js) .tiz-header.is-open .tiz-menu {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+      isolation: isolate;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      padding: 120px max(var(--tiz-gutter), env(safe-area-inset-right)) max(48px, env(safe-area-inset-bottom))
+        max(var(--tiz-gutter), env(safe-area-inset-left));
+      background: var(--tiz-linen), var(--tiz-lino);
+    }
+
+    .tiz-header.is-open :global(.tiz-menu__stroke) {
+      display: block;
+      animation-duration: 700ms;
+      animation-delay: 0s;
+    }
+
+    .tiz-header.is-open .tiz-nav__list {
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .tiz-header.is-open .tiz-nav__link {
+      font: 800 64px/1.05 var(--tiz-font-voce);
+      letter-spacing: -0.03em;
+      animation: tiz-settle 500ms var(--tiz-ease-settle) both;
+      animation-delay: calc(150ms + var(--i, 0) * 70ms);
+    }
+
+    .tiz-header.is-open .tiz-nav__link[aria-current='page'] .tiz-nav__label {
+      background: none;
+    }
+
+    .tiz-header.is-open .tiz-menu__motto {
+      display: block;
+      margin-top: auto;
+      padding-top: var(--tiz-s6);
+      font: 400 40px/1 var(--tiz-font-mano);
+      text-wrap: pretty;
+    }
+
+    .tiz-menu__heart {
+      color: var(--tiz-rosso);
+    }
   }
 
-  .site-nav__list {
-    display: flex;
-    gap: clamp(var(--space-1), 2.5vw, var(--space-6));
-  }
-
-  .site-nav__link {
-    display: inline-flex;
-    align-items: center;
-    min-height: var(--tap-target);
-    padding-inline: var(--space-2);
-    font-size: var(--text-sm);
-    letter-spacing: 0.02em;
-    white-space: nowrap;
-    text-decoration: none;
-    text-underline-offset: 0.45em;
-  }
-
-  .site-nav__link[aria-current='page'] {
-    text-decoration: underline;
-    text-decoration-color: var(--color-highlight);
+  /* ── Tablet and desktop ────────────────────────────────── */
+  @media (min-width: 640px) {
+    .tiz-nav__list {
+      gap: var(--tiz-s5);
+    }
   }
 </style>

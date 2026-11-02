@@ -9,8 +9,17 @@
  *   ("Tiziana Tschudi Belloli — TIZ").
  * - `path`: route without base path, ending with "/" ("" = home). `null` = no canonical (404).
  * - `ogImage`: sharing image; default = cover of the first work in the home selection.
+ * - `footerVariant`: "home" for the large home footer (SiteFooter).
+ * - `headerBack`: phone-only back link in the header instead of the Menu button (SiteHeader `back`).
+ *
+ * Also here, once per page: the font preloads, the #tiz-rough SVG filter of the brushstrokes, the
+ * `js` class on <html> (set before the first paint) and the reveal-on-scroll script for [data-reveal]
+ * (see global.css). Page changes use native cross-document view transitions (global.css), not
+ * Astro's ClientRouter: the vanilla scripts rely on normal page loads.
  */
 import '../styles/global.css';
+import manoFont from '../assets/fonts/tiz-mano.woff2?url';
+import voceFont from '../assets/fonts/bricolage-grotesque.woff2?url';
 import SiteHeader from '../components/SiteHeader.astro';
 import SiteFooter from '../components/SiteFooter.astro';
 import { SITE, IS_PREVIEW, absoluteUrl, withBase } from '../components/lib/site';
@@ -27,9 +36,21 @@ interface Props {
   jsonLd?: JsonLd[];
   /** Keep this page out of search engines (always true on the GitHub Pages preview). */
   noindex?: boolean;
+  footerVariant?: 'default' | 'home';
+  headerBack?: { href: string; label: string };
 }
 
-const { title, description, path, ogImage, ogType = 'website', jsonLd = [], noindex = false } = Astro.props;
+const {
+  title,
+  description,
+  path,
+  ogImage,
+  ogType = 'website',
+  jsonLd = [],
+  noindex = false,
+  footerVariant = 'default',
+  headerBack,
+} = Astro.props;
 
 const fullTitle = title ? `${title} — ${SITE.nome}` : `${SITE.nome} — ${SITE.firma}`;
 const canonical = path === null ? undefined : absoluteUrl(withBase(path));
@@ -44,6 +65,20 @@ const image =
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <script is:inline>
+      // Before the first paint: CSS may now hide [data-reveal] elements until they are revealed. If
+      // the reveal script never runs (failed download), show everything after 3 s.
+      document.documentElement.classList.add('js');
+      setTimeout(function () {
+        if (document.documentElement.dataset.reveal !== 'ready') {
+          document.querySelectorAll('[data-reveal]').forEach(function (el) {
+            el.classList.add('is-in');
+          });
+        }
+      }, 3000);
+    </script>
+    <link rel="preload" href={voceFont} as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href={manoFont} as="font" type="font/woff2" crossorigin />
     <title>{fullTitle}</title>
     <meta name="description" content={description} />
     {(IS_PREVIEW || noindex) && <meta name="robots" content="noindex" />}
@@ -71,25 +106,78 @@ const image =
     <link rel="icon" href={withBase('favicon.svg')} type="image/svg+xml" />
     <link rel="icon" href={withBase('favicon-32.png')} type="image/png" sizes="32x32" />
     <link rel="apple-touch-icon" href={withBase('apple-touch-icon.png')} />
-    <!-- Same value as --color-bg in src/styles/tokens.css -->
-    <meta name="theme-color" content="#f6f3ee" />
+    <!-- Same value as --tiz-lino in src/styles/tokens.css -->
+    <meta name="theme-color" content="#f3ecdf" />
     <meta name="generator" content={Astro.generator} />
 
     {jsonLd.length > 0 && <script type="application/ld+json" set:html={jsonLdScript(jsonLd)} />}
   </head>
   <body>
     <a class="skip-link" href="#contenuto">Vai al contenuto</a>
-    <SiteHeader />
+    <SiteHeader back={headerBack} />
     <main id="contenuto" class="main" tabindex="-1">
       <slot />
     </main>
-    <SiteFooter />
+    <SiteFooter variant={footerVariant} />
+    <svg class="tiz-filters" width="0" height="0" aria-hidden="true" focusable="false">
+      <filter id="tiz-rough" x="-10%" y="-10%" width="120%" height="120%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.03" numOctaves="3" seed="7"></feTurbulence>
+        <feDisplacementMap in="SourceGraphic" scale="34"></feDisplacementMap>
+      </filter>
+    </svg>
   </body>
 </html>
+
+<script>
+  // Reveal on scroll: [data-reveal] elements get .is-in when they enter the viewport (global.css runs
+  // the animation). Elements revealed together are staggered by --tiz-stagger in document order,
+  // unless they set their own --tiz-reveal-delay inline.
+  const STAGGER_MS = 90;
+  const MAX_STEPS = 7;
+  const root = document.documentElement;
+  const pending = [...document.querySelectorAll<HTMLElement>('[data-reveal]:not(.is-in)')];
+
+  const reveal = (elements: HTMLElement[]) => {
+    elements.forEach((el, i) => {
+      if (!el.style.getPropertyValue('--tiz-reveal-delay')) {
+        el.style.setProperty('--tiz-reveal-stagger', `${Math.min(i, MAX_STEPS) * STAGGER_MS}ms`);
+      }
+      el.classList.add('is-in');
+    });
+  };
+
+  if (!('IntersectionObserver' in window)) {
+    reveal(pending);
+  } else {
+    // What is already on screen is revealed at once (also the target of a view transition).
+    const inView = (el: HTMLElement) => {
+      const box = el.getBoundingClientRect();
+      return box.bottom > 0 && box.top < window.innerHeight && box.width > 0;
+    };
+    reveal(pending.filter(inView));
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const shown = entries.filter((entry) => entry.isIntersecting).map((entry) => entry.target as HTMLElement);
+        shown.forEach((el) => observer.unobserve(el));
+        reveal(shown);
+      },
+      { rootMargin: '0px 0px -6% 0px', threshold: 0.1 },
+    );
+    pending.filter((el) => !el.classList.contains('is-in')).forEach((el) => observer.observe(el));
+  }
+  root.dataset.reveal = 'ready';
+</script>
 
 <style>
   .main {
     flex: 1;
+  }
+
+  .tiz-filters {
+    position: absolute;
+    width: 0;
+    height: 0;
+    overflow: hidden;
   }
 
   .main:focus {

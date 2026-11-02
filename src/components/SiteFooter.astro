@@ -1,49 +1,189 @@
 ---
 /**
- * Site footer: signature, © year + name, link to the contact page.
+ * Site footer.
+ * - default: dashed filo top border, "TIZ" (54px, rosso) and "© {year} Tiziana Tschudi Belloli".
+ * - variant="home": "TIZ" at 140px with the motto, and the nav on the right ("Scrivimi" in place of
+ *   Contatti) above the © line. On phones (frame 1c) only "TIZ" (110px) and the © line.
  * By design there is no address, phone, e-mail or social link anywhere on the site (CONTRACTS 5.1).
  */
+import sito from '../data/sito.json';
 import { SITE, routes } from './lib/site';
+import { getProfilo } from './lib/opere';
 
+interface Props {
+  variant?: 'default' | 'home';
+}
+
+const { variant = 'default' } = Astro.props;
 const year = new Date().getFullYear();
+const home = variant === 'home';
+const motto = home ? (await getProfilo()).motto.trim() : '';
+const domain = new URL(sito.dominio).host;
 ---
 
-<footer class="site-footer">
-  <div class="site-footer__inner container">
-    <p class="site-footer__signature" aria-hidden="true">{SITE.firma}</p>
-    <p class="site-footer__copy">© {year} {SITE.nome}</p>
-    <a class="site-footer__link" href={routes.contatti}>Contatti</a>
-  </div>
-</footer>
+{
+  home ? (
+    <footer class="tiz-footer tiz-footer--home">
+      <div class="tiz-footer__inner container">
+        <div class="tiz-footer__sign">
+          <p class="tiz-footer__tiz" aria-hidden="true">
+            {SITE.firma}
+          </p>
+          {motto && <p class="tiz-footer__motto">{motto}</p>}
+        </div>
+        <div class="tiz-footer__end">
+          <nav class="tiz-footer__nav" aria-label="Piè di pagina">
+            <ul role="list">
+              <li>
+                <a href={routes.opere}>Opere</a>
+              </li>
+              <li>
+                <a href={routes.chiSono}>Chi sono</a>
+              </li>
+              <li>
+                <a href={routes.contatti}>Scrivimi</a>
+              </li>
+            </ul>
+          </nav>
+          <p class="tiz-footer__copy">
+            © {year} {SITE.nome} · {domain}
+          </p>
+        </div>
+      </div>
+    </footer>
+  ) : (
+    <footer class="tiz-footer">
+      <div class="tiz-footer__inner container">
+        <p class="tiz-footer__tiz" aria-hidden="true">
+          {SITE.firma}
+        </p>
+        <p class="tiz-footer__copy">
+          © {year} {SITE.nome}
+        </p>
+      </div>
+    </footer>
+  )
+}
 
 <style>
-  .site-footer {
-    margin-top: var(--section-gap);
-    border-top: var(--border-width) solid var(--color-line);
-    font-size: var(--text-sm);
-    color: var(--color-text-muted);
+  .tiz-footer {
+    border-top: var(--tiz-divider);
   }
 
-  .site-footer__inner {
+  .tiz-footer__inner {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: var(--space-2) var(--space-5);
-    padding-block: var(--space-6);
+    justify-content: space-between;
+    gap: var(--tiz-s2) var(--tiz-s4);
+    padding-block: 28px;
   }
 
-  .site-footer__signature {
-    font-family: var(--font-display);
-    font-weight: var(--weight-bold);
-    letter-spacing: 0.08em;
-    color: var(--color-highlight);
+  .tiz-footer__tiz {
+    color: var(--tiz-rosso);
+    font: 400 54px/1 var(--tiz-font-mano);
   }
 
-  .site-footer__link {
-    display: inline-flex;
-    align-items: center;
-    min-height: var(--tap-target);
-    margin-left: auto;
-    color: var(--color-text);
+  .tiz-footer__copy {
+    color: var(--tiz-terra-2);
+    font-size: var(--tiz-small);
+    line-height: var(--tiz-line-small);
+  }
+
+  @media (min-width: 640px) {
+    .tiz-footer__inner {
+      padding-block: 36px;
+    }
+
+    .tiz-footer__copy {
+      line-height: 1;
+    }
+  }
+
+  /* ── Home ──────────────────────────────────────────────── */
+  .tiz-footer--home {
+    border-top: 0;
+  }
+
+  .tiz-footer--home .tiz-footer__inner {
+    display: block;
+    padding-block: var(--tiz-s6) 36px;
+  }
+
+  .tiz-footer--home .tiz-footer__tiz {
+    font-size: 110px;
+    line-height: 0.8;
+  }
+
+  .tiz-footer__motto,
+  .tiz-footer__nav {
+    display: none;
+  }
+
+  .tiz-footer--home .tiz-footer__copy {
+    margin-top: 16px;
+    line-height: 1.5;
+  }
+
+  @media (min-width: 640px) {
+    .tiz-footer--home .tiz-footer__inner {
+      display: flex;
+      align-items: flex-end;
+      gap: 40px;
+      padding-block: 64px 40px;
+    }
+
+    .tiz-footer--home .tiz-footer__tiz {
+      font-size: 140px;
+    }
+
+    .tiz-footer__motto {
+      display: block;
+      margin-top: var(--tiz-s3);
+      font: 400 30px/1 var(--tiz-font-mano);
+    }
+
+    .tiz-footer__end {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 7px; /* + the 7px under the last link = the design's 14px */
+      margin-left: auto;
+    }
+
+    .tiz-footer__nav {
+      display: block;
+    }
+
+    .tiz-footer__nav ul {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+    }
+
+    /* 31 px apart as in the design (17px text + 14px gap); 44 px targets on touch screens. */
+    .tiz-footer__nav a {
+      display: inline-flex;
+      align-items: center;
+      min-height: 31px;
+      color: var(--tiz-terra);
+      font: 500 17px/1 var(--tiz-font-voce);
+      text-decoration: none;
+    }
+
+    .tiz-footer__nav a:hover {
+      color: var(--tiz-rosso);
+    }
+
+    .tiz-footer--home .tiz-footer__copy {
+      margin-top: 0;
+      line-height: 1;
+    }
+  }
+
+  @media (min-width: 640px) and (pointer: coarse) {
+    .tiz-footer__nav a {
+      min-height: var(--tiz-hit);
+    }
   }
 </style>
