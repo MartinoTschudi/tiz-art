@@ -40,6 +40,8 @@ export const routes = {
   contatti: withBase('contatti/'),
   /** Contact form with the artwork pre-selected (read by ContactForm). */
   contattiOpera: (slug: string) => withBase(`contatti/?opera=${encodeURIComponent(slug)}`),
+  /** The form's success page for visitors without JS (Web3Forms redirects there; noindex). */
+  contattiGrazie: withBase('contatti/grazie/'),
 } as const;
 
 /**

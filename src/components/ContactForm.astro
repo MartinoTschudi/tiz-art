@@ -23,7 +23,7 @@
  * [data-contact-again], [data-contact-live].
  */
 import Grazie from './contatti/Grazie.astro';
-import { SITE, absoluteUrl, routes, withBase } from './lib/site';
+import { SITE, absoluteUrl, routes } from './lib/site';
 import type { Opera } from './lib/opere';
 import { CONTACT_THUMB_WIDTH, webpUrl } from './lib/images';
 import { FROM_NAME, LIMITS, MESSAGES, MIN_MESSAGE, SUBJECT, WEB3FORMS_ENDPOINT } from './lib/contatti';
@@ -37,7 +37,7 @@ interface Props {
 
 const { opere, labelledBy } = Astro.props;
 const active = SITE.web3formsAccessKey !== '';
-const redirect = absoluteUrl(withBase('contatti/grazie/'));
+const redirect = absoluteUrl(routes.contattiGrazie);
 
 // The chip's thumbnail box (CSS px, desktop; CSS scales it down on phones). The painting is fitted
 // inside it, never cropped: 64 px high, or narrower when it is very wide.
