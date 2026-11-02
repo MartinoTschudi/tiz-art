@@ -205,11 +205,12 @@ a:hover {
   color: var(--tiz-terra);
 }
 
-/** Marker link: ocra highlighter under the text, 44px tall. */
+/** Marker link: ocra highlighter under the text, 44px tall. Write the arrow after a space as its own
+    (aria-hidden) element: the gap is that word space, as in the reference ("Tutte le opere →"). */
 .tiz-marker {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: 0.3em;
   min-height: var(--tiz-hit);
   background: var(--tiz-marker);
   color: var(--tiz-terra);

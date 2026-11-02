@@ -164,13 +164,9 @@ const hasPicture = Boolean(profilo.ritratto || work);
 
   /* 18px text on phones (frame 1i), 20px from 640; paragraphs 18px apart as in both frames. */
   .chi__bio {
+    --plain-text-gap: 18px;
     font-size: 18px;
     line-height: 1.6;
-  }
-
-  /* Two scoped classes, so this outranks PlainText's own scoped `p + p { margin-top: 1em }`. */
-  .chi__text .chi__bio :global(.plain-text p + p) {
-    margin-top: 18px;
   }
 
   .chi__links {
@@ -179,11 +175,6 @@ const hasPicture = Boolean(profilo.ritratto || work);
     align-items: center;
     gap: 12px 28px;
     margin-top: 6px;
-  }
-
-  /* Frame 1h: "Scrivimi →" has a plain word space before the arrow. */
-  .chi__links .tiz-marker {
-    gap: 0.3em;
   }
 
   /* Frame 1h: the dark button is 52px high, padding 0 24px. */

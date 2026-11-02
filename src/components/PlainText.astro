@@ -5,7 +5,8 @@
  *
  *   <PlainText text={data.testo} />
  *
- * To restyle it from a parent, wrap it: `.parent :global(.plain-text) { … }`.
+ * The space between paragraphs is `--plain-text-gap` (default 1em): set it on a parent. For anything
+ * else, wrap it: `.parent :global(.plain-text) { … }`.
  */
 import { paragraphs } from './lib/opere';
 
@@ -39,6 +40,6 @@ const blocks = paragraphs(Astro.props.text);
   }
 
   .plain-text p + p {
-    margin-top: 1em;
+    margin-top: var(--plain-text-gap, 1em);
   }
 </style>
