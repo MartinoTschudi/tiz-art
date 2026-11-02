@@ -1,0 +1,22 @@
+{
+  "nome": "Tiziana Tschudi Belloli",
+  "firma": "TIZ",
+  "dominio": "https://tiz-art.ch",
+  "lingua": "it",
+  "repository": { "owner": "MartinoTschudi", "repo": "tiz-art", "branch": "main" },
+  "contatto": { "web3formsAccessKey": "" },
+  "redirectVecchioSito": {
+    "/2023/12/28/il-risveglio-di-madre-natura/": "/opere/il-risveglio-di-madre-natura/",
+    "/2023/12/28/liberi-di-volare/": "/opere/liberi-di-volare/",
+    "/2023/12/27/donna-sapiens/": "/opere/donna-sapiens/",
+    "/2023/12/27/gioventu/": "/opere/gioventu/",
+    "/2023/12/27/confidenze/": "/opere/confidenze/",
+    "/2023/12/27/estasi/": "/opere/estasi/",
+    "/2023/11/12/guardami/": "/opere/guardami/",
+    "/2023/09/24/il-coraggio-di-guardare-oltre/": "/opere/il-coraggio-di-guardare-oltre/",
+    "/2023/09/24/pagina-bianca/": "/opere/pagina-bianca/",
+    "/2023/09/23/e-fuori-piove/": "/opere/e-fuori-piove/",
+    "/2023/09/23/coraggio/": "/opere/istinto/",
+    "/2023/09/23/bozza-automatica/": "/opere/sorellanza/"
+  }
+}

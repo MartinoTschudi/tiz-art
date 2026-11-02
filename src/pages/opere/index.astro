@@ -1,0 +1,55 @@
+---
+/**
+ * All published works in order. With more than one series, each series gets its own heading
+ * (works without a series come last, under "Altre opere").
+ */
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PageHeader from '../../components/PageHeader.astro';
+import ArtworkGrid from '../../components/ArtworkGrid.astro';
+import { SITE } from '../../components/lib/site';
+import { getPublishedOpere, groupByCollezione } from '../../components/lib/opere';
+
+const opere = await getPublishedOpere();
+const groups = groupByCollezione(opere);
+const grouped = groups.length > 1;
+const series = groups.map((group) => group.collezione).filter(Boolean);
+const quoted = series.map((name) => `«${name}»`).join(', ');
+
+const count = opere.length === 1 ? '1 opera' : `${opere.length} opere`;
+const lead = !grouped && series.length === 1 ? `Dalla serie ${quoted}` : undefined;
+const description =
+  `Tutte le opere di ${SITE.nome} (${SITE.firma})` +
+  (series.length > 0 ? `, tra cui ${series.length > 1 ? 'le serie' : 'la serie'} ${quoted}` : '.');
+---
+
+<BaseLayout title="Opere" description={description} path="opere/">
+  <div class="container">
+    <PageHeader eyebrow={count} title="Opere" lead={lead} />
+
+    {opere.length === 0 && <p>Le opere saranno pubblicate presto.</p>}
+
+    {
+      grouped
+        ? groups.map((group, i) => (
+            <section class="series" aria-labelledby={`serie-${i + 1}`}>
+              <h2 class="series__title" id={`serie-${i + 1}`}>
+                {group.collezione ? `«${group.collezione}»` : 'Altre opere'}
+              </h2>
+              <ArtworkGrid opere={group.opere} priorityCount={i === 0 ? 3 : 0} />
+            </section>
+          ))
+        : opere.length > 0 && <ArtworkGrid opere={opere} headingLevel={2} priorityCount={3} />
+    }
+  </div>
+</BaseLayout>
+
+<style>
+  .series + .series {
+    margin-top: var(--section-gap);
+  }
+
+  .series__title {
+    margin-bottom: var(--space-6);
+    font-size: var(--text-2xl);
+  }
+</style>

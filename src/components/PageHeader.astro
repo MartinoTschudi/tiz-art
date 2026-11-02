@@ -1,0 +1,41 @@
+---
+/**
+ * Title block at the top of the inner pages: small label, <h1>, optional lead sentence.
+ *
+ *   <PageHeader eyebrow="12 opere" title="Opere" lead="Dalla serie «noi, DONNA.»" />
+ */
+interface Props {
+  title: string;
+  eyebrow?: string;
+  lead?: string;
+}
+
+const { title, eyebrow, lead } = Astro.props;
+---
+
+<header class="page-header">
+  {eyebrow && <p class="eyebrow">{eyebrow}</p>}
+  <h1 class="page-header__title">{title}</h1>
+  {lead && <p class="page-header__lead">{lead}</p>}
+</header>
+
+<style>
+  .page-header {
+    padding-block: clamp(var(--space-6), 7vw, var(--space-8));
+  }
+
+  .page-header__title {
+    margin-top: var(--space-2);
+    font-size: var(--text-3xl);
+    letter-spacing: var(--tracking-tight);
+  }
+
+  .page-header__lead {
+    max-width: var(--width-text);
+    margin-top: var(--space-3);
+    font-family: var(--font-display);
+    font-size: var(--text-xl);
+    line-height: var(--leading-snug);
+    color: var(--color-text-muted);
+  }
+</style>

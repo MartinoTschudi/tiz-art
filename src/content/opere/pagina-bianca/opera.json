@@ -1,0 +1,17 @@
+{
+  "titolo": "Pagina bianca",
+  "anno": 2023,
+  "larghezza": 120,
+  "altezza": 120,
+  "tecnica": "Acrilico su tela",
+  "collezione": "noi, DONNA.",
+  "testo": "Lascio bianca questa pagina prima o poi, scriverò quel qualcosa che farà vibrare il mio cuore. Tra le sue righe perfette finalmente le riempirò del mio nuovo essere che libero e brillante sui sentieri della vita lascerà le sue orme.",
+  "immagini": [
+    "./01.jpg"
+  ],
+  "ordine": 90,
+  "inEvidenza": false,
+  "pubblicata": true,
+  "creataIl": "2023-09-24T12:00:00.000Z",
+  "aggiornataIl": "2023-09-24T12:00:00.000Z"
+}

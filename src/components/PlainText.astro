@@ -1,0 +1,44 @@
+---
+/**
+ * Renders the admin's plain text (artwork text, bio) safely: a blank line = new paragraph,
+ * a single newline = line break. Text is always escaped, never interpreted as HTML or Markdown.
+ *
+ *   <PlainText text={data.testo} />
+ *
+ * To restyle it from a parent, wrap it: `.parent :global(.plain-text) { … }`.
+ */
+import { paragraphs } from './lib/opere';
+
+interface Props {
+  text: string;
+}
+
+const blocks = paragraphs(Astro.props.text);
+---
+
+{
+  blocks.length > 0 && (
+    <div class="plain-text">
+      {blocks.map((lines) => (
+        <p>
+          {lines.map((line, i) => (
+            <>
+              {i > 0 && <br />}
+              {line}
+            </>
+          ))}
+        </p>
+      ))}
+    </div>
+  )
+}
+
+<style>
+  .plain-text {
+    max-width: var(--width-text);
+  }
+
+  .plain-text p + p {
+    margin-top: 1em;
+  }
+</style>

@@ -1,0 +1,143 @@
+# ─────────────────────────────────────────────────────────────────────────────────────────────────
+# Deploy: tests and builds the site and publishes it on GitHub Pages (CONTRACTS.md section 8).
+#
+# ONE-TIME SETTING: repository → Settings → Pages → Build and deployment → Source: "GitHub Actions"
+# (docs/SETUP.md, step 1). The address comes from the Pages settings: https://martinotschudi.github.io/tiz-art/
+# until the custom domain is set, then https://tiz-art.ch/ (next run after the change).
+#
+# WHEN IT RUNS
+#   • push to main       – every save in the admin is a commit on main          (≈ 1–3 minutes)
+#   • workflow_dispatch  – Actions → Deploy → "Run workflow" (e.g. after changing the custom domain)
+#
+# The admin shows the state of the latest run of THIS file ("Online ✓" / "Pubblicazione in corso…"),
+# looked up by its name: keep the file name deploy.yml.
+# If a step fails nothing is published and the previous version stays online (docs/SETUP.md, step 7).
+# ─────────────────────────────────────────────────────────────────────────────────────────────────
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Nothing by default; each job asks only for what it needs.
+permissions: {}
+
+# One deployment at a time and never cancelled halfway. Commits that arrive meanwhile wait; GitHub keeps
+# only the newest waiting run, which builds the latest commit (so it includes the skipped ones).
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read # check out the code
+      pages: read # actions/configure-pages reads the site address
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false # nothing in this job pushes
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+      # Every artwork, the profile and the site settings against CONTRACTS.md section 4.
+      # Errors and warnings also appear as annotations on the run's summary page.
+      - name: Check content
+        run: npm run check:content
+
+      - name: Read GitHub Pages settings
+        id: pages
+        uses: actions/configure-pages@v6
+
+      # Astro converts every artwork photo into AVIF/WebP in several widths (plus thumbnails for the
+      # admin). That takes minutes; the pages themselves build in seconds. The converted images are
+      # therefore kept in the GitHub Actions cache between runs ("… image cache" steps below).
+      # Astro names each file after the hash of its source photo and resize options, but not after the
+      # Astro/sharp versions or the image settings, so the cache is tied to package-lock.json +
+      # astro.config.mjs (a change there = one full rebuild). Bump v1 to flush the cache by hand.
+      - name: Image cache key
+        id: image-prefix
+        run: echo "prefix=astro-images-v1-${{ hashFiles('package-lock.json', 'astro.config.mjs') }}-" >> "$GITHUB_OUTPUT"
+
+      # The newest saved set with the current prefix wins (the key itself never matches exactly).
+      - name: Restore image cache
+        id: image-cache
+        uses: actions/cache/restore@v6
+        with:
+          path: node_modules/.astro/assets
+          key: ${{ steps.image-prefix.outputs.prefix }}${{ github.run_id }}
+          restore-keys: ${{ steps.image-prefix.outputs.prefix }}
+
+      # base_path is "/tiz-art" on github.io and "" with the custom domain; BASE_PATH always ends with "/".
+      - name: Build site
+        env:
+          SITE_URL: ${{ steps.pages.outputs.origin }}
+          BASE_PATH: ${{ steps.pages.outputs.base_path }}/
+        run: npm run build
+
+      # Keeps only the images this build used (photos of deleted artworks drop out, so the cache does
+      # not grow forever) and names the set after the hash of its file names. Each cached file is named
+      # like its copy in dist/_astro/ (remote images also have a .json companion).
+      - name: Prune image cache
+        id: image-set
+        env:
+          PREFIX: ${{ steps.image-prefix.outputs.prefix }}
+        run: |
+          cache="node_modules/.astro/assets"
+          mkdir -p "$cache"
+          if [ -d dist/_astro ]; then
+            for file in "$cache"/*; do
+              [ -e "$file" ] || continue
+              name="$(basename "$file")"
+              [ -e "dist/_astro/${name%.json}" ] || rm -f -- "$file"
+            done
+          else
+            echo "::warning::dist/_astro not found: image cache not pruned (did build.assets change in astro.config.mjs?)"
+          fi
+          set_id="${PREFIX}$(ls "$cache" | sha256sum | cut -c1-16)-"
+          echo "set=${set_id}" >> "$GITHUB_OUTPUT"
+          echo "key=${set_id}${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" >> "$GITHUB_OUTPUT"
+          echo "$(ls "$cache" | wc -l) files in the image cache"
+
+      # Saved only when the set changed (new photos, new sizes). Every save gets its own key
+      # (run id + attempt), so the newest entry is always the latest set.
+      - name: Save image cache
+        if: ${{ !startsWith(steps.image-cache.outputs.cache-matched-key, steps.image-set.outputs.set) }}
+        uses: actions/cache/save@v6
+        with:
+          path: node_modules/.astro/assets
+          key: ${{ steps.image-set.outputs.key }}
+
+      - name: Upload site
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      pages: write # publish to GitHub Pages
+      id-token: write # required by actions/deploy-pages
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5

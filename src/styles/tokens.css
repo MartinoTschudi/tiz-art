@@ -1,0 +1,108 @@
+/*
+ * Design tokens — every colour, font, size, space, radius, width and timing of the public site.
+ * Components and pages only use these custom properties: a redesign starts here.
+ * (The admin in public/admin/ has its own styles and does not use this file.)
+ */
+
+:root {
+  /* ── Colour ─────────────────────────────────────────────── */
+  --color-bg: #f6f3ee; /* page background: warm paper, kind to paintings */
+  --color-surface: #fdfcfa; /* form fields, raised areas */
+  --color-text: #1d1b18;
+  --color-text-muted: #675f55;
+  --color-line: #ddd5c9;
+  --color-line-strong: #a89e90;
+  --color-accent: #1d1b18; /* primary buttons */
+  --color-on-accent: #f6f3ee;
+  --color-highlight: #9a3b2a; /* the TIZ signature, hovers, focus ring: earth red */
+  --color-placeholder: #e8e2d8; /* behind images while they load */
+  --color-success: #2b6a3d;
+  --color-error: #a3271c;
+  --color-viewer-bg: #12110f; /* full-screen image viewer */
+  --color-viewer-text: #f2eee8;
+  --color-viewer-control: rgb(18 17 15 / 0.62); /* readable over dark and over a zoomed painting */
+  --color-viewer-control-hover: rgb(58 54 50 / 0.85);
+  --color-viewer-control-border: rgb(255 255 255 / 0.2);
+
+  /* ── Typography (system fonts only, no downloads) ───────── */
+  --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-serif: 'Iowan Old Style', 'Palatino Linotype', Palatino, 'Book Antiqua', 'URW Palladio L', Georgia, serif;
+  --font-body: var(--font-sans);
+  --font-display: var(--font-serif); /* headings, titles, the motto */
+
+  --text-xs: 0.8125rem;
+  --text-sm: 0.9375rem;
+  --text-base: 1.0625rem;
+  --text-lg: clamp(1.1875rem, 1.1rem + 0.4vw, 1.375rem);
+  --text-xl: clamp(1.375rem, 1.2rem + 0.8vw, 1.75rem);
+  --text-2xl: clamp(1.75rem, 1.4rem + 1.6vw, 2.625rem);
+  --text-3xl: clamp(2.25rem, 1.6rem + 3vw, 4rem);
+  --text-display: clamp(2.75rem, 1.2rem + 7vw, 7.5rem); /* the name on the home page */
+
+  --leading-tight: 1.05;
+  --leading-snug: 1.3;
+  --leading-body: 1.65;
+  --tracking-caps: 0.16em; /* small uppercase labels */
+  --tracking-tight: -0.015em; /* large serif headings */
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-bold: 650;
+
+  /* ── Space ──────────────────────────────────────────────── */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --space-8: 4rem;
+  --space-9: 6rem;
+  --gutter: clamp(1rem, 4vw, 3rem); /* page side padding */
+  --section-gap: clamp(4rem, 9vw, 8rem); /* between home-page sections */
+
+  /* ── Layout ─────────────────────────────────────────────── */
+  --width-page: 90rem;
+  --width-text: 40rem; /* comfortable reading line */
+  --header-height: 4rem;
+  --tap-target: 2.75rem; /* 44 px minimum touch target */
+  --grid-row: 9.5rem; /* target row height of the artwork grids (two works per row on phones) */
+  --grid-gap: clamp(0.75rem, 2.2vw, 2rem); /* between works in a row */
+  --grid-row-gap: clamp(2rem, 4vw, 3rem); /* between rows (captions sit in it) */
+  --artwork-max-height: 80svh; /* a painting always fits the screen height on its page */
+
+  /* ── Shape ──────────────────────────────────────────────── */
+  --radius-sm: 2px;
+  --radius-md: 6px;
+  --radius-pill: 999px;
+  --border-width: 1px;
+  --focus-ring: 2px solid var(--color-highlight);
+  --shadow-art: 0 1px 2px rgb(29 27 24 / 0.08), 0 12px 28px -16px rgb(29 27 24 / 0.35); /* like hung on a wall */
+
+  /* ── Motion ─────────────────────────────────────────────── */
+  --duration-fast: 150ms;
+  --duration: 260ms;
+  --duration-slow: 480ms;
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+@media (min-width: 48rem) {
+  :root {
+    --header-height: 4.75rem;
+    --grid-row: 15rem;
+  }
+}
+
+@media (min-width: 80rem) {
+  :root {
+    --grid-row: 19rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-fast: 0ms;
+    --duration: 0ms;
+    --duration-slow: 0ms;
+  }
+}

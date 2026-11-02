@@ -1,0 +1,182 @@
+---
+/**
+ * Full-screen viewer (<dialog>) for the photos of one work. Behaviour: image-viewer.ts.
+ * Must sit inside the element with `data-viewer-gallery` that holds the `[data-viewer-open]` links.
+ */
+import type { ViewerSource } from './lib/images';
+
+interface Props {
+  images: (ViewerSource & { alt: string })[];
+  /** Accessible name of the dialog, e.g. "Immagini di «Sorellanza»". */
+  label: string;
+}
+
+const { images, label } = Astro.props;
+const many = images.length > 1;
+---
+
+<dialog class="viewer" aria-label={label} data-viewer data-images={JSON.stringify(images)}>
+  <div class="viewer__bar viewer__bar--top">
+    <button class="viewer__button" type="button" aria-pressed="false" data-viewer-zoom>
+      <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+        <circle cx="10.5" cy="10.5" r="6.5"></circle>
+        <path d="m15.5 15.5 5 5M10.5 7.5v6M7.5 10.5h6" class="viewer__zoom-in"></path>
+        <path d="m15.5 15.5 5 5M7.5 10.5h6" class="viewer__zoom-out"></path>
+      </svg>
+      <span class="visually-hidden">Ingrandisci</span>
+    </button>
+    <button class="viewer__button" type="button" autofocus data-viewer-close>
+      <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+        <path d="m6 6 12 12M18 6 6 18"></path>
+      </svg>
+      <span class="visually-hidden">Chiudi</span>
+    </button>
+  </div>
+
+  <div class="viewer__stage" data-viewer-stage>
+    <img class="viewer__image" alt="" draggable="false" data-viewer-image />
+  </div>
+
+  {
+    many && (
+      <div class="viewer__bar viewer__bar--bottom">
+        <button class="viewer__button" type="button" data-viewer-prev>
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+            <path d="m14.5 6-6 6 6 6" />
+          </svg>
+          <span class="visually-hidden">Immagine precedente</span>
+        </button>
+        <p class="viewer__counter" aria-hidden="true" data-viewer-counter></p>
+        <button class="viewer__button" type="button" data-viewer-next>
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+            <path d="m9.5 6 6 6-6 6" />
+          </svg>
+          <span class="visually-hidden">Immagine successiva</span>
+        </button>
+      </div>
+    )
+  }
+  <p class="visually-hidden" aria-live="polite" data-viewer-announcer></p>
+</dialog>
+
+<script>
+  import { initImageViewers } from './image-viewer';
+
+  initImageViewers();
+</script>
+
+<style>
+  .viewer {
+    --viewer-bar: calc(var(--tap-target) + var(--space-5));
+
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    max-width: none;
+    height: 100%;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    overflow: hidden;
+    background: var(--color-viewer-bg);
+    color: var(--color-viewer-text);
+    touch-action: none; /* gestures are handled by the script */
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  .viewer::backdrop {
+    background: var(--color-viewer-bg);
+  }
+
+  .viewer__stage {
+    position: absolute;
+    inset: var(--viewer-bar) var(--gutter);
+    display: grid;
+    place-items: center;
+  }
+
+  .viewer__image {
+    max-width: none;
+    transform-origin: center;
+    transition: transform var(--duration) var(--ease);
+    cursor: zoom-in;
+    -webkit-user-drag: none;
+  }
+
+  .viewer.is-zoomed .viewer__image {
+    cursor: grab;
+  }
+
+  .viewer.is-dragging .viewer__image {
+    transition: none;
+  }
+
+  .viewer__bar {
+    position: absolute;
+    inset-inline: 0;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--gutter);
+  }
+
+  .viewer__bar--top {
+    top: 0;
+    justify-content: flex-end;
+    padding-top: max(var(--space-3), env(safe-area-inset-top));
+  }
+
+  .viewer__bar--bottom {
+    bottom: 0;
+    justify-content: center;
+    padding-bottom: max(var(--space-3), env(safe-area-inset-bottom));
+  }
+
+  .viewer__button {
+    display: inline-grid;
+    place-items: center;
+    width: var(--tap-target);
+    height: var(--tap-target);
+    padding: 0;
+    border: var(--border-width) solid var(--color-viewer-control-border);
+    border-radius: var(--radius-pill);
+    background: var(--color-viewer-control);
+    color: inherit;
+    backdrop-filter: blur(6px);
+    transition: background-color var(--duration-fast) var(--ease);
+  }
+
+  .viewer__button:hover {
+    background: var(--color-viewer-control-hover);
+  }
+
+  .viewer__button svg {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.6;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .viewer__zoom-out,
+  .viewer__button[aria-pressed='true'] .viewer__zoom-in {
+    display: none;
+  }
+
+  .viewer__button[aria-pressed='true'] .viewer__zoom-out {
+    display: inline;
+  }
+
+  .viewer__counter {
+    min-width: 4.5em;
+    padding: var(--space-1) var(--space-3);
+    border-radius: var(--radius-pill);
+    background: var(--color-viewer-control);
+    font-size: var(--text-sm);
+    font-variant-numeric: tabular-nums;
+    text-align: center;
+  }
+</style>

@@ -1,0 +1,112 @@
+---
+/**
+ * Site header: the "TIZ" signature + name (→ home) and the main navigation.
+ * The current section gets aria-current="page" (artwork pages count as "Opere").
+ * On narrow screens only the signature is visible; the name stays readable for screen readers.
+ */
+import { SITE, routes } from './lib/site';
+
+const NAV = [
+  { href: routes.opere, label: 'Opere' },
+  { href: routes.chiSono, label: 'Chi sono' },
+  { href: routes.contatti, label: 'Contatti' },
+];
+
+const current = Astro.url.pathname;
+---
+
+<header class="site-header">
+  <div class="site-header__inner container">
+    <a class="brand" href={routes.home} aria-current={current === routes.home ? 'page' : undefined}>
+      <span class="brand__signature">{SITE.firma}</span>
+      <span class="brand__name">{SITE.nome}</span>
+    </a>
+    <nav class="site-nav" aria-label="Principale">
+      <ul class="site-nav__list" role="list">
+        {
+          NAV.map(({ href, label }) => (
+            <li>
+              <a class="site-nav__link" href={href} aria-current={current.startsWith(href) ? 'page' : undefined}>
+                {label}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<style>
+  .site-header {
+    border-bottom: var(--border-width) solid var(--color-line);
+  }
+
+  .site-header__inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+    min-height: var(--header-height);
+  }
+
+  .brand {
+    display: inline-flex;
+    align-items: baseline;
+    gap: var(--space-3);
+    padding-block: var(--space-3);
+    text-decoration: none;
+  }
+
+  .brand__signature {
+    font-family: var(--font-display);
+    font-size: var(--text-xl);
+    font-weight: var(--weight-bold);
+    letter-spacing: 0.08em;
+    color: var(--color-highlight);
+    line-height: 1;
+  }
+
+  .brand__name {
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+    letter-spacing: 0.02em;
+  }
+
+  .brand:hover .brand__name {
+    color: var(--color-text);
+  }
+
+  @media (max-width: 47.99rem) {
+    .brand__name {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+  }
+
+  .site-nav__list {
+    display: flex;
+    gap: clamp(var(--space-1), 2.5vw, var(--space-6));
+  }
+
+  .site-nav__link {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--tap-target);
+    padding-inline: var(--space-2);
+    font-size: var(--text-sm);
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+    text-decoration: none;
+    text-underline-offset: 0.45em;
+  }
+
+  .site-nav__link[aria-current='page'] {
+    text-decoration: underline;
+    text-decoration-color: var(--color-highlight);
+  }
+</style>

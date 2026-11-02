@@ -1,0 +1,123 @@
+---
+/**
+ * Photos of one work on its page: the cover large (always whole, fits the screen height), the other
+ * photos as thumbnails below. Every photo opens the full-screen viewer; without JavaScript the
+ * links open the full-size JPEG.
+ */
+import ResponsivePicture from './ResponsivePicture.astro';
+import ImageViewer from './ImageViewer.astro';
+import { altText, type Opera } from './lib/opere';
+import { viewerSource } from './lib/images';
+
+interface Props {
+  opera: Opera;
+}
+
+const { data } = Astro.props.opera;
+const [cover, ...details] = data.immagini;
+const coverRatio = cover.width / cover.height;
+const viewerImages = await Promise.all(
+  data.immagini.map(async (image, i) => ({ ...(await viewerSource(image)), alt: altText(data, i) })),
+);
+// The cover is as wide as the column, unless the screen height limits it (tall paintings).
+const coverSizes = `(min-width: 64rem) min(56vw, ${Math.round(80 * coverRatio)}vh), min(100vw, ${Math.round(80 * coverRatio)}vh)`;
+---
+
+<div class="gallery" data-viewer-gallery>
+  <a
+    class="gallery__cover"
+    href={viewerImages[0].full}
+    style={`--ratio: ${coverRatio.toFixed(4)}`}
+    data-viewer-open="0"
+  >
+    <ResponsivePicture image={cover} alt={altText(data)} preset="artwork" sizes={coverSizes} priority />
+    <span class="gallery__zoom" aria-hidden="true">
+      <svg viewBox="0 0 24 24" width="20" height="20">
+        <circle cx="10.5" cy="10.5" r="6.5"></circle>
+        <path d="m15.5 15.5 5 5M10.5 7.5v6M7.5 10.5h6"></path>
+      </svg>
+    </span>
+    <span class="visually-hidden">(apri a schermo intero)</span>
+  </a>
+
+  {
+    details.length > 0 && (
+      <ul class="gallery__details" role="list" aria-label="Altre immagini">
+        {details.map((image, i) => (
+          <li class="gallery__detail" style={`--ratio: ${(image.width / image.height).toFixed(4)}`}>
+            <a class="gallery__detail-link" href={viewerImages[i + 1].full} data-viewer-open={i + 1}>
+              <ResponsivePicture image={image} alt={altText(data, i + 1)} preset="thumb" sizes="(min-width: 64rem) 14vw, 40vw" />
+              <span class="visually-hidden">(apri a schermo intero)</span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    )
+  }
+
+  <ImageViewer images={viewerImages} label={`Immagini di «${data.titolo}»`} />
+</div>
+
+<style>
+  .gallery__cover {
+    position: relative;
+    display: block;
+    width: min(100%, calc(var(--artwork-max-height) * var(--ratio)));
+    margin-inline: auto;
+    box-shadow: var(--shadow-art);
+    background: var(--color-placeholder);
+    cursor: zoom-in;
+  }
+
+  .gallery__cover :global(img),
+  .gallery__detail-link :global(img) {
+    width: 100%;
+    height: auto;
+  }
+
+  .gallery__zoom {
+    position: absolute;
+    right: var(--space-3);
+    bottom: var(--space-3);
+    display: grid;
+    place-items: center;
+    width: var(--tap-target);
+    height: var(--tap-target);
+    border-radius: var(--radius-pill);
+    background: color-mix(in srgb, var(--color-bg) 85%, transparent);
+    color: var(--color-text);
+    opacity: 0.85;
+    transition: opacity var(--duration-fast) var(--ease);
+  }
+
+  .gallery__zoom svg {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.6;
+    stroke-linecap: round;
+  }
+
+  .gallery__cover:hover .gallery__zoom {
+    opacity: 1;
+  }
+
+  .gallery__details {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--space-4);
+    margin-top: var(--space-5);
+  }
+
+  /* Thumbnails share one height and keep their proportions. */
+  .gallery__detail {
+    width: calc(var(--ratio) * clamp(6rem, 18vw, 9rem));
+  }
+
+  .gallery__detail-link {
+    display: block;
+    box-shadow: var(--shadow-art);
+    background: var(--color-placeholder);
+    cursor: zoom-in;
+  }
+</style>

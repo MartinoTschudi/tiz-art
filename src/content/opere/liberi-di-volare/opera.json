@@ -1,0 +1,17 @@
+{
+  "titolo": "Liberi di volare",
+  "anno": 2023,
+  "larghezza": 100,
+  "altezza": 100,
+  "tecnica": "Acrilico e olio su tela",
+  "collezione": "noi, DONNA.",
+  "testo": "Oltre i pregiudizi razziali, o sessuali, oltre le idee politiche o religiose in un mondo che ha bisogno di PACE e RISPETTO.",
+  "immagini": [
+    "./01.jpg"
+  ],
+  "ordine": 20,
+  "inEvidenza": true,
+  "pubblicata": true,
+  "creataIl": "2023-12-28T12:00:00.000Z",
+  "aggiornataIl": "2023-12-28T12:00:00.000Z"
+}

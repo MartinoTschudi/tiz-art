@@ -1,0 +1,17 @@
+{
+  "titolo": "Istinto",
+  "anno": 2023,
+  "larghezza": 100,
+  "altezza": 100,
+  "tecnica": "Acrilico e olio su tela",
+  "collezione": "noi, DONNA.",
+  "testo": "Con l’istinto non c’è niente da imparare – sono tutte quelle azioni che avvengono naturalmente, senza il bisogno di pensarci: i bambini piangono per istinto e le anatre seguono la loro madre per istinto. Gli animali e gli esseri umani imparano un sacco di cose dagli altri animali e dagli esseri umani. Ma non c’è alcun apprendimento coinvolto, quindi il comportamento è semplicemente “istinto”; viene naturalmente, come il desiderio di un bambino di essere nutrito.\n\nAlcuni comportamenti sono una combinazione tra istinto e comportamento appreso, come il linguaggio; altri avvengono senza alcun insegnamento, come per esempio l’istinto di correre quando si è inseguiti da un grande orso affamato. Quando vedi la parola “istinto”, pensa a “risposta naturale”.",
+  "immagini": [
+    "./01.jpg"
+  ],
+  "ordine": 110,
+  "inEvidenza": false,
+  "pubblicata": true,
+  "creataIl": "2023-09-23T12:00:00.000Z",
+  "aggiornataIl": "2023-09-23T12:00:00.000Z"
+}

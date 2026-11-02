@@ -1,0 +1,17 @@
+{
+  "titolo": "…e fuori piove",
+  "anno": 2023,
+  "larghezza": 150,
+  "altezza": 120,
+  "tecnica": "Acrilico su tela",
+  "collezione": "noi, DONNA.",
+  "testo": "La pioggia ha qualcosa di magico; riesce a produrre effetti diversi sull’umore a seconda delle persone che la stanno guardando. Metafora per eccellenza della tristezza e della solitudine, può essere in realtà anche un eccellente sinonimo per la speranza, dato che dopo un temporale arriva sempre il sole.\n\nE tu, come ti senti quando c’è aria di pioggia?",
+  "immagini": [
+    "./01.jpg"
+  ],
+  "ordine": 100,
+  "inEvidenza": false,
+  "pubblicata": true,
+  "creataIl": "2023-09-23T12:00:00.000Z",
+  "aggiornataIl": "2023-09-23T12:00:00.000Z"
+}

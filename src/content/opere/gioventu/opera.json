@@ -1,0 +1,17 @@
+{
+  "titolo": "Gioventù",
+  "anno": 2023,
+  "larghezza": 100,
+  "altezza": 140,
+  "tecnica": "Acrilico su tela",
+  "collezione": "noi, DONNA.",
+  "testo": "La gioventù bella e orgogliosa… e le ali la portano via…",
+  "immagini": [
+    "./01.jpg"
+  ],
+  "ordine": 40,
+  "inEvidenza": true,
+  "pubblicata": true,
+  "creataIl": "2023-12-27T12:00:00.000Z",
+  "aggiornataIl": "2023-12-27T12:00:00.000Z"
+}

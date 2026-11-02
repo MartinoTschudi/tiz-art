@@ -1,0 +1,49 @@
+---
+/**
+ * Site footer: signature, © year + name, link to the contact page.
+ * By design there is no address, phone, e-mail or social link anywhere on the site (CONTRACTS 5.1).
+ */
+import { SITE, routes } from './lib/site';
+
+const year = new Date().getFullYear();
+---
+
+<footer class="site-footer">
+  <div class="site-footer__inner container">
+    <p class="site-footer__signature" aria-hidden="true">{SITE.firma}</p>
+    <p class="site-footer__copy">© {year} {SITE.nome}</p>
+    <a class="site-footer__link" href={routes.contatti}>Contatti</a>
+  </div>
+</footer>
+
+<style>
+  .site-footer {
+    margin-top: var(--section-gap);
+    border-top: var(--border-width) solid var(--color-line);
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+  }
+
+  .site-footer__inner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2) var(--space-5);
+    padding-block: var(--space-6);
+  }
+
+  .site-footer__signature {
+    font-family: var(--font-display);
+    font-weight: var(--weight-bold);
+    letter-spacing: 0.08em;
+    color: var(--color-highlight);
+  }
+
+  .site-footer__link {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--tap-target);
+    margin-left: auto;
+    color: var(--color-text);
+  }
+</style>

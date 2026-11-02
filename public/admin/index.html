@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <!-- Only our own files, GitHub and (for local tests only) the mock on localhost:8787. -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' blob: data: https://raw.githubusercontent.com http://localhost:8787 http://127.0.0.1:8787; connect-src 'self' https://api.github.com https://raw.githubusercontent.com http://localhost:8787 http://127.0.0.1:8787; style-src 'self'; script-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'" />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="referrer" content="no-referrer" />
+    <meta name="color-scheme" content="light" />
+    <meta name="theme-color" content="#f7f3ec" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="TIZ Admin" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <title>TIZ Admin</title>
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
+    <link rel="icon" href="./icons/icon-192.png" type="image/png" />
+    <link rel="stylesheet" href="./admin.css" />
+    <script type="module" src="./js/app.js"></script>
+  </head>
+  <body>
+    <div id="app">
+      <div class="loading loading-full">
+        <div class="spinner"></div>
+        <p>Un momento…</p>
+      </div>
+    </div>
+    <noscript><p class="noscript">Per usare l’admin serve JavaScript attivo.</p></noscript>
+  </body>
+</html>

@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' blob: data: https://raw.githubusercontent.com http://localhost:8787 http://127.0.0.1:8787; connect-src 'self' https://api.github.com https://raw.githubusercontent.com http://localhost:8787 http://127.0.0.1:8787; style-src 'self'; script-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'" />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="referrer" content="no-referrer" />
+    <meta name="color-scheme" content="light" />
+    <title>Configurazione · TIZ Admin</title>
+    <link rel="icon" href="../icons/icon-192.png" type="image/png" />
+    <link rel="stylesheet" href="../admin.css" />
+    <script type="module" src="./setup.js"></script>
+  </head>
+  <body>
+    <main class="screen screen-login setup">
+      <div class="login-brand">
+        <img class="login-logo" src="../icons/icon-192.png" alt="" width="96" height="96" />
+        <p class="login-wordmark">Configurazione</p>
+        <p class="login-sub">TIZ · Admin del sito</p>
+      </div>
+
+      <div id="setup-intro" class="card">
+        <h1 class="card-title">Accesso per Tiziana</h1>
+        <p>Questa pagina è per Martino. Crea (o rinnova) l’accesso dell’admin:</p>
+        <ol class="steps">
+          <li>scegli l’e-mail e la password con cui Tiziana entrerà;</li>
+          <li>incolla un token GitHub «fine-grained» solo per il repository del sito, con i permessi
+            <strong>Contents: Read and write</strong> e <strong>Actions: Read</strong>;</li>
+          <li>tocca «Configura»: la chiave viene cifrata qui nel browser e salvata nel repository
+            (<code>public/admin/auth.json</code>) con lo stesso token.</li>
+        </ol>
+      </div>
+
+      <form id="setup-form" class="card login-form" method="post" novalidate>
+        <div class="field-row">
+          <label class="label" for="email">E-mail di Tiziana</label>
+          <input id="email" name="email" type="email" class="input" autocomplete="username" inputmode="email" autocapitalize="off" autocorrect="off" spellcheck="false" required />
+        </div>
+        <div class="field-row">
+          <label class="label" for="password">Password (almeno 12 caratteri)</label>
+          <input id="password" name="password" type="password" class="input" autocomplete="new-password" autocapitalize="off" autocorrect="off" spellcheck="false" required />
+          <p class="hint">Meglio una frase di 4 parole, facile da scrivere sul telefono e usata solo qui.</p>
+        </div>
+        <div class="field-row">
+          <label class="label" for="password2">Ripeti la password</label>
+          <input id="password2" name="password2" type="password" class="input" autocomplete="new-password" autocapitalize="off" autocorrect="off" spellcheck="false" required />
+        </div>
+        <div class="field-row">
+          <label class="label" for="token">Token GitHub</label>
+          <input id="token" name="token" type="password" class="input" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" required />
+          <p class="hint">github.com → Settings → Developer settings → Fine-grained tokens. Non viene mai salvato in chiaro.</p>
+        </div>
+        <details>
+          <summary>Repository</summary>
+          <div class="field-row">
+            <label class="label" for="owner">Proprietario</label>
+            <input id="owner" name="owner" class="input" value="MartinoTschudi" autocapitalize="off" autocorrect="off" spellcheck="false" />
+          </div>
+          <div class="field-row">
+            <label class="label" for="repo">Repository</label>
+            <input id="repo" name="repo" class="input" value="tiz-art" autocapitalize="off" autocorrect="off" spellcheck="false" />
+          </div>
+          <div class="field-row">
+            <label class="label" for="branch">Ramo</label>
+            <input id="branch" name="branch" class="input" value="main" autocapitalize="off" autocorrect="off" spellcheck="false" />
+          </div>
+        </details>
+        <p id="setup-status" class="hint" role="status" aria-live="polite"></p>
+        <p id="setup-error" class="field-error" role="alert" hidden></p>
+        <button id="setup-submit" type="submit" class="btn btn-primary btn-block">Configura</button>
+      </form>
+
+      <div id="setup-done" class="card" hidden>
+        <h2 class="card-title">Fatto!</h2>
+        <p class="result-ok">L’accesso è configurato.</p>
+        <p>Tra circa 2 minuti, quando il sito è pubblicato, Tiziana può entrare nell’admin con questa e-mail e questa password.</p>
+        <ul id="setup-notes" class="hint"></ul>
+        <a id="admin-link" class="btn btn-secondary btn-block" href="../index.html">Apri l’admin</a>
+      </div>
+    </main>
+  </body>
+</html>

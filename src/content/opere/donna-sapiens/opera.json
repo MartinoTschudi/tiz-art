@@ -1,0 +1,17 @@
+{
+  "titolo": "Donna Sapiens",
+  "anno": 2023,
+  "larghezza": 100,
+  "altezza": 140,
+  "tecnica": "Acrilico su tela",
+  "collezione": "noi, DONNA.",
+  "testo": "I colori della terra e del fuoco rendono quest’opera ancorata al primordiale con al centro la donna in tutta la sua energia vitale.",
+  "immagini": [
+    "./01.jpg"
+  ],
+  "ordine": 30,
+  "inEvidenza": true,
+  "pubblicata": true,
+  "creataIl": "2023-12-27T12:00:00.000Z",
+  "aggiornataIl": "2023-12-27T12:00:00.000Z"
+}

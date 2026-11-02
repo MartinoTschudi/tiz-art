@@ -1,0 +1,120 @@
+---
+/**
+ * One artwork: photos (full-screen viewer), title, facts, text, "Chiedi informazioni" → contact form
+ * with this work pre-selected, previous/next work. Only published works get a page.
+ */
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ArtworkGallery from '../../components/ArtworkGallery.astro';
+import ArtworkFacts from '../../components/ArtworkFacts.astro';
+import ArtworkPager from '../../components/ArtworkPager.astro';
+import PlainText from '../../components/PlainText.astro';
+import { absoluteUrl, routes } from '../../components/lib/site';
+import { altText, getPublishedOpere, neighbours, operaDescription, type Opera } from '../../components/lib/opere';
+import { fullImageUrl, socialImage } from '../../components/lib/images';
+import { artworkJsonLd } from '../../components/lib/structured-data';
+
+export async function getStaticPaths() {
+  const opere = await getPublishedOpere();
+  return opere.map((opera) => ({ params: { slug: opera.id }, props: { opera, ...neighbours(opere, opera.id) } }));
+}
+
+interface Props {
+  opera: Opera;
+  prev?: Opera;
+  next?: Opera;
+}
+
+const { opera, prev, next } = Astro.props;
+const { data } = opera;
+const description = operaDescription(data);
+const shareImage = await socialImage(data.immagini[0], altText(data));
+// Search engines get the full-size JPEGs (the viewer already publishes them, so nothing extra is built).
+const fullImages = await Promise.all(data.immagini.map((image) => fullImageUrl(image)));
+const jsonLd = artworkJsonLd(opera, { images: fullImages.map((url) => absoluteUrl(url)), description });
+---
+
+<BaseLayout title={data.titolo} description={description} path={`opere/${opera.id}/`} ogImage={shareImage} jsonLd={[jsonLd]}>
+  <article class="artwork container">
+    <p class="artwork__back">
+      <a class="arrow-link" href={routes.opere}><span aria-hidden="true">←</span> Tutte le opere</a>
+    </p>
+
+    <div class="artwork__layout">
+      <div class="artwork__media">
+        <ArtworkGallery opera={opera} />
+      </div>
+
+      <div class="artwork__info">
+        <h1 class="artwork__title">{data.titolo}</h1>
+        <ArtworkFacts data={data} />
+        {
+          data.testo.trim() && (
+            <div class="artwork__text">
+              <PlainText text={data.testo} />
+            </div>
+          )
+        }
+        <p class="artwork__cta">
+          <a class="button" href={routes.contattiOpera(opera.id)}>Chiedi informazioni su quest’opera</a>
+        </p>
+      </div>
+    </div>
+
+    <div class="artwork__pager">
+      <ArtworkPager prev={prev} next={next} />
+    </div>
+  </article>
+</BaseLayout>
+
+<style>
+  .artwork__back {
+    padding-block: var(--space-3);
+  }
+
+  .artwork__back a {
+    font-size: var(--text-sm);
+    font-weight: var(--weight-regular);
+    text-decoration: none;
+  }
+
+  .artwork__layout {
+    display: grid;
+    gap: var(--space-7);
+    padding-top: var(--space-3);
+  }
+
+  .artwork__info {
+    display: grid;
+    gap: var(--space-5);
+    align-content: start;
+  }
+
+  .artwork__title {
+    font-size: var(--text-3xl);
+    line-height: var(--leading-tight);
+    letter-spacing: var(--tracking-tight);
+  }
+
+  .artwork__text {
+    font-size: var(--text-lg);
+    line-height: var(--leading-body);
+  }
+
+  .artwork__pager {
+    margin-top: var(--section-gap);
+  }
+
+  @media (min-width: 64rem) {
+    .artwork__layout {
+      grid-template-columns: minmax(0, 3fr) minmax(20rem, 2fr);
+      gap: clamp(var(--space-7), 5vw, var(--space-9));
+      align-items: start;
+    }
+
+    /* The text column stays in view next to tall paintings. */
+    .artwork__info {
+      position: sticky;
+      top: var(--space-6);
+    }
+  }
+</style>

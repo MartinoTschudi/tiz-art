@@ -1,0 +1,45 @@
+---
+/**
+ * Contact page: the form is the only way to reach the artist (no e-mail, phone or address shown).
+ * `?opera=<slug>` (from "Chiedi informazioni su quest’opera") pre-selects that work.
+ */
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PageHeader from '../components/PageHeader.astro';
+import ContactForm from '../components/ContactForm.astro';
+import { SITE } from '../components/lib/site';
+import { getPublishedOpere } from '../components/lib/opere';
+
+const opere = await getPublishedOpere();
+---
+
+<BaseLayout
+  title="Contatti"
+  description={`Scrivi a ${SITE.nome} per informazioni sulle sue opere.`}
+  path="contatti/"
+>
+  <div class="contact container">
+    <PageHeader
+      eyebrow="Scrivimi"
+      title="Contatti"
+      lead="Hai una domanda su un’opera o vuoi semplicemente scrivermi? Compila il modulo: ti risponderò al più presto."
+    />
+    <div class="contact__form">
+      <ContactForm opere={opere} />
+    </div>
+  </div>
+</BaseLayout>
+
+<style>
+  @media (min-width: 64rem) {
+    .contact {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+      gap: var(--space-8);
+      align-items: start;
+    }
+
+    .contact__form {
+      padding-top: clamp(var(--space-6), 7vw, var(--space-8));
+    }
+  }
+</style>

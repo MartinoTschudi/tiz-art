@@ -1,0 +1,17 @@
+{
+  "titolo": "Guardami!",
+  "anno": 2023,
+  "larghezza": 120,
+  "altezza": 120,
+  "tecnica": "Acrilico su tela",
+  "collezione": "noi, DONNA.",
+  "testo": "",
+  "immagini": [
+    "./01.jpg"
+  ],
+  "ordine": 70,
+  "inEvidenza": true,
+  "pubblicata": true,
+  "creataIl": "2023-11-12T12:00:00.000Z",
+  "aggiornataIl": "2023-11-12T12:00:00.000Z"
+}

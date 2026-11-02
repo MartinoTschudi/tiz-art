@@ -1,0 +1,253 @@
+---
+/**
+ * Contact form (CONTRACTS 5.4). Sends through Web3Forms; behaviour in contact-form.ts.
+ *
+ * - With JavaScript: Italian validation, fetch POST (JSON), messages in place, no page change.
+ *   `?opera=<slug>` pre-selects the artwork and shows its thumbnail.
+ * - Without JavaScript: a normal POST to Web3Forms (their own confirmation page).
+ * - Empty access key in src/data/sito.json: the form renders, sending says it is not active yet.
+ */
+import { SITE, absoluteUrl, routes } from './lib/site';
+import { metaLine, type Opera } from './lib/opere';
+import { CONTACT_THUMB_WIDTH, webpUrl } from './lib/images';
+
+interface Props {
+  opere: Opera[];
+}
+
+const WEB3FORMS_ENDPOINT = 'https://api.web3forms.com/submit';
+const SUBJECT = 'Nuovo messaggio da tiz-art.ch';
+
+const options = await Promise.all(
+  Astro.props.opere.map(async (opera) => ({
+    slug: opera.id,
+    titolo: opera.data.titolo,
+    meta: metaLine(opera.data),
+    url: absoluteUrl(routes.opera(opera.id)),
+    thumb: await webpUrl(opera.data.immagini[0], CONTACT_THUMB_WIDTH),
+  })),
+);
+---
+
+<form
+  class="contact-form"
+  method="post"
+  action={WEB3FORMS_ENDPOINT}
+  data-contact-form
+  data-active={SITE.web3formsAccessKey ? 'true' : 'false'}
+>
+  <input type="hidden" name="access_key" value={SITE.web3formsAccessKey} />
+  <input type="hidden" name="subject" value={SUBJECT} />
+  <input type="hidden" name="from_name" value="tiz-art.ch" />
+
+  {
+    options.length > 0 && (
+      <div class="contact-form__field">
+        <label class="contact-form__label" for="contatto-opera">
+          Opera <span class="contact-form__optional">(facoltativo)</span>
+        </label>
+        <select class="contact-form__control" id="contatto-opera" name="opera">
+          <option value="">Nessuna in particolare</option>
+          {options.map((option) => (
+            <option value={option.slug} data-title={option.titolo} data-url={option.url} data-thumb={option.thumb} data-meta={option.meta}>
+              {option.titolo}
+            </option>
+          ))}
+        </select>
+        <figure class="contact-form__opera" hidden data-opera-preview>
+          <img class="contact-form__opera-image" alt="" width="80" height="80" data-opera-image />
+          <figcaption>
+            <span class="contact-form__opera-title" data-opera-title></span>
+            <span class="contact-form__opera-meta" data-opera-meta></span>
+          </figcaption>
+        </figure>
+      </div>
+    )
+  }
+
+  <div class="contact-form__field">
+    <label class="contact-form__label" for="contatto-nome">Nome</label>
+    <input
+      class="contact-form__control"
+      id="contatto-nome"
+      name="name"
+      type="text"
+      autocomplete="name"
+      required
+      maxlength="120"
+      aria-describedby="contatto-nome-errore"
+    />
+    <p class="contact-form__error" id="contatto-nome-errore" data-error-for="name"></p>
+  </div>
+
+  <div class="contact-form__field">
+    <label class="contact-form__label" for="contatto-email">E-mail</label>
+    <input
+      class="contact-form__control"
+      id="contatto-email"
+      name="email"
+      type="email"
+      autocomplete="email"
+      required
+      maxlength="200"
+      aria-describedby="contatto-email-errore"
+    />
+    <p class="contact-form__error" id="contatto-email-errore" data-error-for="email"></p>
+  </div>
+
+  <div class="contact-form__field">
+    <label class="contact-form__label" for="contatto-messaggio">Messaggio</label>
+    <textarea
+      class="contact-form__control contact-form__control--textarea"
+      id="contatto-messaggio"
+      name="message"
+      rows="7"
+      required
+      minlength="10"
+      maxlength="5000"
+      aria-describedby="contatto-messaggio-errore"></textarea>
+    <p class="contact-form__error" id="contatto-messaggio-errore" data-error-for="message"></p>
+  </div>
+
+  <!-- Honeypot: invisible to people, bots tend to tick it. -->
+  <div class="contact-form__trap" aria-hidden="true">
+    <label>Non compilare questo campo <input type="checkbox" name="botcheck" tabindex="-1" autocomplete="off" /></label>
+  </div>
+
+  <div class="contact-form__actions">
+    <button class="button contact-form__submit" type="submit" data-submit>Invia messaggio</button>
+    <p class="contact-form__status" role="status" data-status></p>
+  </div>
+</form>
+
+<script>
+  import { initContactForms } from './contact-form';
+
+  initContactForms();
+</script>
+
+<style>
+  .contact-form {
+    display: grid;
+    gap: var(--space-5);
+    max-width: var(--width-text);
+  }
+
+  .contact-form__field {
+    display: grid;
+    gap: var(--space-2);
+  }
+
+  .contact-form__label {
+    font-size: var(--text-sm);
+    font-weight: var(--weight-medium);
+  }
+
+  .contact-form__optional {
+    font-weight: var(--weight-regular);
+    color: var(--color-text-muted);
+  }
+
+  .contact-form__control {
+    width: 100%;
+    min-height: var(--tap-target);
+    padding: var(--space-2) var(--space-3);
+    border: var(--border-width) solid var(--color-line-strong);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    font-size: max(16px, var(--text-base)); /* ≥ 16 px: iOS does not zoom into the field */
+    transition: border-color var(--duration-fast) var(--ease);
+  }
+
+  .contact-form__control:hover {
+    border-color: var(--color-text-muted);
+  }
+
+  .contact-form__control:focus-visible {
+    border-color: var(--color-highlight);
+    outline-offset: 1px;
+  }
+
+  .contact-form__control[aria-invalid='true'] {
+    border-color: var(--color-error);
+  }
+
+  .contact-form__control--textarea {
+    min-height: 10rem;
+    resize: vertical;
+  }
+
+  .contact-form__opera {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    padding: var(--space-3);
+    border: var(--border-width) solid var(--color-line);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+  }
+
+  .contact-form__opera[hidden] {
+    display: none;
+  }
+
+  .contact-form__opera-image {
+    width: 5rem;
+    height: 5rem;
+    object-fit: contain;
+    background: var(--color-placeholder);
+  }
+
+  .contact-form__opera figcaption {
+    display: grid;
+  }
+
+  .contact-form__opera-title {
+    font-family: var(--font-display);
+    font-size: var(--text-lg);
+  }
+
+  .contact-form__opera-meta {
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+  }
+
+  /* Reserved line: an error appearing does not push the form around. */
+  .contact-form__error {
+    min-height: 1.4em;
+    font-size: var(--text-xs);
+    line-height: 1.4;
+    color: var(--color-error);
+  }
+
+  .contact-form__trap {
+    position: absolute;
+    left: -100vw;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+  }
+
+  .contact-form__actions {
+    display: grid;
+    gap: var(--space-3);
+    justify-items: start;
+  }
+
+  .contact-form__submit {
+    min-width: 13rem; /* same width for "Invia messaggio" and "Invio in corso…" */
+  }
+
+  .contact-form__status {
+    min-height: 3.3em; /* room for two lines of feedback, reserved */
+    font-size: var(--text-sm);
+  }
+
+  .contact-form__status[data-tone='success'] {
+    color: var(--color-success);
+  }
+
+  .contact-form__status[data-tone='error'] {
+    color: var(--color-error);
+  }
+</style>

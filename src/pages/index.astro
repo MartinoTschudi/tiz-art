@@ -1,0 +1,151 @@
+---
+/**
+ * Home: name + motto, the selection of works "in evidenza", a short bio, contact call-to-action.
+ */
+import BaseLayout from '../layouts/BaseLayout.astro';
+import ArtworkGrid from '../components/ArtworkGrid.astro';
+import { SITE, routes } from '../components/lib/site';
+import { excerpt, getFeaturedOpere, getProfilo, getPublishedOpere, paragraphs } from '../components/lib/opere';
+import { personJsonLd } from '../components/lib/structured-data';
+
+const [featured, all, profilo] = await Promise.all([getFeaturedOpere(), getPublishedOpere(), getProfilo()]);
+const bioTeaser = paragraphs(profilo.bio)[0]?.join(' ') ?? '';
+const description = excerpt([profilo.motto, profilo.bio].filter(Boolean).join(' '));
+---
+
+<BaseLayout description={description} path="" jsonLd={[personJsonLd({ description: profilo.motto || undefined })]}>
+  <section class="hero container" aria-labelledby="titolo-home">
+    <h1 class="hero__name" id="titolo-home">{SITE.nome}</h1>
+    {profilo.motto && <p class="hero__motto">{profilo.motto}</p>}
+    <p class="hero__actions">
+      <a class="button" href={routes.opere}>Scopri le opere</a>
+      <a class="button button--quiet" href={routes.chiSono}>Chi sono</a>
+    </p>
+  </section>
+
+  {
+    featured.length > 0 && (
+      <section class="home-section container" aria-labelledby="titolo-selezione">
+        <header class="home-section__header">
+          <p class="eyebrow">Selezione</p>
+          <h2 class="home-section__title" id="titolo-selezione">
+            Opere in evidenza
+          </h2>
+        </header>
+        <ArtworkGrid opere={featured} priorityCount={2} />
+        {all.length > featured.length && (
+          <p class="home-section__more">
+            <a class="arrow-link" href={routes.opere}>
+              Tutte le opere ({all.length}) <span aria-hidden="true">→</span>
+            </a>
+          </p>
+        )}
+      </section>
+    )
+  }
+
+  {
+    bioTeaser && (
+      <section class="home-section home-about container" aria-labelledby="titolo-chi-sono">
+        <p class="eyebrow">L’artista</p>
+        <h2 class="home-section__title" id="titolo-chi-sono">
+          Chi sono
+        </h2>
+        <p class="home-about__text">{excerpt(bioTeaser, 400)}</p>
+        <a class="arrow-link" href={routes.chiSono}>
+          Leggi di più <span aria-hidden="true">→</span>
+        </a>
+      </section>
+    )
+  }
+
+  <section class="home-section container" aria-labelledby="titolo-contatto">
+    <div class="home-contact">
+      <h2 class="home-contact__title" id="titolo-contatto">Un’opera ti ha colpito?</h2>
+      <p class="home-contact__text">Per informazioni su un quadro o anche solo per un saluto, scrivimi: ti risponderò volentieri.</p>
+      <a class="button" href={routes.contatti}>Scrivimi</a>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .hero {
+    padding-block: clamp(var(--space-7), 10vw, var(--space-9)) var(--section-gap);
+  }
+
+  .hero__name {
+    max-width: 12ch;
+    font-size: var(--text-display);
+    line-height: var(--leading-tight);
+    letter-spacing: var(--tracking-tight);
+  }
+
+  .hero__motto {
+    max-width: 30ch;
+    margin-top: var(--space-5);
+    font-family: var(--font-display);
+    font-size: var(--text-2xl);
+    font-style: italic;
+    line-height: var(--leading-snug);
+    color: var(--color-text-muted);
+  }
+
+  .hero__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    margin-top: var(--space-7);
+  }
+
+  .home-section + .home-section {
+    margin-top: var(--section-gap);
+  }
+
+  .home-section__header {
+    margin-bottom: var(--space-6);
+  }
+
+  .home-section__title {
+    margin-top: var(--space-2);
+    font-size: var(--text-3xl);
+    letter-spacing: var(--tracking-tight);
+  }
+
+  .home-section__more {
+    margin-top: var(--space-7);
+    text-align: center;
+  }
+
+  .home-about {
+    display: grid;
+    justify-items: start;
+    gap: var(--space-4);
+  }
+
+  .home-about .home-section__title {
+    margin-top: 0;
+  }
+
+  .home-about__text {
+    max-width: var(--width-text);
+    font-size: var(--text-lg);
+  }
+
+  .home-contact {
+    display: grid;
+    justify-items: center;
+    gap: var(--space-4);
+    padding: clamp(var(--space-6), 7vw, var(--space-9)) var(--space-5);
+    border-block: var(--border-width) solid var(--color-line);
+    text-align: center;
+  }
+
+  .home-contact__title {
+    font-size: var(--text-2xl);
+  }
+
+  .home-contact__text {
+    max-width: 36ch;
+    color: var(--color-text-muted);
+  }
+</style>

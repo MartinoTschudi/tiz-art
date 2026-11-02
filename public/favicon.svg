@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- TIZ signature drawn with strokes (no font needed). Colours = highlight and bg tokens. -->
+  <rect width="64" height="64" rx="12" fill="#9a3b2a"/>
+  <g fill="none" stroke="#f6f3ee" stroke-width="5" stroke-linecap="square" stroke-linejoin="miter">
+    <path d="M8 21h16M16 21v22"/>
+    <path d="M32 21v22"/>
+    <path d="M40 21h16L40 43h16"/>
+  </g>
+</svg>
