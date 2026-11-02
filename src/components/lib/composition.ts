@@ -156,16 +156,19 @@ export function mottoParts(motto: string): MottoParts {
 export interface LastWord {
   /** Everything before the word. */
   before: string;
-  /** The last run of letters ("alleanza"); "" when the text has no letters. */
+  /** The last run of letters or digits ("alleanza", "2023"); "" when the text has neither. */
   word: string;
   /** What follows it: the closing punctuation ("." / "!" / "…»"). */
   after: string;
 }
 
-/** "…un’altra: alleanza." → { before: "…un’altra: ", word: "alleanza", after: "." } (whitespace collapsed). */
+/**
+ * "…un’altra: alleanza." → { before: "…un’altra: ", word: "alleanza", after: "." } (whitespace collapsed).
+ * A closing number is the last word too ("…nel 2023." → "2023"), never the word before it.
+ */
 export function splitLastWord(text: string): LastWord {
   const flat = collapse(text);
-  const match = /(\p{L}[\p{L}\p{M}]*)([^\p{L}]*)$/u.exec(flat);
+  const match = /([\p{L}\p{N}][\p{L}\p{M}\p{N}]*)([^\p{L}\p{N}]*)$/u.exec(flat);
   if (!match) return { before: flat, word: '', after: '' };
   return { before: flat.slice(0, match.index), word: match[1], after: match[2] };
 }
@@ -224,15 +227,17 @@ const CLOSERS = '»”’"\')\\]';
 const OPENERS = '«“‘"\'(';
 
 /**
- * The first sentence: up to and including the first . ! ? followed by whitespace or the end
- * (closing quotes/brackets right after it are kept). An ellipsis (… or ...) ends a sentence only
- * before whitespace + an uppercase letter, or at the end. Whitespace is collapsed; no terminator →
- * the whole text.
+ * The first sentence: up to and including the first . ! ? followed by whitespace or the end.
+ * Closing quotes/brackets right after it are kept, and then it ends only before an uppercase letter
+ * or at the end («Basta.» Poi… ends; «Guardami!» disse lei… goes on). An ellipsis (… or ...) ends a
+ * sentence only before whitespace + an uppercase letter, or at the end. Whitespace is collapsed; no
+ * terminator → the whole text.
  */
 export function firstSentence(text: string): string {
   const flat = collapse(text);
+  const beforeCapital = `(?=$|\\s+[${OPENERS}]?\\p{Lu})`;
   const end = new RegExp(
-    `(?:…|\\.{3})[${CLOSERS}]*(?=$|\\s+[${OPENERS}]?\\p{Lu})|(?<!\\.)[.!?](?!\\.)[${CLOSERS}]*(?=$|\\s)`,
+    `(?:…|\\.{3})[${CLOSERS}]*${beforeCapital}|(?<!\\.)[.!?](?!\\.)(?:(?=$|\\s)|[${CLOSERS}]+${beforeCapital})`,
     'u',
   );
   const match = end.exec(flat);
@@ -248,7 +253,7 @@ export interface Quote {
   id: string;
   sentence: string;
   before: string;
-  /** Last word of the sentence, letters only (shown in rosso). */
+  /** Last word of the sentence without punctuation (shown in rosso). */
   keyWord: string;
   /** The closing punctuation after it. */
   after: string;

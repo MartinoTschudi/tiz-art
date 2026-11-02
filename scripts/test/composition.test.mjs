@@ -165,7 +165,12 @@ describe('splitLastWord', () => {
     });
     assert.deepEqual(splitLastWord('Dialogo tra testa e cuore.'), { before: 'Dialogo tra testa e ', word: 'cuore', after: '.' });
     assert.deepEqual(splitLastWord('Gioventù…»'), { before: '', word: 'Gioventù', after: '…»' });
-    assert.deepEqual(splitLastWord('2023'), { before: '2023', word: '', after: '' });
+    assert.deepEqual(splitLastWord('— !'), { before: '— !', word: '', after: '' });
+  });
+
+  test('a closing number is the last word, not the word before it', () => {
+    assert.deepEqual(splitLastWord('Esposta a Bellinzona nel 2023.'), { before: 'Esposta a Bellinzona nel ', word: '2023', after: '.' });
+    assert.equal(pickQuote([work('a', { testo: 'L’ho dipinta a Lostallo nel 2023. Poi altro.' })])?.keyWord, '2023');
   });
 });
 
@@ -246,6 +251,12 @@ describe('firstSentence', () => {
 
   test('closing quotes stay with the sentence', () => {
     assert.equal(firstSentence('Lei disse «Basta.» Poi tacque.'), 'Lei disse «Basta.»');
+    assert.equal(firstSentence('Mi disse «Sì.»'), 'Mi disse «Sì.»');
+  });
+
+  test('a quoted exclamation inside the sentence does not end it', () => {
+    assert.equal(firstSentence('«Guardami!» mi dice la tela ogni mattina. Poi tace.'), '«Guardami!» mi dice la tela ogni mattina.');
+    assert.equal(firstSentence('Il titolo (provvisorio!) è rimasto. Fine.'), 'Il titolo (provvisorio!) è rimasto.');
   });
 
   test('an ellipsis ends only before an uppercase letter or at the end', () => {
