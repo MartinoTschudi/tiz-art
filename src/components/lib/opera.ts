@@ -93,11 +93,7 @@ export function pagerThumbSizes(ratio: number): string {
 }
 
 export interface Counter {
-  /** "01" … two digits at least. */
-  nn: string;
-  /** "12" */
-  total: string;
-  /** "01 / 12" as shown. */
+  /** "01 / 12" as shown: the number with two digits at least. */
   text: string;
   /** "Opera 1 di 12" for screen readers. */
   spoken: string;
@@ -106,6 +102,5 @@ export interface Counter {
 /** The work's position in the published list: index 0 of 12 → "01 / 12". */
 export function operaCounter(index: number, total: number): Counter {
   const n = Math.max(0, index) + 1;
-  const nn = String(n).padStart(2, '0');
-  return { nn, total: String(total), text: `${nn} / ${total}`, spoken: `Opera ${n} di ${total}` };
+  return { text: `${String(n).padStart(2, '0')} / ${total}`, spoken: `Opera ${n} di ${total}` };
 }

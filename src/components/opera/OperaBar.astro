@@ -61,6 +61,17 @@ const { prev, next, ask } = Astro.props;
       padding-bottom: calc(var(--tiz-bar-h) + env(safe-area-inset-bottom));
     }
 
+    /* A link that gets the keyboard focus is scrolled above the bar, never behind it. */
+    :global(html:has(.opera-bar)) {
+      scroll-padding-bottom: calc(var(--tiz-bar-h) + env(safe-area-inset-bottom));
+    }
+
+    /* Frame 1g: the arrows are 600 20px. */
+    .opera-bar__arrow {
+      font-weight: 600;
+      font-size: 20px;
+    }
+
     .opera-bar__ask {
       flex: 1;
       min-width: 0;

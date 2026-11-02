@@ -152,11 +152,6 @@ const many = images.length > 1;
     font-size: 30px;
   }
 
-  /* Readable over a zoomed painting. */
-  .viewer.is-zoomed .viewer__counter {
-    background: var(--tiz-lino);
-  }
-
   .viewer__zoom-out,
   .viewer__button[aria-pressed='true'] .viewer__zoom-in {
     display: none;
@@ -174,5 +169,10 @@ const many = images.length > 1;
     font: 500 15px/1 var(--tiz-font-voce);
     font-variant-numeric: tabular-nums;
     text-align: center;
+  }
+
+  /* Readable over a zoomed painting. */
+  .viewer.is-zoomed .viewer__counter {
+    background: var(--tiz-lino);
   }
 </style>

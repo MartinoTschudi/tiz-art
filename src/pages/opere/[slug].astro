@@ -93,7 +93,7 @@ const jsonLd = artworkJsonLd(opera, { images: fullImages.map((url) => absoluteUr
           )
         }
         <p class="opera__ask">
-          <a class="tiz-btn" href={ask}>Chiedi di quest’opera <span aria-hidden="true">→</span></a>
+          <a class="tiz-btn" href={ask}><span>Chiedi di quest’opera <span aria-hidden="true">→</span></span></a>
         </p>
       </div>
     </div>
@@ -133,7 +133,6 @@ const jsonLd = artworkJsonLd(opera, { images: fullImages.map((url) => absoluteUr
   .opera__count {
     color: var(--tiz-terra-2);
     font: 500 13px/1 var(--tiz-font-voce);
-    font-variant-numeric: tabular-nums;
   }
 
   /* The series is shown from 640 px (frame 1g has only the number). */
@@ -170,13 +169,14 @@ const jsonLd = artworkJsonLd(opera, { images: fullImages.map((url) => absoluteUr
       padding-top: var(--tiz-s2);
     }
 
-    /* 15 px text, 44 px to tap: the extra height overlaps the spacing around it. */
+    /* 15 px text on the 19 px line of frame 1f, 44 px to tap: the extra height overlaps the spacing
+       around it. */
     .opera__back-link {
       display: inline-flex;
       align-items: center;
       gap: 6px;
       min-height: var(--tiz-hit);
-      margin-block: calc((15px - var(--tiz-hit)) / 2);
+      margin-block: calc((19px - var(--tiz-hit)) / 2);
       color: var(--tiz-terra-2);
       font: 500 15px/1 var(--tiz-font-voce);
       text-decoration: none;

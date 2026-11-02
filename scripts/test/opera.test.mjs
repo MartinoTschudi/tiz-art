@@ -69,7 +69,7 @@ describe('thumbnails', () => {
 
 describe('operaCounter', () => {
   test('two digits, total as is', () => {
-    assert.deepEqual(operaCounter(0, 12), { nn: '01', total: '12', text: '01 / 12', spoken: 'Opera 1 di 12' });
+    assert.deepEqual(operaCounter(0, 12), { text: '01 / 12', spoken: 'Opera 1 di 12' });
     assert.equal(operaCounter(11, 12).text, '12 / 12');
     assert.equal(operaCounter(99, 120).text, '100 / 120');
     assert.equal(operaCounter(0, 1).text, '01 / 1');
