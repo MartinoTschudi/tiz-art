@@ -45,13 +45,18 @@ or assets, also the `/tiz-art/` build above. These are the same checks Deploy ru
   the admin (`public/admin/js/env.js`). Trailing slash on every page URL.
 - **Keep the data rules in sync.** A change to a data format touches all of: CONTRACTS.md §4,
   `src/content.config.ts` (zod schema), `public/admin/js/model.js` (admin validation and serialisation),
-  `scripts/check-content.mjs` and their tests. Change them together, never one alone.
+  `scripts/check-content.mjs` and their tests. Change them together, never one alone. The paint names
+  of `colore` also live in `src/components/lib/composition.ts` (`PAINTS`, which the schema imports, and
+  `PAINT_CYCLE`), `src/styles/tokens.css` (`--tiz-<paint>`), `public/admin/admin.css` (`.swatch-<paint>`)
+  and `public/admin/js/screens/form.js` (`COLORE_LABELS`); `scripts/test/design-sync.test.mjs` fails
+  when any of them differs.
 - **No contact details on the site**: no e-mail, phone, street address or social links anywhere (CONTRACTS §5.1).
 - **Text**: user-facing text is Italian with correct typography (’ « » … ×); code comments in English.
   Artwork texts are plain text (`\n\n` = paragraph), always rendered as text, never as HTML/Markdown.
-- **Site**: semantic HTML, no UI framework, no Tailwind, no trackers or third-party scripts. All design values
-  are custom properties in `src/styles/tokens.css`; the design («Lo studio») is described as built in
-  `docs/DESIGN-HANDOFF.md`. Artwork images go through `astro:assets` (AVIF/WebP); never crop a painting.
+- **Site**: semantic HTML, no UI framework, no Tailwind, no trackers or third-party scripts. Colours, fonts,
+  the type and spacing scales, gutters, shadows and motion are custom properties in `src/styles/tokens.css`
+  (write a value that equals a token as the token; layout px read off one frame stay in the component); the
+  design («Lo studio») is described as built in `docs/DESIGN-HANDOFF.md`. Artwork images go through `astro:assets` (AVIF/WebP); never crop a painting.
 - **Admin**: plain ES modules, no build step, no CDN, no external fonts; strict CSP in `index.html`. Never
   put untrusted strings into `innerHTML` (use `textContent`/DOM APIs). Phone first: 375 px wide, touch
   targets ≥ 44 px. It reads data only from the GitHub API, never from the deployed site.
@@ -69,6 +74,6 @@ or assets, also the `/tiz-art/` build above. These are the same checks Deploy ru
 | Site address and base path, redirects, sitemap | `astro.config.mjs` (from `SITE_URL` / `BASE_PATH`) |
 | Admin | `public/admin/` (`js/` modules, `setup/` page); local mock: `scripts/dev/admin-dev.mjs` |
 | Content validator | `scripts/check-content.mjs` |
-| Tests | `scripts/test/` (`admin-*.test.mjs`, `content-*.test.mjs`, and the site's design rules `composition`, `home`, `opera`, `chi`, `contatti`; `npm test` runs every `scripts/test/*.test.mjs` through the glob in `package.json`, there is no index file). The admin tests use the committed fixture `scripts/test/fixtures/repo/`, never the live `src/content` (Deploy runs `npm test` after every save of Tiziana) |
+| Tests | `scripts/test/` (`admin-*.test.mjs`, `content-*.test.mjs`, the site's design rules `composition`, `home`, `opera`, `chi`, `contatti`, and `design-sync`, which checks the values the CSS, the `sizes` helpers, the admin and CONTRACTS share; `npm test` runs every `scripts/test/*.test.mjs` through the glob in `package.json`, there is no index file). The admin tests use the committed fixture `scripts/test/fixtures/repo/`, never the live `src/content` (Deploy runs `npm test` after every save of Tiziana) |
 | Docs | `docs/SETUP.md` (owner), `docs/GUIDA-ADMIN.md` (Tiziana, Italian), `docs/DESIGN-HANDOFF.md` (the site's design as built) |
 | Site icons | `public/favicon.svg` → `node scripts/dev/site-icons.mjs` renders `favicon-32.png` and `apple-touch-icon.png` |

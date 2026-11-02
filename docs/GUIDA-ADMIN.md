@@ -77,9 +77,13 @@ Tocca un’opera per aprirla e modificarla.
    Sul sito appaiono come «100 × 140 cm», solo se ci sono tutte e due.
 6. **Tecnica**, per esempio «Acrilico su tela». Mentre scrivi l’admin ti propone quelle che hai già usato.
 7. **Collezione**: il nome della serie, per esempio «noi, DONNA.». Puoi lasciarlo vuoto.
+   La serie del primo quadro in evidenza ha una sezione tutta sua nella pagina iniziale, con il nome
+   in grande e alcune opere della serie.
 8. **Colore della pennellata**: il colore della pennellata dietro al quadro, sul sito (vedi § 9a).
    Se non sai, lascia **Automatico**.
 9. **Testo**: il racconto dell’opera. Per un **nuovo paragrafo lascia una riga vuota**.
+   La prima frase del testo (se non è troppo corta né troppo lunga) può comparire come citazione,
+   scritta in grande, nella pagina iniziale: conviene che stia bene anche da sola.
 10. **In evidenza in home**: accendilo se vuoi l’opera tra i quadri grandi in cima alla pagina iniziale (§ 9).
 11. **Visibile sul sito**: è già acceso. Spegnilo solo se l’opera non deve ancora vedersi.
 12. Tocca **Salva**.
@@ -183,7 +187,11 @@ Se vuoi solo toglierla dal sito per un po’, **nascondila** (§ 8).
 
 1. In «Le mie opere» tocca **Profilo**.
 2. **Ritratto**: una tua foto, oppure mentre dipingi. Puoi aggiungerla, cambiarla o toglierla con **×**.
-3. **Motto**: una frase breve, per esempio «Dialogo tra testa e cuore.».
+   Sul sito il ritratto è mostrato **in verticale** (un po’ più alto che largo): scegli una foto
+   verticale. Di una foto orizzontale si vedrebbe solo la parte centrale, senza i lati.
+3. **Motto**: una frase breve, per esempio «Dialogo tra testa e cuore.». È il **grande titolo scritto
+   a mano** in cima alla pagina iniziale: l’ultima parola è in rosso e il punto finale diventa un
+   puntino rosso che batte. Più è breve, più è grande: una frase lunga diventa più piccola.
 4. **Biografia**: il tuo testo. Per un nuovo paragrafo lascia una riga vuota.
 5. Tocca **Salva**.
 

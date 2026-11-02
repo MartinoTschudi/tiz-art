@@ -9,7 +9,8 @@ do not silently diverge: write the problem in your final report.
 Portfolio website of the painter **Tiziana Tschudi Belloli** (signature "TIZ"), domain **tiz-art.ch**.
 Italian only. Pure portfolio: no prices, no shop, no availability. Visitors contact her only through a
 **contact form** (no e-mail address, phone or street address is ever shown on the site). Every artwork
-page has a "Chiedi di quest’opera" action that opens the contact form pre-filled with that artwork.
+page has a "Chiedi di quest’opera" action that opens the contact form pre-filled with that artwork (with
+JavaScript; without it the form opens without the work, §5.5).
 
 Her mother-tongue admin (`/admin/`) runs on a phone: log in, take/choose photos, fill a few fields,
 save. Saving commits to GitHub; GitHub Actions rebuilds and publishes the site (≈1–3 minutes).
@@ -55,6 +56,8 @@ scripts/admin-setup.mjs          admin agent (CLI alternative to the setup page)
 scripts/dev/admin-dev.mjs        admin agent (`npm run admin:dev`: local mock GitHub API, section 7.6)
 scripts/check-content.mjs        infra agent (`npm run check:content`, validates section 4)
 scripts/test/admin-*.test.mjs    admin agent       scripts/test/content-*.test.mjs   infra agent
+scripts/test/{composition,home,opera,chi,contatti,design-sync}.test.mjs   site agent (the site's design rules)
+scripts/dev/make-mano-font.py, src/assets/fonts/   site agent (the self-hosted fonts, docs/DESIGN-HANDOFF.md §4)
 scripts/test/fixtures/repo/      admin agent (small committed copy of src/content for the tests, section 8)
 scripts/dev/site-icons.mjs       site agent (renders favicon-32.png / apple-touch-icon.png from favicon.svg)
 .github/workflows/deploy.yml     infra agent
@@ -153,11 +156,11 @@ package.json, CONTRACTS.md       fixed — do not edit (report needed changes in
 |---|---|
 | `/` | **Hero composition**: the motto (last word in rosso; the artist's name when the motto is empty) and up to 3 works = the first 3 published `inEvidenza` works in display order, filled up with the first published works not already picked when fewer than 3. Slots by aspect ratio: the most square → large (ties: larger canvas, then display order), the tallest of the rest → narrow, the other → small; the handwritten note "{titolo}, {anno}" under the large one; the intro paragraph with "Guarda le opere →". Below 1024 px: motto → the large work → paragraph. Then the **series section**: the `collezione` of the first hero work (else the most common non-empty one) with the highest `anno` of its works and up to 5 of its published works that are not in the hero or the quote ("Le ultime opere" and the first 5 such works when no work has a series), and the link "Tutte le {n} opere →". Then the **quote band**: the first sentence (20–140 chars) of a published work's text outside the hero, searched from the last work in display order backwards, with that painting; hidden when there is none; the attribution links to the work. Then the large home footer. No bio teaser, no contact call-to-action |
 | `/opere/` | ONE list of all published works in display order (`ordine`), hung at real relative scale ("{n} tele, appese come nello studio"; "1 tela"). No grouping or filtering by `collezione` |
-| `/opere/<slug>/` | the cover on a stage with the work's brushstroke behind it (whole painting); the other photos as thumbnails under it (tap = swap the stage image; without JS a link to the full-size JPEG); tap on the stage = full-screen viewer with zoom, keyboard + swipe; "{nn} / {total} · {collezione}" (series part omitted when empty), title, `<dl>` Anno / Misure / Tecnica (empty ones skipped), her text + "— TIZ" (the block is omitted when the text is empty), "Chiedi di quest’opera →" → `/contatti/?opera=<slug>`, previous/next work (wrapping around). Phone: a fixed bottom bar with ← · the button · → |
+| `/opere/<slug>/` | the cover on a stage with the work's brushstroke behind it (whole painting); with 2 or more photos all of them as thumbnails under it, the one on the stage marked (tap = swap the stage image; without JS a link to the full-size JPEG); tap on the stage = full-screen viewer with zoom, keyboard + swipe; "{nn} / {total} · {collezione}" (series part omitted when empty), title, `<dl>` Anno / Misure / Tecnica (empty ones skipped), her text + "— TIZ" (the block is omitted when the text is empty), "Chiedi di quest’opera →" → `/contatti/?opera=<slug>`, previous/next work (wrapping around; with two published works only the other one, as next on the first and previous on the second). Phone: a fixed bottom bar with ← · the button · → |
 | `/chi-sono/` | `profilo.ritratto` (4:5 crop allowed here only: it is a photo, not a painting) with an ocra brushstroke and the note "nello studio"; without a portrait the first hero painting, uncropped, captioned «titolo», anno. Name, motto (last word in rosso), bio (`profilo.bio`, plain text), "Vedi le opere" and "Scrivimi →" |
 | `/contatti/` | contact form (5.4) |
 | `/contatti/grazie/` | the form's success page for visitors without JS (5.4); `noindex`, not in the sitemap |
-| `/404.html` | Italian 404: "Qui la tela è ancora bianca.", "Vedi le opere →" and "Torna alla home" |
+| `/404.html` | Italian 404: "Qui la tela è ancora bianca.", "Guarda le opere →" and "Torna alla home" |
 | old WordPress paths | static redirect pages from `sito.json` `redirectVecchioSito` (meta refresh + canonical, noindex); a target artwork that is hidden or deleted redirects to `/opere/` instead |
 | `/admin/anteprime.json` | section 6 |
 | `/sitemap-index.xml`, `/robots.txt` | sitemap of public pages only (not `/contatti/grazie/`); robots allows all except `/admin/` (preview: disallow all) |
@@ -211,9 +214,12 @@ ancora attivo" and the build prints a warning.
 
 ### 5.5 Quality bar
 Semantic HTML, keyboard accessible, visible focus, `prefers-reduced-motion` respected, works without
-JS (only the viewer, the phone menu overlay, the photo swap and the animations need it; the contact form
-falls back to a normal POST, §5.4), Lighthouse-friendly (no layout shift, lazy images below the
-fold), mobile-first. All design values in `src/styles/tokens.css` as CSS custom properties.
+JS (only the viewer, the phone menu overlay, the photo swap, the `?opera` chip and the animations need
+it; the contact form falls back to a normal POST, §5.4, which then carries no work), Lighthouse-friendly
+(no layout shift, also while the fonts load; lazy images below the fold), mobile-first. Colours, fonts,
+the type and spacing scales, gutters, shadows and motion are CSS custom properties in
+`src/styles/tokens.css` (a value equal to a token is written as the token); layout numbers read off a
+single frame stay as px in the component that uses them.
 
 ## 6. Thumbnail index for the admin — `/admin/anteprime.json`
 

@@ -94,7 +94,7 @@ Requirements: **Node.js 22.23.4 or newer** (`.nvmrc` = 22; Astro 7.4 refuses old
 git clone https://github.com/MartinoTschudi/tiz-art.git && cd tiz-art
 npm ci                  # exactly the locked dependencies
 npm run dev             # http://localhost:4321
-npm test                # all tests (admin, setup, content check), no network
+npm test                # all tests (admin, setup, content check, the site's design rules), no network
 npm run check:content   # validate src/content and src/data/sito.json
 npm run build           # static site in dist/
 npm run preview         # serve dist/
