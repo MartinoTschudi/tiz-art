@@ -11,7 +11,10 @@ import { fileURLToPath } from 'node:url';
 import { createMockGitHub, readFilesFrom } from '../dev/mock-github.mjs';
 import { Store, runState, withSaved, withOrder, CHANGED_MEANWHILE_OPERA, CHANGED_MEANWHILE_PROFILO } from '../../public/admin/js/store.js';
 import { resolveEnv } from '../../public/admin/js/env.js';
-import { validateOpera, validateProfilo, serializeOpera, compareOpere, IMAGE_FILE_RE, OPERA_KEYS } from '../../public/admin/js/model.js';
+import {
+  validateOpera, validateProfilo, serializeOpera, compareOpere, parseOperaForm, IMAGE_FILE_RE, OPERA_KEYS,
+} from '../../public/admin/js/model.js';
+import { createDraft } from '../../public/admin/js/screens/form.js';
 
 const FIXTURE = fileURLToPath(new URL('./fixtures/repo/', import.meta.url));
 const SEED = await readFilesFrom(FIXTURE, ['src/content', 'src/data']);
@@ -27,6 +30,8 @@ const SEED_OPERE = Object.entries(SEED)
   .sort(compareOpere);
 const SEED_PROFILO = JSON.parse(decoder.decode(SEED['src/content/profilo/profilo.json']));
 const seedWork = (slug) => SEED_OPERE.find((o) => o.slug === slug);
+// The fixture's work saved by an older admin, before `colore` existed (see fixtures/README.md).
+const LEGACY = 'guardami';
 
 const env = resolveEnv({ origin: 'http://localhost:4330', hostname: 'localhost', pathname: '/admin/index.html', search: '?api=http://localhost:8787' });
 
@@ -35,8 +40,14 @@ const upload = (n) => ({ upload: { blob: jpeg(n), preview: jpeg(n + 100), width:
 
 const fields = (over = {}) => ({
   titolo: 'Nuova opera', anno: 2026, larghezza: 80.5, altezza: 100, tecnica: 'Olio su tela', collezione: '',
-  testo: 'Primo.\n\nSecondo.', inEvidenza: false, pubblicata: true, ...over,
+  colore: null, testo: 'Primo.\n\nSecondo.', inEvidenza: false, pubblicata: true, ...over,
 });
+
+/** What «Salva» sends for a work opened in the form and saved without touching anything. */
+function unchangedSave(opera) {
+  const draft = createDraft(opera);
+  return { slug: opera.slug, fields: parseOperaForm(draft.fields).fields, photos: opera.data.immagini.map((r) => ({ file: r.slice(2) })), base: opera.data.aggiornataIl };
+}
 
 let mock;
 let store;
@@ -117,6 +128,20 @@ describe('Store: reading', () => {
     assert.equal(res.headers.get('content-type'), 'image/jpeg');
   });
 
+  test('a file saved before «colore» existed reads as colore null, without a problem, and is marked outdated', async () => {
+    assert.ok(!('colore' in seedWork(LEGACY).data), 'the fixture keeps one work without the key');
+    const data = await store.load();
+    assert.deepEqual(data.problems, []);
+    const legacy = data.opere.find((o) => o.slug === LEGACY);
+    assert.equal(legacy.data.colore, null);
+    assert.deepEqual(validateOpera(legacy.data), []);
+    assert.equal(legacy.outdated, true, '«Salva» rewrites it even without a change');
+    for (const o of data.opere.filter((x) => x.slug !== LEGACY)) {
+      assert.equal(o.outdated, false, o.slug);
+      assert.equal(o.data.colore, seedWork(o.slug).data.colore, o.slug);
+    }
+  });
+
   test('a broken opera.json is reported, it does not block the list', async () => {
     mock = createMockGitHub({ files: { ...SEED, [`${OPERE}/rotta/opera.json`]: '{ non è json', [`${OPERE}/vuota/01.jpg`]: 'x' } });
     store = makeStore();
@@ -183,6 +208,31 @@ describe('Store: artworks', () => {
     const data = assertValidFolder('guardami');
     assert.equal(data.immagini[0], './01.jpg');
     assert.match(data.immagini[1], /^\.\/02-[a-z0-9]{6}\.jpg$/);
+  });
+
+  test('colore: the choice of the form is written right after collezione; automatico is null', async () => {
+    const created = await store.saveOpera({ slug: null, fields: fields({ titolo: 'Pennellata', colore: 'ottanio' }), photos: [upload(1)] });
+    assert.equal(assertValidFolder(created.slug).colore, 'ottanio');
+    assert.match(mock.read(`${OPERE}/${created.slug}/opera.json`), /\n {2}"collezione": "",\n {2}"colore": "ottanio",\n {2}"testo": /);
+    const { opere } = await store.load();
+    const sorellanza = opere.find((o) => o.slug === 'sorellanza');
+    await store.saveOpera({ ...unchangedSave(sorellanza), fields: { ...unchangedSave(sorellanza).fields, colore: null } });
+    assert.equal(assertValidFolder('sorellanza').colore, null);
+  });
+
+  test('a work without «colore» saved unchanged → rewritten once with colore null, nothing else changes', async () => {
+    const { opere } = await store.load();
+    const legacy = opere.find((o) => o.slug === LEGACY);
+    const before = mock.log().length;
+    const result = await store.saveOpera(unchangedSave(legacy));
+    assert.equal(result.action, 'update');
+    assert.equal(mock.log().length, before + 1);
+    const data = assertValidFolder(LEGACY);
+    assert.equal(data.colore, null);
+    assert.deepEqual({ ...data, aggiornataIl: '' }, { ...legacy.data, aggiornataIl: '' }, 'only colore and the time are new');
+    assert.equal(data.aggiornataIl, NOW.toISOString());
+    const reloaded = (await store.load()).opere.find((o) => o.slug === LEGACY);
+    assert.equal(reloaded.outdated, false, 'now in the admin’s format');
   });
 
   test('hide: pubblicata false is saved as a normal edit', async () => {

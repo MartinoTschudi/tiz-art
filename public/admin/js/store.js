@@ -20,7 +20,7 @@
 import { GitHubClient, GitHubError, KEY_INVALID_MESSAGE } from './github.js';
 import {
   OPERE_DIR, PROFILO_DIR, OPERA_FILE, PROFILO_FILE,
-  slugify, uniqueSlug, validateOpera, validateProfilo, serializeOpera, serializeProfilo,
+  slugify, uniqueSlug, validateOpera, validateProfilo, serializeOpera, serializeProfilo, normalizeOpera,
   compareOpere, nextOrdine, imageFileName, portraitFileName, commitMessage, imageRefName,
 } from './model.js';
 import { mapLimit, randomId } from './util.js';
@@ -82,7 +82,7 @@ export function runState(run) {
  * The loaded data (Store.load) with a save of this phone already in it: the reload that follows
  * takes a moment (longer on a slow connection, and it can fail), and a screen opened meanwhile must
  * show what was saved, or saving it again would silently undo the first save.
- * @param {{opere: Array<{slug: string, data: object}>, profilo: object|null}} data
+ * @param {{opere: Array<{slug: string, data: object, outdated?: boolean}>, profilo: object|null}} data
  * @param {{action: string, slug?: string, opera?: object, profilo?: object}} result  of saveOpera / deleteOpera / saveProfilo
  */
 export function withSaved(data, result) {
@@ -90,7 +90,7 @@ export function withSaved(data, result) {
   const opere = data.opere.filter((o) => o.slug !== result.slug);
   if (result.action === 'create' || result.action === 'update') {
     const files = new Set([OPERA_FILE, ...result.opera.immagini.map(imageRefName)]);
-    opere.push({ slug: result.slug, sha: null, files, data: result.opera });
+    opere.push({ slug: result.slug, sha: null, files, data: result.opera, outdated: false });
     opere.sort(compareOpere);
   }
   return { ...data, opere };
@@ -184,7 +184,12 @@ export class Store {
     return folders;
   }
 
-  /** Reads every opera.json of a tree. A broken file is reported, it never blocks the list. */
+  /**
+   * Reads every opera.json of a tree. A broken file is reported, it never blocks the list.
+   * Each work is { slug, sha, files, data, outdated }: `data` is normalised (normalizeOpera: a file
+   * saved before `colore` existed reads as colore null), and `outdated` is true when the file is not
+   * exactly what the admin would write for it, so «Salva» rewrites it even without a change.
+   */
   async readOpere(files) {
     const folders = Store.folders(files);
     const problems = [];
@@ -193,9 +198,11 @@ export class Store {
         problems.push(`La cartella «${folder.slug}» non contiene opera.json.`);
         return null;
       }
+      let text;
       let data;
       try {
-        data = JSON.parse(await this.gh.readText(folder.sha));
+        text = await this.gh.readText(folder.sha);
+        data = normalizeOpera(JSON.parse(text));
       } catch (err) {
         if (err instanceof GitHubError) throw err;
         problems.push(`I dati dell’opera «${folder.slug}» non sono leggibili.`);
@@ -203,7 +210,7 @@ export class Store {
       }
       const invalid = validateOpera(data);
       if (invalid.length) problems.push(`L’opera «${folder.slug}» ha dati non validi (${invalid[0]}).`);
-      return { ...folder, data };
+      return { ...folder, data, outdated: !invalid.length && serializeOpera(data) !== text };
     });
     return { folders, opere: read.filter(Boolean).sort(compareOpere), problems };
   }
@@ -221,8 +228,8 @@ export class Store {
 
   /**
    * Loads everything the admin shows.
-   * @returns {Promise<{head: object, opere: Array<{slug: string, data: object, files: Set<string>}>,
-   *                    profilo: object|null, problems: string[]}>}
+   * @returns {Promise<{head: object, opere: Array<{slug: string, data: object, files: Set<string>, outdated: boolean}>,
+   *                    profilo: object|null, problems: string[]}>}  (see readOpere)
    */
   async load() {
     const index = Promise.resolve()

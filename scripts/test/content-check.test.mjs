@@ -71,6 +71,7 @@ const OPERA = {
   altezza: 80.5,
   tecnica: 'Acrilico su tela',
   collezione: 'noi, DONNA.',
+  colore: 'terracotta',
   testo: 'Primo paragrafo.\n\nSecondo paragrafo.',
   immagini: ['./01.jpg', './02-a1b2c3.png'],
   ordine: 10,
@@ -88,6 +89,7 @@ const BOZZA = {
   altezza: null,
   tecnica: '',
   collezione: '',
+  colore: null,
   testo: '',
   immagini: ['./01.webp'],
   ordine: -10,
@@ -230,6 +232,14 @@ describe('check-content: valid content', () => {
     assert.deepEqual(lines(checkContent(root).warnings), []);
   });
 
+  test('accepts every colour name and null (automatic)', (t) => {
+    const root = makeTree(t);
+    for (const colore of ['ocra', 'rosso', 'terracotta', 'ottanio', 'blu', null]) {
+      setOpera({ colore })(root);
+      assert.deepEqual(checkContent(root), { errors: [], warnings: [], works: 2, published: 1 }, String(colore));
+    }
+  });
+
   test('ignores .DS_Store files from macOS', (t) => {
     const root = makeTree(t);
     for (const folder of ['src/content/opere', 'src/content/opere/prima-opera', 'src/content/profilo']) {
@@ -280,6 +290,10 @@ const ERROR_CASES = [
   ['height as text', setOpera({ altezza: '80' }), /"altezza" must be a size in cm/],
   ['technique too long', setOpera({ tecnica: 'x'.repeat(121) }), /"tecnica" must be at most 120 characters/],
   ['collection that is null', setOpera({ collezione: null }), /"collezione" must be a text/],
+  ['unknown colour', setOpera({ colore: 'verde' }), /"colore" must be null \(automatic\) or one of "ocra", "rosso", "terracotta", "ottanio", "blu" \(found "verde"\)/],
+  ['colour with a capital', setOpera({ colore: 'Ocra' }), /"colore" must be null \(automatic\) or one of/],
+  ['colour as empty text', setOpera({ colore: '' }), /"colore" must be null \(automatic\) or one of/],
+  ['colour as a hex value', setOpera({ colore: '#d6982b' }), /"colore" must be null \(automatic\) or one of/],
   ['text too long', setOpera({ testo: 'x'.repeat(5001) }), /"testo" must be at most 5000 characters/],
   ['no images', setOpera({ immagini: [] }), /"immagini" must be a list of 1 to 8 images/],
   ['nine images', setOpera({ immagini: Array.from({ length: 9 }, (_, i) => `./0${i}.jpg`) }), /"immagini" must be a list of 1 to 8 images/],
@@ -342,6 +356,9 @@ const WARNING_CASES = [
   ['contact form key empty', setSito({ contatto: { web3formsAccessKey: '' } }), /sito\.json: contatto\.web3formsAccessKey is empty/],
   ['contact form key malformed', setSito({ contatto: { web3formsAccessKey: 'my-key' } }), /does not look like a Web3Forms access key/],
   ['JSON not in the admin format', (root) => write(root, OPERA_JSON, JSON.stringify(OPERA)), /prima-opera\/opera\.json: is valid but not in the format the admin writes/],
+  // An older admin (or a branch opened before the field existed) wrote the file: valid, read as null.
+  ['artwork saved before "colore" existed', (root) => editJson(root, OPERA_JSON, (data) => delete data.colore), /prima-opera\/opera\.json: missing field "colore": read as null \(automatic colour\); the next save in the admin adds it/],
+  ['"colore" in another position', (root) => write(root, OPERA_JSON, json({ colore: OPERA.colore, ...OPERA })), /prima-opera\/opera\.json: is valid but not in the format/],
   ['fields in another order', (root) => write(root, PROFILO_JSON, json({ bio: PROFILO.bio, ...PROFILO })), /profilo\.json: is valid but not in the format/],
   ['redirect to a hidden artwork', setSito({ redirectVecchioSito: { '/vecchia/': '/opere/bozza/' } }), /redirect \/vecchia\/ → \/opere\/bozza\/: the target page does not exist/],
   ['redirect to an unknown page', setSito({ redirectVecchioSito: { '/vecchia/': '/galleria/' } }), /the target page does not exist/],

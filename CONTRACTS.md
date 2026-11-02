@@ -77,6 +77,7 @@ package.json, CONTRACTS.md       fixed — do not edit (report needed changes in
   "altezza": 150,
   "tecnica": "Acrilico su tela",
   "collezione": "noi, DONNA.",
+  "colore": "terracotta",
   "testo": "Primo paragrafo.\n\nSecondo paragrafo.",
   "immagini": ["./01.jpg", "./02.jpg"],
   "ordine": 120,
@@ -94,13 +95,24 @@ package.json, CONTRACTS.md       fixed — do not edit (report needed changes in
 | `larghezza`, `altezza` | number \| null | centimetres, > 0, ≤ 1000, max 1 decimal. Displayed "100 × 140 cm" / "100,5 × 80 cm" (width × height, Italian decimal comma). Shown only when both are set |
 | `tecnica` | string | may be `""`, ≤ 120 chars (e.g. "Acrilico su tela", "Acrilico e olio su tela") |
 | `collezione` | string | series name, may be `""`, ≤ 120 chars |
+| `colore` | string \| null | colour of the brushstroke painted behind the work on the site: `"ocra"`, `"rosso"`, `"terracotta"`, `"ottanio"` or `"blu"`; `null` = automatic (see below). The admin always writes the key; a file without it is still valid and reads as `null` |
 | `testo` | string | may be `""`, ≤ 5000 chars. Plain text: paragraphs separated by a blank line (`\n\n`), single `\n` = line break. Never HTML/Markdown — render as text |
 | `immagini` | string[] | 1–8 entries, each `./<file>` in the same folder, file name `^[a-z0-9][a-z0-9._-]*\.(jpg\|jpeg\|png\|webp)$`. The FIRST image is the cover. No duplicate entries |
 | `ordine` | integer | ascending = shown first. Ties broken by `creataIl` descending |
-| `inEvidenza` | boolean | shown in the home-page selection |
+| `inEvidenza` | boolean | featured: the first 3 `inEvidenza` works in display order make the composition at the top of the home page (§5.1); any further ones have no effect there |
 | `pubblicata` | boolean | `false` = hidden everywhere on the public site (draft), no page generated |
 | `creataIl`, `aggiornataIl` | string | ISO 8601 UTC |
 
+- **Brushstroke colour.** The site paints the stroke with `var(--tiz-<colore>)` (design tokens: ocra
+  `#d6982b`, rosso `#c3262b`, terracotta `#b5532f`, ottanio `#1d7377`, blu `#2c55a0`). When `colore` is
+  `null` (or the key is missing), the colour is automatic:
+  `PAINT_CYCLE = ['ocra', 'rosso', 'ottanio', 'terracotta', 'blu']`, indexed by the work's position in the full
+  published list in display order (`getPublishedOpere()`, index mod 5). So a work keeps the same colour on every
+  page; it changes only when the published order changes.
+- **A missing `colore` key** (a file saved by an admin older than this field) is accepted everywhere and
+  treated as `null`: the zod schema defaults it, the admin normalises it when reading (and rewrites the file
+  in the current format on the next «Salva», even without a change), and `npm run check:content` only
+  **warns**. Every other key stays required.
 - Unknown extra keys are not allowed (the schema is strict) — this catches typos.
 - **Slug** = folder name, `^[a-z0-9]+(?:-[a-z0-9]+)*$`, ≤ 60 chars, derived once from the title at
   creation (lowercase, accents stripped: "Gioventù" → `gioventu`, "…e fuori piove" → `e-fuori-piove`),
@@ -271,8 +283,11 @@ Saving twice must never do harm:
    dropped by re-encoding); "Fai copertina" button to make one the first (the first shows "★ Copertina");
    "×" to remove. Fields: Titolo*,
    Anno (default current year), Larghezza cm, Altezza cm, Tecnica (datalist from existing values),
-   Collezione (datalist from existing values), Testo (textarea), "In evidenza in home" toggle,
-   "Visibile sul sito" toggle (default on). "Salva" → progress ("Preparo le foto…", "Carico la foto 1 di 3…",
+   Collezione (datalist from existing values), "Colore della pennellata" (radio buttons drawn as large
+   swatches with their names: Automatico (default, `null`) · Ocra · Rosso · Terracotta · Ottanio · Blu),
+   Testo (textarea), "In evidenza in home" toggle (hint: the first 3 make the home composition),
+   "Visibile sul sito" toggle (default on). "Salva" with nothing changed says "Nessuna modifica da salvare",
+   except for a file not in the current format (e.g. without `colore`, §4.1): that one is rewritten. "Salva" → progress ("Preparo le foto…", "Carico la foto 1 di 3…",
    "Pubblico…") → "Fatto! Sarà online tra circa 2 minuti" with "Vedi sul sito", "Torna alle opere",
    "Aggiungi un'altra opera". Existing work: "Elimina opera" at the bottom with confirmation dialog.
    New works get `ordine = min(existing) - 10` (shown first). Unsaved new work is kept as a draft

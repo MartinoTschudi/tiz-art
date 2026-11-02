@@ -7,3 +7,7 @@ format the admin writes. `admin-store.test.mjs` seeds the mock GitHub API with i
 It is deliberately **not** the live `src/content`: Tiziana's admin changes that every day and Deploy runs
 `npm test` before every build, so a test that depended on it would block publishing after her first save.
 The tests derive their expected values from these files; the photos are 9-byte stand-ins (never decoded).
+
+`opere/guardami/opera.json` deliberately has **no `colore` key**: it stands for a file saved by an older
+admin, before the field existed (CONTRACTS.md §4.1). The admin must read it as `colore: null` and write the
+key on the next save. Keep one such work when you edit the fixture.

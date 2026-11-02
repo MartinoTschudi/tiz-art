@@ -28,6 +28,8 @@ const CENTIMETRES_RE = /^\d+(?:\.\d)?$/;
 // Site path: starts and ends with "/", no "." or ".." segments, no query or fragment.
 const SITE_PATH_RE = /^\/(?:(?!\.\.?\/)[A-Za-z0-9._~%-]+\/)*$/;
 const WEB3FORMS_KEY_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+// Colours of the brushstroke behind a painting (CONTRACTS.md 4.1); null = automatic.
+const COLORI = ['ocra', 'rosso', 'terracotta', 'ottanio', 'blu'];
 
 // Pages of the new site (CONTRACTS.md 5.1). An old WordPress path must never replace one of them.
 const FIXED_PAGES = ['/', '/opere/', '/chi-sono/', '/contatti/'];
@@ -69,6 +71,10 @@ const centimetres = (value) =>
     ? null
     : 'must be a size in cm, greater than 0 and at most 1000, with at most one decimal, or null';
 const integer = (value) => (Number.isSafeInteger(value) ? null : 'must be a whole number');
+const colour = (value) =>
+  value === null || COLORI.includes(value)
+    ? null
+    : `must be null (automatic) or one of ${COLORI.map((name) => `"${name}"`).join(', ')}`;
 const boolean = (value) => (typeof value === 'boolean' ? null : 'must be true or false');
 
 function isoDate(value) {
@@ -127,6 +133,12 @@ function redirects(value) {
   return null;
 }
 
+/**
+ * A field that files written before it existed do not have: a missing key is a warning with this
+ * explanation (the site reads it as its default), never an error. A present key must pass `rule`.
+ */
+const addedLater = (rule, whenMissing) => Object.assign((value) => rule(value), { whenMissing });
+
 // Schemas. The key order is the order the admin writes (CONTRACTS.md 4.1 and 4.2).
 // A nested object is a nested schema.
 const OPERA_FIELDS = {
@@ -136,6 +148,7 @@ const OPERA_FIELDS = {
   altezza: centimetres,
   tecnica: text({ max: 120 }),
   collezione: text({ max: 120 }),
+  colore: addedLater(colour, 'read as null (automatic colour); the next save in the admin adds it'),
   testo: text({ max: 5000 }),
   immagini: imageList,
   ordine: integer,
@@ -162,8 +175,11 @@ const SITO_FIELDS = {
   redirectVecchioSito: redirects,
 };
 
-/** Checks `value` against `schema`: every field present, no unknown field, every rule passes. */
-function checkFields(value, schema, fail, prefix = '') {
+/**
+ * Checks `value` against `schema`: every field present (a missing `addedLater` field only warns), no
+ * unknown field, every rule passes. Returns false when there was an error.
+ */
+function checkFields(value, schema, fail, warn, prefix = '') {
   if (!isPlainObject(value)) {
     fail(prefix ? `"${prefix.slice(0, -1)}" must be an object { … }` : 'must contain a JSON object { … }');
     return false;
@@ -172,10 +188,14 @@ function checkFields(value, schema, fail, prefix = '') {
   for (const [key, rule] of Object.entries(schema)) {
     const name = prefix + key;
     if (!Object.hasOwn(value, key)) {
-      fail(`missing field "${name}"`);
-      valid = false;
+      if (rule.whenMissing) {
+        warn(`missing field "${name}": ${rule.whenMissing}`);
+      } else {
+        fail(`missing field "${name}"`);
+        valid = false;
+      }
     } else if (isPlainObject(rule)) {
-      valid = checkFields(value[key], rule, fail, `${name}.`) && valid;
+      valid = checkFields(value[key], rule, fail, warn, `${name}.`) && valid;
     } else {
       const problem = rule(value[key]);
       if (problem) {
@@ -195,7 +215,11 @@ function checkFields(value, schema, fail, prefix = '') {
   return valid;
 }
 
-/** The exact text the admin writes for `data`: schema key order, 2-space indentation, final newline. */
+/**
+ * The exact text the admin writes for `data`: schema key order, 2-space indentation, final newline.
+ * A missing `addedLater` key stays missing (JSON.stringify drops undefined), so such a file gets only
+ * the missing-field warning, not a second one about its format.
+ */
 function canonicalJson(data, schema) {
   const ordered = Object.fromEntries(Object.keys(schema).map((key) => [key, data[key]]));
   return `${JSON.stringify(ordered, null, 2)}\n`;
@@ -320,7 +344,12 @@ function readJsonFile(ctx, rel, schema, { canonical }) {
     ctx.error(rel, `is not valid JSON: ${error.message}`);
     return { data: null, valid: false };
   }
-  const valid = checkFields(data, schema, (message) => ctx.error(rel, message));
+  const valid = checkFields(
+    data,
+    schema,
+    (message) => ctx.error(rel, message),
+    (message) => ctx.warn(rel, message),
+  );
   if (valid && canonical && source !== canonicalJson(data, schema)) {
     ctx.warn(
       rel,
