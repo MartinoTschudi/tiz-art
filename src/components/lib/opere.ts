@@ -8,7 +8,7 @@ import { paintName, paintVar, type PaintName } from './composition';
 export type Opera = CollectionEntry<'opere'>;
 export type Profilo = CollectionEntry<'profilo'>;
 
-/** Works on the home page when none is marked "in evidenza". */
+/** Works returned by getFeaturedOpere when none is marked "in evidenza". */
 const FEATURED_FALLBACK = 6;
 
 /** `ordine` ascending; ties: newest `creataIl` first (CONTRACTS 4.1). */
@@ -26,7 +26,10 @@ export async function getPublishedOpere(): Promise<Opera[]> {
   return (await getCollection('opere', ({ data }) => data.pubblicata)).sort(byOrder);
 }
 
-/** Home-page selection: the works "in evidenza", or the first few if none is marked. */
+/**
+ * The works "in evidenza", or the first few if none is marked. BaseLayout shares the first one when a
+ * page has no image of its own (= the first hero work; the home itself composes with heroSlots).
+ */
 export async function getFeaturedOpere(): Promise<Opera[]> {
   const published = await getPublishedOpere();
   const featured = published.filter(({ data }) => data.inEvidenza);
@@ -76,16 +79,6 @@ const numberFormat = new Intl.NumberFormat('it', { maximumFractionDigits: 1, use
 export function formatDimensions({ larghezza, altezza }: Opera['data']): string | null {
   if (larghezza == null || altezza == null) return null;
   return `${numberFormat.format(larghezza)} × ${numberFormat.format(altezza)} cm`;
-}
-
-/** Year and size, whichever are set: ["2023", "100 × 140 cm"]. */
-export function metaParts(data: Opera['data']): string[] {
-  return [data.anno ? String(data.anno) : '', formatDimensions(data) ?? ''].filter(Boolean);
-}
-
-/** Short line for cards and lists: "2023 · 100 × 140 cm". */
-export function metaLine(data: Opera['data']): string {
-  return metaParts(data).join(' · ');
 }
 
 /** «Titolo», Tiziana Tschudi Belloli, 2023 (+ ", dettaglio N" for the extra photos). */

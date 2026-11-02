@@ -20,12 +20,10 @@ const redirects = Object.fromEntries(
 );
 
 // Pages that must not appear in the sitemap: the admin, the contact form's thank-you page (CONTRACTS
-// 5.1), the redirect pages and the design kit (src/pages/kit/, removed at the end of the redesign
-// together with its line).
+// 5.1) and the redirect pages.
 const notInSitemap = [
   new URL(`${base}admin/`, site).href,
   new URL(`${base}contatti/grazie/`, site).href,
-  new URL(`${base}kit/`, site).href,
   ...Object.keys(redirects).map((from) => new URL(base + from.replace(/^\/+/, ''), site).href),
 ];
 
