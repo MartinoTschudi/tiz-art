@@ -1,165 +1,223 @@
 /**
- * Contact form behaviour (markup: ContactForm.astro, rules: CONTRACTS 5.4).
- * Validates in Italian, pre-selects the artwork from `?opera=<slug>`, sends JSON to Web3Forms with
- * fetch and reports the result in place (button disabled while sending, no layout shift).
+ * Contact form behaviour (markup: ContactForm.astro; rules and texts: lib/contatti.ts; CONTRACTS 5.4).
+ *
+ * - Validation in Italian: on "Invia" every field is checked, the error shows under its field
+ *   (aria-describedby, aria-invalid), focus goes to the first wrong one, and from then on the errors
+ *   follow the typing. The input is never cleared on an error.
+ * - Sending: JSON POST to Web3Forms. The button is aria-disabled meanwhile (not `disabled`, so it
+ *   keeps focus) and a second click does nothing; the status line says "Invio in corso…".
+ * - Success: "Grazie!" replaces the form, focus moves to its heading and the live region announces
+ *   the line under it. "Scrivi ancora" brings back the empty form (the chosen work stays, as in the
+ *   design) with focus in the first field.
+ * - The chosen work: the inline script in ContactForm.astro has already drawn the chip for `?opera=`
+ *   (data-slug); here it fills the hidden `opera` field and the subject, and its × removes it: the
+ *   field is cleared and disabled, the subject goes back to the default, `?opera` leaves the URL
+ *   (history.replaceState), focus moves to the first field.
+ * - Empty access key: after validation, the note "Il modulo non è ancora attivo" (nothing is sent).
+ * - Honeypot ticked: pretend it worked, send nothing.
  */
+import {
+  MESSAGES,
+  buildPayload,
+  fieldError,
+  isSent,
+  operaLine,
+  subjectFor,
+  withoutOpera,
+  type ChosenOpera,
+  type FieldName,
+} from './lib/contatti';
 
-const TEXT = {
-  name: 'Inserisci il tuo nome.',
-  emailMissing: 'Inserisci il tuo indirizzo e-mail.',
-  emailInvalid: 'Questo indirizzo e-mail non sembra corretto.',
-  message: 'Scrivi un messaggio di almeno 10 caratteri.',
-  checkFields: 'Controlla i campi evidenziati.',
-  sending: 'Invio in corso…',
-  success: 'Grazie! Il messaggio è stato inviato: ti risponderò al più presto.',
-  failure: 'Non è stato possibile inviare il messaggio. Riprova tra qualche minuto.',
-  inactive: 'Il modulo non è ancora attivo.',
-} as const;
+/** A request that has not answered after this long counts as failed. */
+const TIMEOUT_MS = 20_000;
 
-const MIN_MESSAGE = 10;
-const SITE_NAME = 'tiz-art.ch';
-
-type FieldName = 'name' | 'email' | 'message';
 type Control = HTMLInputElement | HTMLTextAreaElement;
+type Tone = 'busy' | 'error' | 'failure' | 'inactive';
 
-/** Italian error for a field, or "" when it is valid. */
-function errorFor(name: FieldName, control: Control): string {
-  const value = control.value.trim();
-  if (name === 'name') return value ? '' : TEXT.name;
-  if (name === 'email') {
-    if (!value) return TEXT.emailMissing;
-    return control.validity.typeMismatch ? TEXT.emailInvalid : '';
-  }
-  return value.length >= MIN_MESSAGE ? '' : TEXT.message;
+interface Field {
+  name: FieldName;
+  control: Control;
+  error: HTMLElement;
 }
 
-function setupForm(form: HTMLFormElement) {
+/** The work whose chip the inline script showed, from the JSON embedded in the page. */
+function readChosen(form: HTMLFormElement, chip: HTMLElement | null): ChosenOpera | null {
+  const slug = chip && !chip.hidden ? chip.dataset.slug : undefined;
+  if (!slug) return null;
+  try {
+    const works = JSON.parse(form.querySelector('[data-contact-opere]')?.textContent ?? '[]') as ChosenOpera[];
+    const work = works.find((candidate) => candidate.slug === slug);
+    return work ? { slug: work.slug, titolo: work.titolo, url: work.url } : null;
+  } catch {
+    return null;
+  }
+}
+
+function setup(root: HTMLElement) {
+  const form = root.querySelector<HTMLFormElement>('form[data-contact-form]');
+  const success = root.querySelector<HTMLElement>('[data-contact-success]');
+  const submit = form?.querySelector<HTMLButtonElement>('[data-submit]');
+  const status = form?.querySelector<HTMLElement>('[data-status]');
+  const live = root.querySelector<HTMLElement>('[data-contact-live]');
+  if (!form || !success || !submit || !status || !live) return;
+
+  const statusTitle = status.querySelector<HTMLElement>('[data-status-title]')!;
+  const statusText = status.querySelector<HTMLElement>('[data-status-text]')!;
+  const heading = success.querySelector<HTMLElement>('[data-grazie-title]')!;
+  const again = success.querySelector<HTMLButtonElement>('[data-contact-again]')!;
+  const chip = form.querySelector<HTMLElement>('[data-opera-chip]');
+  const operaField = form.elements.namedItem('opera') as HTMLInputElement;
+  const subjectField = form.elements.namedItem('subject') as HTMLInputElement;
   const active = form.dataset.active === 'true';
-  const submit = form.querySelector<HTMLButtonElement>('[data-submit]')!;
-  const submitLabel = submit.textContent ?? '';
-  const status = form.querySelector<HTMLElement>('[data-status]')!;
-  const select = form.querySelector<HTMLSelectElement>('select[name="opera"]');
-  const fields = (['name', 'email', 'message'] as const).map((name) => ({
+  const fields: Field[] = (['name', 'email', 'message'] as const).map((name) => ({
     name,
     control: form.elements.namedItem(name) as Control,
     error: form.querySelector<HTMLElement>(`[data-error-for="${name}"]`)!,
   }));
+
+  let chosen = readChosen(form, chip);
   let attempted = false;
+  let sending = false;
 
-  form.noValidate = true; // our Italian messages replace the browser's
+  // Our Italian messages replace the browser's; the button is usable (it is off without JS only
+  // while the form is not active); the no-JS notice is not needed.
+  form.noValidate = true;
+  submit.disabled = false;
+  form.querySelector('[data-contact-offline]')?.remove();
 
-  const showStatus = (message: string, tone?: 'success' | 'error') => {
-    status.textContent = message;
-    if (tone) status.dataset.tone = tone;
-    else delete status.dataset.tone;
+  const choose = (work: ChosenOpera | null) => {
+    chosen = work;
+    operaField.value = work ? operaLine(work) : '';
+    operaField.disabled = !work;
+    subjectField.value = subjectFor(work);
+  };
+  choose(chosen);
+
+  const announce = (text: string) => {
+    live.textContent = '';
+    // A moment later, so it is read after the focus change, not swallowed by it.
+    window.setTimeout(() => (live.textContent = text), 150);
   };
 
-  const validate = (field: (typeof fields)[number]) => {
-    const message = errorFor(field.name, field.control);
+  const showStatus = (tone?: Tone, text = '', title = '') => {
+    if (tone) status.dataset.tone = tone;
+    else delete status.dataset.tone;
+    statusTitle.textContent = title;
+    statusText.textContent = text;
+  };
+
+  const validate = (field: Field) => {
+    const message = fieldError(field.name, field.control.value);
     field.error.textContent = message;
-    field.control.setAttribute('aria-invalid', String(Boolean(message)));
+    if (message) field.control.setAttribute('aria-invalid', 'true');
+    else field.control.removeAttribute('aria-invalid');
     return !message;
   };
 
-  // After the first attempt, errors update while typing.
+  const clearErrors = () => {
+    attempted = false;
+    for (const field of fields) {
+      field.error.textContent = '';
+      field.control.removeAttribute('aria-invalid');
+    }
+  };
+
+  // After the first attempt, the errors follow the typing (and the summary goes once all is right).
   for (const field of fields) {
-    field.control.addEventListener('input', () => attempted && validate(field));
+    field.control.addEventListener('input', () => {
+      if (!attempted) return;
+      validate(field);
+      if (status.dataset.tone === 'error' && fields.every(({ control, name }) => !fieldError(name, control.value))) showStatus();
+    });
   }
 
-  const refreshOpera = select ? setupOperaSelect(form, select) : () => {};
+  if (chip) {
+    chip.querySelector('[data-opera-clear]')?.addEventListener('click', () => {
+      choose(null);
+      chip.hidden = true;
+      history.replaceState(history.state, '', withoutOpera(location.href));
+      fields[0].control.focus();
+      announce(MESSAGES.operaRemoved);
+    });
+  }
 
-  // After sending, the chosen artwork stays (with its preview): the form keeps its height, so the
-  // button and the "Grazie!" message do not jump, and the visitor still sees what they asked about.
-  const clearForm = () => {
-    const keep = select?.value ?? '';
-    form.reset();
-    if (select) select.value = keep;
-    refreshOpera();
+  const setSending = (on: boolean) => {
+    sending = on;
+    if (on) submit.setAttribute('aria-disabled', 'true');
+    else submit.removeAttribute('aria-disabled');
   };
+
+  const showSuccess = () => {
+    form.reset(); // empties the fields; the hidden opera / subject keep the chosen work
+    choose(chosen);
+    clearErrors();
+    showStatus();
+    form.hidden = true;
+    success.hidden = false;
+    heading.focus();
+    announce(MESSAGES.sent);
+  };
+
+  again.addEventListener('click', () => {
+    success.hidden = true;
+    form.hidden = false;
+    live.textContent = '';
+    fields[0].control.focus();
+  });
 
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
+    if (sending) return;
+
     attempted = true;
     const invalid = fields.filter((field) => !validate(field));
     if (invalid.length > 0) {
-      showStatus(TEXT.checkFields, 'error');
+      showStatus('error', MESSAGES.checkFields);
       invalid[0].control.focus();
       return;
     }
-    if (!active) return showStatus(TEXT.inactive, 'error');
-
-    const data = new FormData(form);
-    const chosen = select?.selectedOptions[0]?.value ? select.selectedOptions[0] : null;
-
-    // Honeypot ticked: pretend it worked, send nothing.
-    if (data.get('botcheck')) {
-      clearForm();
-      return showStatus(TEXT.success, 'success');
+    if (!active) {
+      showStatus('inactive', MESSAGES.inactive, MESSAGES.inactiveTitle);
+      return;
     }
 
-    const payload = {
-      access_key: data.get('access_key'),
-      subject: chosen ? `Richiesta su «${chosen.dataset.title}» — ${SITE_NAME}` : data.get('subject'),
-      from_name: SITE_NAME,
-      name: String(data.get('name')).trim(),
-      email: String(data.get('email')).trim(),
-      message: String(data.get('message')).trim(),
-      ...(chosen ? { opera: `${chosen.dataset.title} — ${chosen.dataset.url}` } : {}),
-    };
+    const data = new FormData(form);
+    if (data.get('botcheck')) {
+      showSuccess();
+      return;
+    }
 
-    submit.disabled = true;
-    submit.textContent = TEXT.sending;
-    showStatus('');
+    const payload = buildPayload({
+      accessKey: String(data.get('access_key') ?? ''),
+      name: String(data.get('name') ?? ''),
+      email: String(data.get('email') ?? ''),
+      message: String(data.get('message') ?? ''),
+      opera: chosen,
+    });
+
+    setSending(true);
+    showStatus('busy', MESSAGES.sending);
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => controller.abort(), TIMEOUT_MS);
     try {
       const response = await fetch(form.action, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify(payload),
+        signal: controller.signal,
       });
-      const result = (await response.json().catch(() => null)) as { success?: boolean } | null;
-      if (!response.ok || !result?.success) throw new Error(`Web3Forms: HTTP ${response.status}`);
-      clearForm();
-      attempted = false;
-      showStatus(TEXT.success, 'success');
+      const body: unknown = await response.json().catch(() => null);
+      if (!isSent(response.status, body)) throw new Error(`Web3Forms: HTTP ${response.status}`);
+      showSuccess();
     } catch {
-      showStatus(TEXT.failure, 'error');
+      showStatus('failure', MESSAGES.failure, MESSAGES.failureTitle);
     } finally {
-      submit.disabled = false;
-      submit.textContent = submitLabel;
+      window.clearTimeout(timer);
+      setSending(false);
     }
   });
 }
 
-/**
- * Pre-selects `?opera=<slug>` and shows the chosen work's thumbnail under the select.
- * Returns the function that redraws the preview (needed after form.reset()).
- */
-function setupOperaSelect(form: HTMLFormElement, select: HTMLSelectElement): () => void {
-  const preview = form.querySelector<HTMLElement>('[data-opera-preview]')!;
-  const image = preview.querySelector<HTMLImageElement>('[data-opera-image]')!;
-  const title = preview.querySelector<HTMLElement>('[data-opera-title]')!;
-  const meta = preview.querySelector<HTMLElement>('[data-opera-meta]')!;
-
-  const update = () => {
-    const option = select.selectedOptions[0];
-    if (!option?.value) {
-      preview.hidden = true;
-      return;
-    }
-    image.src = option.dataset.thumb ?? '';
-    title.textContent = option.dataset.title ?? '';
-    meta.textContent = option.dataset.meta ?? '';
-    preview.hidden = false;
-  };
-
-  const requested = new URLSearchParams(location.search).get('opera');
-  if (requested && [...select.options].some((option) => option.value === requested)) select.value = requested;
-
-  select.addEventListener('change', update);
-  update();
-  return update;
-}
-
 export function initContactForms() {
-  document.querySelectorAll<HTMLFormElement>('form[data-contact-form]').forEach(setupForm);
+  document.querySelectorAll<HTMLElement>('[data-contact]').forEach(setup);
 }

@@ -1,0 +1,91 @@
+---
+/**
+ * "Grazie!" after a message (frames 1j-sent / 1k-sent): the word in her hand (rosso, written in), the
+ * line "Il tuo messaggio è arrivato. Ti rispondo presto." and the actions in the slot (the marker button
+ * "Scrivi ancora" in the form, marker links on /contatti/grazie/).
+ *
+ * - `level`: 1 on /contatti/grazie/, 2 in the contact form's success panel (under the h1 "Scrivimi").
+ * - `id` / `focusable`: the form moves focus to the heading after sending (tabindex="-1").
+ * Hook: [data-grazie-title]. The write / settle animations start whenever the block is shown.
+ */
+import { MESSAGES } from '../lib/contatti';
+
+interface Props {
+  level?: 1 | 2;
+  id?: string;
+  focusable?: boolean;
+}
+
+const { level = 2, id, focusable = false } = Astro.props;
+const Heading = level === 1 ? 'h1' : 'h2';
+---
+
+<div class="grazie">
+  <Heading class="grazie__title tiz-write" id={id} tabindex={focusable ? -1 : undefined} data-grazie-title>Grazie!</Heading>
+  <p class="grazie__line tiz-settle" style="--d: 0.6s">{MESSAGES.sent}</p>
+  <div class="grazie__actions">
+    <slot />
+  </div>
+</div>
+
+<style>
+  .grazie {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 20px;
+  }
+
+  .grazie__title {
+    font-family: var(--tiz-font-mano);
+    font-size: clamp(80px, 26vw, 100px);
+    font-weight: 400;
+    line-height: 0.85;
+    color: var(--tiz-rosso);
+    text-wrap: nowrap;
+  }
+
+  /* Focus is moved here by script to announce the result; it is not a control, so no ring. */
+  .grazie__title:focus {
+    outline: none;
+  }
+
+  .grazie__line {
+    max-width: 30em;
+    font-size: 19px;
+    line-height: 1.5;
+  }
+
+  .grazie__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 32px;
+  }
+
+  /* The marker as a <button> ("Scrivi ancora"): no button chrome. */
+  .grazie__actions :global(button.tiz-marker) {
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+  }
+
+  @media (min-width: 640px) {
+    .grazie__title {
+      font-size: 120px;
+    }
+
+    .grazie__line {
+      font-size: 22px;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .grazie {
+      padding-top: 80px;
+    }
+
+    .grazie__title {
+      font-size: 140px;
+    }
+  }
+</style>
