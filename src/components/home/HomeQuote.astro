@@ -17,15 +17,17 @@ import { QUOTE_SIZES, firstName, quoteAttribution } from '../lib/home';
 interface Props {
   quote: Quote;
   opera: Opera;
+  /** The band follows the hero directly (no series section between them). */
+  afterHero?: boolean;
 }
 
-const { quote, opera } = Astro.props;
+const { quote, opera, afterHero = false } = Astro.props;
 const href = routes.opera(opera.id);
 const paint = operaPaintVar(opera, await getPublishedOpere());
 const attribution = quoteAttribution(firstName(SITE.nome), opera.data.titolo, formatDimensions(opera.data));
 ---
 
-<div class="home-quote">
+<div class:list={['home-quote', afterHero && 'home-quote--after-hero']}>
   <div class="home-quote__inner container">
     <div class="home-quote__work" data-reveal>
       <div class="home-quote__frame">
@@ -53,7 +55,7 @@ const attribution = quoteAttribution(firstName(SITE.nome), opera.data.titolo, fo
   }
 
   /* No series section between hero and band (few works): a little air under the hero works. */
-  :global(.home-hero) + .home-quote {
+  .home-quote--after-hero {
     margin-top: var(--tiz-s6);
   }
 

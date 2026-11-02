@@ -21,13 +21,16 @@ const quote = pickQuote(works, heroIds);
 const quoteOpera = quote ? published.find((opera) => opera.id === quote.id) : undefined;
 // Hero ids first: the series is the one of the first hero work.
 const series = pickSeries(works, [...heroIds, ...(quote ? [quote.id] : [])]);
+// Which sections follow the hero (HomeSeries renders nothing without works): spacing between them.
+const hasSeries = series.works.length > 0;
+const hasQuote = Boolean(quote && quoteOpera);
 
 // Motto and bio may both be empty (the admin allows it): never an empty meta description.
 const description = excerpt([profilo.motto, profilo.bio].filter(Boolean).join(' ') || `${SITE.nome} (${SITE.firma}), pittrice: opere su tela.`);
 ---
 
 <BaseLayout description={description} path="" jsonLd={[personJsonLd({ description: profilo.motto || undefined })]} footerVariant="home">
-  <HomeHero hero={hero} motto={profilo.motto} />
+  <HomeHero hero={hero} motto={profilo.motto} alone={!hasSeries && !hasQuote} />
   <HomeSeries series={series} total={published.length} />
-  {quote && quoteOpera && <HomeQuote quote={quote} opera={quoteOpera} />}
+  {quote && quoteOpera && <HomeQuote quote={quote} opera={quoteOpera} afterHero={!hasSeries} />}
 </BaseLayout>

@@ -71,6 +71,11 @@ const image =
       // DOMContentLoaded; if the reveal or the menu script did not run to the end (old browser, an
       // error), go back to the no-JS page: everything visible, the links as a row.
       document.documentElement.classList.add('js');
+      // Entered through a cross-document view transition: pages can skip load animations on the
+      // painting that morphs in (html.tiz-vt-in, see HomeHero), so it is visible when it lands.
+      window.addEventListener('pagereveal', function (event) {
+        if (event.viewTransition) document.documentElement.classList.add('tiz-vt-in');
+      });
       document.addEventListener('DOMContentLoaded', function () {
         var ready = document.documentElement.dataset;
         if (ready.reveal !== 'ready' || ready.menu !== 'ready') document.documentElement.classList.remove('js');

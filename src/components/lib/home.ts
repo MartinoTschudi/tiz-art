@@ -39,6 +39,18 @@ export function longestLine(lines: readonly string[]): number {
 }
 
 /**
+ * Above this many characters on its longest line the motto no longer gets the three lines of the
+ * design (they would shrink it towards body size, 34 px at 320 px for 26 characters): it flows as one
+ * text at a fixed hand size instead, the last word still in rosso.
+ */
+export const MOTTO_FLOW_CHARS = 26;
+
+/** True when the motto's lines (mottoParts) are too long for the three-line hero motto. */
+export function mottoFlows(lines: readonly string[]): boolean {
+  return longestLine(lines) > MOTTO_FLOW_CHARS;
+}
+
+/**
  * The link under the series: "Tutte le 12 opere". The series only shows works outside the hero
  * (up to 3), so there are always at least 4 when the link is on the page.
  */

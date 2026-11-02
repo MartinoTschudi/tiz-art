@@ -9,9 +9,17 @@
  *   heights come from the photos, so square, tall or wide works never overlap.
  * - < 1024: flow layout: motto → the large work with its stroke and note → intro. The narrow and the
  *   small work are hidden there (lazy, so never fetched).
+ * - ≥ 1024 the large work is at most 1.25 × its slot width high (500 px at 1280): a tall work gets
+ *   narrower instead of pushing the intro below the fold. The hero is 800 px high at 1280 (frame 1b),
+ *   less with the wall below that.
  * - Motto lines wipe in at 0 / .5 / 1 s, the beating dot follows the last word in place of the
  *   trailing "." or "!" (none after "?" or "…"; once per page). An empty motto shows the artist's
- *   name instead (no dot).
+ *   name instead (no dot). A long motto (lib/home.ts → mottoFlows) flows as one text at 40 / 56 px
+ *   instead of the three lines, its last word still in rosso.
+ * - Entered through a view transition (html.tiz-vt-in, set in BaseLayout on `pagereveal`), the
+ *   paintings skip their settle: the painting that morphs from the Opera page must land visible.
+ * - `alone`: nothing follows the hero on the page (only the hero works are published), so it keeps
+ *   some air above the footer.
  * - Each stroke is in the work's own paint (`colore`, chosen in the admin; lib/opere.ts → operaPaintVar),
  *   as everywhere on the site.
  */
@@ -20,14 +28,16 @@ import Stroke from '../Stroke.astro';
 import { SITE, routes } from '../lib/site';
 import { altText, getPublishedOpere, operaPaintVar, type ComposableOpera } from '../lib/opere';
 import { mottoParts, type HeroSlots } from '../lib/composition';
-import { HERO_SIZES, HOME_INTRO, heroNote, longestLine } from '../lib/home';
+import { HERO_SIZES, HOME_INTRO, heroNote, longestLine, mottoFlows } from '../lib/home';
 
 interface Props {
   hero: HeroSlots<ComposableOpera>;
   motto: string;
+  /** Nothing below the hero on the page. */
+  alone?: boolean;
 }
 
-const { hero, motto } = Astro.props;
+const { hero, motto, alone = false } = Astro.props;
 const published = await getPublishedOpere();
 
 const fromMotto = mottoParts(motto);
@@ -35,18 +45,23 @@ const parts = fromMotto.lines.length > 0 ? fromMotto : mottoParts(SITE.nome);
 const lines = parts.lines.slice(0, -1);
 const lastLine = parts.lines.at(-1) ?? '';
 const chars = longestLine(parts.lines);
+const flow = mottoFlows(parts.lines);
 // mottoParts strips a closing "." / "!": the dot stands for it. A "?" or "…" stays, without a dot.
 const dot = fromMotto.lines.length > 0 && /[\p{L}\p{N}]$/u.test(fromMotto.lastWord);
 
 const slots = (['large', 'narrow', 'small'] as const)
   .map((slot) => ({ slot, work: hero[slot] }))
   .filter((entry): entry is { slot: 'large' | 'narrow' | 'small'; work: ComposableOpera } => entry.work !== undefined)
-  .map(({ slot, work }) => ({
-    slot,
-    opera: work.opera,
-    paint: operaPaintVar(work.opera, published),
-    sizes: HERO_SIZES[slot],
-  }));
+  .map(({ slot, work }) => {
+    const cover = work.opera.data.immagini[0];
+    return {
+      slot,
+      opera: work.opera,
+      paint: operaPaintVar(work.opera, published),
+      sizes: HERO_SIZES[slot],
+      ratio: (cover.width / cover.height).toFixed(4),
+    };
+  });
 
 // Load choreography of the reference: stroke, then the painting settles (≥ 1024 the note and the
 // intro follow, see the styles).
@@ -59,27 +74,42 @@ const SHAPE = { large: 1, narrow: 2, small: 1 } as const;
 const ROTATE = { large: '-6deg', narrow: '8deg', small: '-3deg' } as const;
 ---
 
-<section class:list={['home-hero container', slots.length === 0 && 'home-hero--empty']} aria-labelledby="home-titolo">
+<section
+  class:list={['home-hero container', slots.length === 0 && 'home-hero--empty', alone && 'home-hero--alone']}
+  aria-labelledby="home-titolo"
+>
   <div class="home-hero__grid">
-    <h1 class="home-hero__motto" id="home-titolo" style={`--chars: ${chars}`}>
-      {fromMotto.lines.length > 0 && <span class="visually-hidden">{SITE.nome} — </span>}
-      {
-        lines.map((line, i) => (
-          <>
-            <span class="home-hero__line tiz-write" style={`--d: ${i * 0.5}s`}>
-              {line}
-            </span>{' '}
-          </>
-        ))
-      }
-      <span class="home-hero__line home-hero__line--last tiz-write" style={`--d: ${lines.length * 0.5}s`}>
-        {lastLine}{dot && <span class="home-hero__dot" aria-hidden="true"></span>}
-      </span>
-    </h1>
+    {
+      flow ? (
+        <h1 class="home-hero__motto home-hero__motto--flow tiz-write" id="home-titolo">
+          {fromMotto.lines.length > 0 && <span class="visually-hidden">{SITE.nome} — </span>}
+          {lines.join(' ')}{' '}
+          <span class="home-hero__line--last">
+            {lastLine}
+            {dot && <span class="home-hero__dot" aria-hidden="true" />}
+          </span>
+        </h1>
+      ) : (
+        <h1 class="home-hero__motto" id="home-titolo" style={`--chars: ${chars}`}>
+          {fromMotto.lines.length > 0 && <span class="visually-hidden">{SITE.nome} — </span>}
+          {lines.map((line, i) => (
+            <>
+              <span class="home-hero__line tiz-write" style={`--d: ${i * 0.5}s`}>
+                {line}
+              </span>{' '}
+            </>
+          ))}
+          <span class="home-hero__line home-hero__line--last tiz-write" style={`--d: ${lines.length * 0.5}s`}>
+            {lastLine}
+            {dot && <span class="home-hero__dot" aria-hidden="true" />}
+          </span>
+        </h1>
+      )
+    }
 
     {
-      slots.map(({ slot, opera, paint, sizes }) => (
-        <div class:list={['home-hero__work', `home-hero__work--${slot}`]}>
+      slots.map(({ slot, opera, paint, sizes, ratio }) => (
+        <div class:list={['home-hero__work', `home-hero__work--${slot}`]} style={`--ratio: ${ratio}`}>
           <div class="home-hero__frame">
             <Stroke
               class={`home-hero__stroke home-hero__stroke--${slot}`}
@@ -127,7 +157,7 @@ const ROTATE = { large: '-6deg', narrow: '8deg', small: '-3deg' } as const;
   }
 
   /* Nothing below the hero (only the hero works are published): keep the footer off the works. */
-  .home-hero:last-child {
+  .home-hero--alone {
     padding-bottom: var(--tiz-s7);
   }
 
@@ -156,6 +186,16 @@ const ROTATE = { large: '-6deg', narrow: '8deg', small: '-3deg' } as const;
 
   .home-hero__line--last {
     color: var(--tiz-rosso);
+  }
+
+  /* A long motto: one text in her hand, wrapping freely (the last word still in rosso), wiped in
+     as a whole. */
+  .home-hero__motto--flow {
+    max-width: 30ch;
+    font-size: 40px;
+    line-height: 0.95;
+    text-wrap: pretty;
+    overflow-wrap: break-word;
   }
 
   /* The beating dot in place of the full stop (22px at 150px). */
@@ -191,6 +231,12 @@ const ROTATE = { large: '-6deg', narrow: '8deg', small: '-3deg' } as const;
   .home-hero__link {
     display: block;
     color: var(--tiz-terra);
+  }
+
+  /* Entered through a view transition: the painting that morphs from the Opera page is shown at once
+     (no settle), so the transition lands on it instead of on an empty slot. */
+  :global(.tiz-vt-in) .home-hero__link {
+    animation: none;
   }
 
   .home-hero__media {
@@ -268,6 +314,11 @@ const ROTATE = { large: '-6deg', narrow: '8deg', small: '-3deg' } as const;
       align-items: start;
     }
 
+    /* The 800 px of frame 1b at 1280, scaled with the wall below that (taller works make it taller). */
+    .home-hero:not(.home-hero--empty) {
+      min-height: min(800px, 62.5vw);
+    }
+
     .home-hero__motto {
       /* Above the large work's stroke where it reaches into the column (never above a painting:
          the columns do not overlap). */
@@ -287,15 +338,23 @@ const ROTATE = { large: '-6deg', narrow: '8deg', small: '-3deg' } as const;
       }
     }
 
+    .home-hero__motto.home-hero__motto--flow {
+      font-size: 56px;
+    }
+
     @supports (width: 1cqi) {
       .home-hero__grid {
         --wall: min(622px, 52.53cqi);
       }
     }
 
+    /* The slot is 400 px wide at 1280 (0.643 of the wall); a work taller than 5:4 is capped at
+       1.25 × that height (500 px) and centred in the slot. */
     .home-hero__work--large {
       grid-column: 2 / 4;
       grid-row: 1;
+      justify-self: center;
+      width: min(100%, calc(var(--wall) * 0.64309 * 1.25 * var(--ratio, 1)));
       max-width: none;
       margin-top: 30px;
       padding-left: 0;

@@ -5,11 +5,13 @@ import assert from 'node:assert/strict';
 import {
   HERO_SIZES,
   HOME_INTRO,
+  MOTTO_FLOW_CHARS,
   QUOTE_SIZES,
   allWorksLabel,
   firstName,
   heroNote,
   longestLine,
+  mottoFlows,
   opereCountNote,
   quoteAttribution,
 } from '../../src/components/lib/home.ts';
@@ -48,9 +50,19 @@ describe('hero', () => {
     }
   });
 
-  test('the intro is Italian copy with its typography', () => {
-    assert.match(HOME_INTRO, /^Volti e corpi di donna/);
+  test('the intro is the design’s copy (frame 1b), with its typography', () => {
+    assert.equal(HOME_INTRO, 'Volti e corpi di donna, in acrilico e olio, a strati spessi. Quadri che nascono di getto — dal cuore, poi dalla testa.');
     assert.doesNotMatch(HOME_INTRO, /'/);
+  });
+
+  test('a motto flows as one text once its longest line is over 26 characters', () => {
+    assert.equal(MOTTO_FLOW_CHARS, 26);
+    assert.equal(mottoFlows(['Dialogo tra', 'testa e', 'cuore']), false);
+    assert.equal(mottoFlows(['a'.repeat(26), 'b', 'c']), false);
+    assert.equal(mottoFlows(['a'.repeat(27), 'b', 'c']), true);
+    assert.equal(mottoFlows([]), false);
+    // The long motto of the edge-case review: 2 balanced lines of ~70 characters + the last word.
+    assert.equal(mottoFlows(['Dipingo quello che sento quando la testa tace e il cuore parla forte, tra', 'Lostallo e il lago, con la spatola e con tanto colore, ogni', 'giorno']), true);
   });
 });
 
