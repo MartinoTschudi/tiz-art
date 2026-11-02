@@ -161,7 +161,7 @@ const domain = new URL(sito.dominio).host;
       align-items: flex-end;
     }
 
-    /* 31 px apart as in the design (17px text + 14px gap); 44 px targets on touch screens. */
+    /* 31 px apart as in the design (17px text + 14px gap); 44 px targets wherever touch is possible. */
     .tiz-footer__nav a {
       display: inline-flex;
       align-items: center;
@@ -181,7 +181,7 @@ const domain = new URL(sito.dominio).host;
     }
   }
 
-  @media (min-width: 640px) and (pointer: coarse) {
+  @media (min-width: 640px) and (any-pointer: coarse) {
     .tiz-footer__nav a {
       min-height: var(--tiz-hit);
     }

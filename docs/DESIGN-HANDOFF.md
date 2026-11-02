@@ -155,7 +155,7 @@ if you change a layout width). Rules to keep:
 - **Pure portfolio**: no prices, availability or shop elements.
 - **Admin is separate**: `public/admin/` (her phone admin) has its own look and is not part of
   this design; `/admin/anteprime.json` must keep working; don’t link the admin from the site.
-- **Quality bar**: semantic HTML, keyboard accessible, visible focus (`--focus-ring`), touch
+- **Quality bar**: semantic HTML, keyboard accessible, visible focus (`--tiz-focus`), touch
   targets ≥ 44 px, `prefers-reduced-motion`, everything readable without JS (except form submit
   and viewer), mobile-first, no horizontal scroll at 320 px.
 - **SEO** is handled in `BaseLayout.astro` (title "Titolo — Tiziana Tschudi Belloli", description,
