@@ -53,11 +53,11 @@
   --tiz-font-voce: 'Bricolage Grotesque', system-ui, sans-serif; /* everything else */
 
   /* ── Type scale (desktop → phone via clamp) ──────────────── */
-  --tiz-mano-xl: clamp(92px, 11vw, 150px); /* line-height .82 — home motto */
+  --tiz-mano-xl: clamp(92px, 11.72vw, 150px); /* line-height .82 — home motto (150 = the 1280 frame) */
   --tiz-mano-l: clamp(64px, 7vw, 92px); /* line-height .88 — opera title */
   --tiz-mano-m: clamp(40px, 5vw, 76px); /* quotes */
   --tiz-mano-s: clamp(28px, 2.4vw, 34px); /* captions, notes */
-  --tiz-display: clamp(64px, 11vw, 150px); /* weight 800, ls -0.05em, lh .8 */
+  --tiz-display: clamp(84px, 11.72vw, 150px); /* weight 800, ls -0.05em, lh .8 — 84 phone, 150 at 1280 */
   --tiz-h1-name: clamp(52px, 7vw, 88px); /* weight 800, ls -0.04em */
   --tiz-lead: clamp(19px, 1.6vw, 22px); /* lh 1.5 */
   --tiz-body: 17px; /* lh 1.55; 18–20px on Chi sono */
@@ -95,6 +95,12 @@
   --tiz-radius-stroke: 42% 58% 46% 54% / 56% 44% 56% 44%;
   --tiz-radius-stroke-2: 52% 48% 40% 60% / 46% 54% 46% 54%; /* site: the second stroke shape of the design */
   --tiz-shadow-tela: 0 1px 2px rgba(42, 28, 21, 0.25), 0 24px 40px -18px rgba(42, 28, 21, 0.45);
+  /* site: the same shadow, deeper, for the large Opera stage (frame 1f, ≥ 1024) */
+  --tiz-shadow-tela-l: 0 1px 2px rgba(42, 28, 21, 0.25), 0 30px 50px -20px rgba(42, 28, 21, 0.5);
+  /* site: small thumbnails, whose tela shadow would spill far below them: the contact chip (64 px,
+     frame 1j) and the Opera pager (84 px, frame 1f) */
+  --tiz-shadow-thumb: 0 8px 16px -8px rgba(42, 28, 21, 0.5);
+  --tiz-shadow-thumb-l: 0 10px 20px -10px rgba(42, 28, 21, 0.5);
   --tiz-bristle: repeating-linear-gradient(178deg, rgba(255, 255, 255, 0.12) 0 2px, transparent 2px 9px);
   --tiz-linen:
     repeating-linear-gradient(0deg, rgba(42, 28, 21, 0.03) 0 1px, transparent 1px 3px),

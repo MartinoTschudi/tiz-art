@@ -272,6 +272,11 @@ const many = photos.length > 1;
       --stage-h: 720px;
     }
 
+    /* The large stage of frame 1f: a deeper shadow. */
+    .gallery__frame {
+      box-shadow: var(--tiz-shadow-tela-l);
+    }
+
     @supports (height: 100svh) {
       .gallery {
         --stage-h: min(720px, max(560px, 100svh - 180px));

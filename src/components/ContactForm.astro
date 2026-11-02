@@ -258,7 +258,7 @@ const worksJson = JSON.stringify(works).replace(/</g, '\\u003c');
   .chip__thumb :global(img) {
     width: calc(var(--w) * 7 / 8);
     height: calc(var(--h) * 7 / 8);
-    box-shadow: 0 8px 16px -8px color-mix(in srgb, var(--tiz-terra) 50%, transparent);
+    box-shadow: var(--tiz-shadow-thumb);
   }
 
   .chip__text {
