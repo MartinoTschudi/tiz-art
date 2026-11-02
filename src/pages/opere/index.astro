@@ -1,55 +1,116 @@
 ---
 /**
- * All published works in order. With more than one series, each series gets its own heading
- * (works without a series come last, under "Altre opere").
+ * Opere (frames 1d / 1e / 1l, CONTRACTS §5.1): ONE list of all published works in display order,
+ * hung by eye at real relative scale (HungWorks), under the title and the handwritten note
+ * "{n} tele, appese come nello studio" ("{n} tele" on phones; "1 tela"). No grouping by series.
  */
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import PageHeader from '../../components/PageHeader.astro';
-import ArtworkGrid from '../../components/ArtworkGrid.astro';
+import HungWorks from '../../components/HungWorks.astro';
 import { SITE } from '../../components/lib/site';
 import { getPublishedOpere, groupByCollezione } from '../../components/lib/opere';
+import { opereCountNote } from '../../components/lib/home';
 
 const opere = await getPublishedOpere();
-const groups = groupByCollezione(opere);
-const grouped = groups.length > 1;
-const series = groups.map((group) => group.collezione).filter(Boolean);
+const series = groupByCollezione(opere)
+  .map((group) => group.collezione)
+  .filter(Boolean);
 const quoted = series.map((name) => `«${name}»`).join(', ');
+const note = opereCountNote(opere.length);
 
-const count = opere.length === 1 ? '1 opera' : `${opere.length} opere`;
-const lead = !grouped && series.length === 1 ? `Dalla serie ${quoted}` : undefined;
 const description =
   `Tutte le opere di ${SITE.nome} (${SITE.firma})` +
   (series.length > 0 ? `, tra cui ${series.length > 1 ? 'le serie' : 'la serie'} ${quoted}` : '.');
 ---
 
 <BaseLayout title="Opere" description={description} path="opere/">
-  <div class="container">
-    <PageHeader eyebrow={count} title="Opere" lead={lead} />
-
-    {opere.length === 0 && <p>Le opere saranno pubblicate presto.</p>}
+  <div class="opere container">
+    <header class="opere__head">
+      <h1 class="opere__title">Opere</h1>
+      {
+        opere.length > 0 && (
+          <p class="opere__note tiz-write" style="--d: .3s">
+            {note.short}<span class="opere__note-rest">{note.rest}</span>
+          </p>
+        )
+      }
+    </header>
 
     {
-      grouped
-        ? groups.map((group, i) => (
-            <section class="series" aria-labelledby={`serie-${i + 1}`}>
-              <h2 class="series__title" id={`serie-${i + 1}`}>
-                {group.collezione ? `«${group.collezione}»` : 'Altre opere'}
-              </h2>
-              <ArtworkGrid opere={group.opere} priorityCount={i === 0 ? 3 : 0} />
-            </section>
-          ))
-        : opere.length > 0 && <ArtworkGrid opere={opere} headingLevel={2} priorityCount={3} />
+      opere.length === 0 ? (
+        <p class="opere__empty">Le opere saranno pubblicate presto.</p>
+      ) : (
+        <div class="opere__list">
+          <HungWorks opere={opere} headingLevel={2} priorityCount={3} label="Tutte le opere" />
+        </div>
+      )
     }
   </div>
 </BaseLayout>
 
 <style>
-  .series + .series {
-    margin-top: var(--section-gap);
+  .opere__head {
+    padding-top: 28px;
   }
 
-  .series__title {
-    margin-bottom: var(--space-6);
-    font-size: var(--text-2xl);
+  .opere__title {
+    font: 800 84px/0.85 var(--tiz-font-voce);
+    letter-spacing: -0.05em;
+  }
+
+  .opere__note {
+    margin-top: 8px;
+    color: var(--tiz-terracotta);
+    font: 400 32px/1 var(--tiz-font-mano);
+    transform: rotate(-3deg);
+    transform-origin: left center;
+  }
+
+  /* Phones: "12 tele" only (frame 1e). */
+  .opere__note-rest {
+    display: none;
+  }
+
+  .opere__list {
+    padding-block: 36px 72px;
+  }
+
+  .opere__empty {
+    padding-block: 36px 72px;
+    font-size: var(--tiz-lead);
+  }
+
+  @media (min-width: 640px) {
+    .opere__head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      gap: 16px 36px;
+      padding-top: 56px;
+      padding-bottom: 24px;
+    }
+
+    .opere__title {
+      font-size: 120px;
+      line-height: 0.8;
+    }
+
+    .opere__note {
+      margin: 0 0 6px;
+      font-size: 44px;
+    }
+
+    .opere__note-rest {
+      display: inline;
+    }
+
+    .opere__list {
+      padding-block: 40px 120px;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .opere__title {
+      font-size: 150px;
+    }
   }
 </style>

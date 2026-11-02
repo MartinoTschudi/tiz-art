@@ -1,0 +1,151 @@
+---
+/**
+ * Home series section (frames 1b / 1c): the series title in Bricolage 800 with its year in her hand,
+ * the series line from SERIE_NOTE (lib/site.ts), up to 5 of its works hung by eye (HungWorks) and
+ * the link to all works. `series` comes from lib/composition.ts → pickSeries; without a series
+ * (name null) the section is "Le ultime opere". Nothing is rendered when there is no work to show.
+ */
+import HungWorks from '../HungWorks.astro';
+import { SERIE_NOTE, routes } from '../lib/site';
+import type { ComposableOpera } from '../lib/opere';
+import type { Series } from '../lib/composition';
+import { allWorksLabel } from '../lib/home';
+
+interface Props {
+  series: Series<ComposableOpera>;
+  /** Number of published works (for "Tutte le {n} opere"). */
+  total: number;
+}
+
+const { series, total } = Astro.props;
+const title = series.name ?? 'Le ultime opere';
+const note = series.name ? SERIE_NOTE[series.name] : undefined;
+---
+
+{
+  series.works.length > 0 && (
+    <section class="home-series" aria-labelledby="home-serie">
+      <div class="container">
+        <header class="home-series__head">
+          <h2 class="home-series__title" id="home-serie">
+            {title}
+            {series.name && series.year && (
+              <>
+                {' '}
+                <span class="home-series__year">{series.year}</span>
+              </>
+            )}
+          </h2>
+          {note && <p class="home-series__note">{note}</p>}
+        </header>
+        <div class="home-series__works">
+          <HungWorks opere={series.works.map((work) => work.opera)} headingLevel={3} />
+        </div>
+        <p class="home-series__more">
+          <a class="tiz-marker" href={routes.opere}>
+            {allWorksLabel(total)} <span aria-hidden="true">→</span>
+          </a>
+        </p>
+      </div>
+    </section>
+  )
+}
+
+<style>
+  .home-series__head {
+    padding-top: 72px;
+  }
+
+  .home-series__title {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    /* 64px; a little smaller on very narrow phones so "noi, DONNA." stays on one line. */
+    font: 800 min(64px, 16.4vw) / 0.9 var(--tiz-font-voce);
+    letter-spacing: -0.04em;
+    text-wrap: balance;
+  }
+
+  .home-series__year {
+    color: var(--tiz-terracotta);
+    font: 400 36px/1 var(--tiz-font-mano);
+    letter-spacing: 0;
+    transform: rotate(-3deg);
+    transform-origin: left center;
+  }
+
+  .home-series__note {
+    max-width: 340px;
+    margin-top: var(--tiz-s4);
+    color: var(--tiz-terra-3);
+    font-size: 17px;
+    line-height: 1.5;
+  }
+
+  .home-series__works {
+    padding-block: 36px 24px;
+  }
+
+  /* Home captions show the title only (frames 1b / 1c); the sizes are on Opere and the work page. */
+  .home-series__works :global(.tiz-hung__size) {
+    display: none;
+  }
+
+  .home-series__works :global(.tiz-hung__list) {
+    gap: 48px;
+  }
+
+  .home-series__more {
+    padding-block: 8px 64px;
+  }
+
+  @media (min-width: 640px) {
+    .home-series__head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 24px 40px;
+      padding-top: 80px;
+    }
+
+    .home-series__title {
+      flex-direction: row;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 0 24px;
+      font-size: clamp(64px, 10vw, 128px);
+      line-height: 0.85;
+    }
+
+    .home-series__year {
+      font-size: 56px;
+      transform: rotate(-4deg);
+    }
+
+    .home-series__note {
+      margin: 0 0 12px;
+      font-size: 19px;
+    }
+
+    .home-series__works {
+      padding-block: 40px;
+    }
+
+    .home-series__works :global(.tiz-hung__list) {
+      gap: 40px 48px;
+    }
+
+    .home-series__more {
+      display: flex;
+      justify-content: center;
+      padding-block: 24px 96px;
+    }
+
+    .home-series__more .tiz-marker {
+      padding-inline: 4px;
+      font-size: 19px;
+    }
+  }
+</style>
