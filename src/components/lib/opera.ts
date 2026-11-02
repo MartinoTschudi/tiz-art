@@ -97,6 +97,17 @@ export function pagerThumbSizes(ratio: number): string {
   return `${Math.ceil(PAGER_THUMB_H * safeRatio(ratio))}px`;
 }
 
+/**
+ * Previous / next position for the work at `index` of a list of `length` (it wraps around). With two
+ * works the other one is "next" from the first and "previous" from the second, never both (the same
+ * work on both sides looks like a mistake). Fewer than two works or an unknown index: none.
+ */
+export function neighbourIndexes(length: number, index: number): { prev?: number; next?: number } {
+  if (!Number.isInteger(index) || index < 0 || index >= length || length < 2) return {};
+  if (length === 2) return index === 0 ? { next: 1 } : { prev: 0 };
+  return { prev: (index - 1 + length) % length, next: (index + 1) % length };
+}
+
 export interface Counter {
   /** "01 / 12" as shown: the number with two digits at least. */
   text: string;

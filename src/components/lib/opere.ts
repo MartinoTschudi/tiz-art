@@ -4,6 +4,7 @@
 import { getCollection, getEntry, type CollectionEntry } from 'astro:content';
 import { SITE } from './site';
 import { heroSlots, paintName, paintVar, type PaintName } from './composition';
+import { neighbourIndexes } from './opera';
 
 export type Opera = CollectionEntry<'opere'>;
 export type Profilo = CollectionEntry<'profilo'>;
@@ -57,14 +58,10 @@ export function groupByCollezione(opere: Opera[]): Gruppo[] {
     .sort((a, b) => Number(a.collezione === '') - Number(b.collezione === ''));
 }
 
-/** Previous / next published work (wraps around), for the artwork page. */
+/** Previous / next published work for the artwork page (wraps around; lib/opera.ts → neighbourIndexes). */
 export function neighbours(opere: Opera[], slug: string): { prev?: Opera; next?: Opera } {
-  const index = opere.findIndex((opera) => opera.id === slug);
-  if (index === -1 || opere.length < 2) return {};
-  return {
-    prev: opere[(index - 1 + opere.length) % opere.length],
-    next: opere[(index + 1) % opere.length],
-  };
+  const { prev, next } = neighbourIndexes(opere.length, opere.findIndex((opera) => opera.id === slug));
+  return { prev: prev === undefined ? undefined : opere[prev], next: next === undefined ? undefined : opere[next] };
 }
 
 // Italian decimal comma ("100,5"), exactly as the admin shows sizes and asks her to type them.

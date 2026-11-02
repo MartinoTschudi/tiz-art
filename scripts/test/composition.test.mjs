@@ -5,14 +5,18 @@ import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   AL,
+  GUTTERS,
+  LONG_TITLE,
   MT,
   PAINT_CYCLE,
   SWL,
   SWR,
   SWT,
   firstSentence,
+  gutterAt,
   heroSlots,
   hungAt,
+  isLongTitle,
   mottoParts,
   paintName,
   paintVar,
@@ -345,5 +349,28 @@ describe('pickSeries', () => {
     const list = [work('hero', { collezione: 'Mari' }), work('a'), work('b')];
     assert.deepEqual(pickSeries(list, ['hero']), { name: null, year: null, works: [list[1], list[2]] });
     assert.deepEqual(pickSeries([], []), { name: null, year: null, works: [] });
+  });
+});
+
+describe('page frame', () => {
+  test('gutter per breakpoint (20 / 32 / 48, the 1280 and 390 frames)', () => {
+    assert.deepEqual(GUTTERS.map(({ gutter }) => gutter), [48, 32, 20]);
+    assert.equal(gutterAt(320), 20);
+    assert.equal(gutterAt(639), 20);
+    assert.equal(gutterAt(640), 32);
+    assert.equal(gutterAt(1023), 32);
+    assert.equal(gutterAt(1024), 48);
+    assert.equal(gutterAt(2000), 48);
+  });
+});
+
+describe('long titles', () => {
+  test('over 40 characters (whitespace collapsed, accents count once)', () => {
+    assert.equal(LONG_TITLE, 40);
+    assert.equal(isLongTitle('Il coraggio di guardare oltre'), false);
+    assert.equal(isLongTitle('à'.repeat(40)), false);
+    assert.equal(isLongTitle('à'.repeat(41)), true);
+    assert.equal(isLongTitle(`${'a'.repeat(20)}    ${'b'.repeat(19)}`), false);
+    assert.equal(isLongTitle('Il lungo dialogo silenzioso tra la testa che pensa troppo'), true);
   });
 });

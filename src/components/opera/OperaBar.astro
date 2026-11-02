@@ -79,9 +79,21 @@ const { prev, next, ask } = Astro.props;
       padding-inline: var(--tiz-s3);
       font-size: 16px;
       line-height: 1.1;
-      /* 320 px: two lines rather than overflowing */
+      /* Two lines rather than overflowing, should a phone be narrower still */
       white-space: normal;
       text-wrap: balance;
+    }
+  }
+
+  /* 320–359 px: a little smaller, so «Chiedi di quest’opera» keeps one line (frame 1g). */
+  @media (max-width: 359.98px) {
+    .opera-bar {
+      gap: var(--tiz-s2);
+    }
+
+    .opera-bar__ask {
+      padding-inline: var(--tiz-s2);
+      font-size: 15px;
     }
   }
 </style>

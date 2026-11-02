@@ -2,7 +2,7 @@
 // Node's type stripping. Pure numbers: no content is read.
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
-import { PAGE_MAX, STAGE, operaCounter, pagerThumbSizes, stageSizes, thumbSizes } from '../../src/components/lib/opera.ts';
+import { PAGE_MAX, STAGE, neighbourIndexes, operaCounter, pagerThumbSizes, stageSizes, thumbSizes } from '../../src/components/lib/opera.ts';
 
 /** The width the CSS gives the stage painting at a viewport width (the rule stageSizes encodes). */
 function cssWidth(vw, ratio) {
@@ -73,5 +73,25 @@ describe('operaCounter', () => {
     assert.equal(operaCounter(11, 12).text, '12 / 12');
     assert.equal(operaCounter(99, 120).text, '100 / 120');
     assert.equal(operaCounter(0, 1).text, '01 / 1');
+  });
+});
+
+describe('neighbourIndexes', () => {
+  test('wraps around from three works up', () => {
+    assert.deepEqual(neighbourIndexes(12, 0), { prev: 11, next: 1 });
+    assert.deepEqual(neighbourIndexes(12, 11), { prev: 10, next: 0 });
+    assert.deepEqual(neighbourIndexes(3, 1), { prev: 0, next: 2 });
+  });
+
+  test('two works: the other one once, never on both sides', () => {
+    assert.deepEqual(neighbourIndexes(2, 0), { next: 1 });
+    assert.deepEqual(neighbourIndexes(2, 1), { prev: 0 });
+  });
+
+  test('one work, an unknown index: none', () => {
+    assert.deepEqual(neighbourIndexes(1, 0), {});
+    assert.deepEqual(neighbourIndexes(12, -1), {});
+    assert.deepEqual(neighbourIndexes(12, 12), {});
+    assert.deepEqual(neighbourIndexes(0, 0), {});
   });
 });

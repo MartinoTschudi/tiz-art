@@ -354,6 +354,18 @@ function mostCommonSeries(works: readonly SeriesWork[]): string | null {
   return best;
 }
 
+// ── Long titles ───────────────────────────────────────────────────────────────────────────────────
+
+/**
+ * A work title or a series name longer than this (characters) gets the next smaller type step where
+ * it is a display heading (the Opera h1, the home series title): up to 120 are allowed.
+ */
+export const LONG_TITLE = 40;
+
+export function isLongTitle(text: string): boolean {
+  return [...collapse(text)].length > LONG_TITLE;
+}
+
 // ── Utilities ─────────────────────────────────────────────────────────────────────────────────────
 
 function collapse(text: string): string {

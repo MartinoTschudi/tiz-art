@@ -22,6 +22,7 @@ import { altText, getPublishedOpere, neighbours, operaDescription, operaPaintVar
 import { fullImageUrl, socialImage } from '../../components/lib/images';
 import { artworkJsonLd } from '../../components/lib/structured-data';
 import { operaCounter } from '../../components/lib/opera';
+import { isLongTitle } from '../../components/lib/composition';
 
 export async function getStaticPaths() {
   const opere = await getPublishedOpere();
@@ -43,6 +44,8 @@ const counter = operaCounter(
 const series = data.collezione.trim();
 const hasText = data.testo.trim() !== '';
 const ask = routes.contattiOpera(opera.id);
+// A title over 40 characters (up to 120 are allowed) gets the next smaller size.
+const longTitle = isLongTitle(data.titolo);
 
 const description = operaDescription(data);
 const shareImage = await socialImage(data.immagini[0], altText(data));
@@ -82,7 +85,7 @@ const jsonLd = artworkJsonLd(opera, { images: fullImages.map((url) => absoluteUr
             )
           }
         </p>
-        <h1 class="opera__title">{data.titolo}</h1>
+        <h1 class:list={['opera__title', longTitle && 'opera__title--long']}>{data.titolo}</h1>
         <ArtworkFacts data={data} />
         {
           hasText && (
@@ -145,6 +148,10 @@ const jsonLd = artworkJsonLd(opera, { images: fullImages.map((url) => absoluteUr
     font: 400 64px/0.9 var(--tiz-font-mano);
     letter-spacing: 0;
     text-wrap: balance;
+  }
+
+  .opera__title--long {
+    font-size: 48px;
   }
 
   .opera__text {
@@ -211,6 +218,10 @@ const jsonLd = artworkJsonLd(opera, { images: fullImages.map((url) => absoluteUr
       line-height: 0.88;
     }
 
+    .opera__title--long {
+      font-size: 64px;
+    }
+
     .opera__text {
       font-size: var(--tiz-lead);
       line-height: 1.5;
@@ -238,7 +249,7 @@ const jsonLd = artworkJsonLd(opera, { images: fullImages.map((url) => absoluteUr
       max-width: none;
     }
 
-    .opera__title {
+    .opera__title:not(.opera__title--long) {
       font-size: 92px;
     }
 

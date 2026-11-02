@@ -3,7 +3,7 @@
  * Previous / next work at the bottom of an artwork page (frame 1f; the list wraps around): two halves
  * with a dashed divider, each with an 84 px thumbnail, "← Precedente" / "Successiva →" and the title
  * in her hand; gesso on hover. From 640 px only: on phones the fixed bar (opera/OperaBar.astro) has
- * the arrows.
+ * the arrows. With two works only one half shows (lib/opera.ts → neighbourIndexes).
  */
 import ResponsivePicture from './ResponsivePicture.astro';
 import { routes } from './lib/site';
@@ -126,7 +126,10 @@ const sizesOf = (opera: Opera) => pagerThumbSizes(cover(opera).width / cover(ope
     font: 500 var(--tiz-small) / 1 var(--tiz-font-voce);
   }
 
+  /* max-width: in the right half the column is aligned to the end (shrink-to-fit), where a long
+     single word would otherwise keep its full width and run over the other half. */
   .pager__title {
+    max-width: 100%;
     font: 400 36px/1 var(--tiz-font-mano);
     text-wrap: balance;
     overflow-wrap: break-word;
