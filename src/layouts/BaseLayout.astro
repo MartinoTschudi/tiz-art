@@ -130,9 +130,8 @@ const image =
 
 <script>
   // Reveal on scroll: [data-reveal] elements get .is-in when they enter the viewport (global.css runs
-  // the animation). Elements revealed together are staggered by --tiz-stagger in document order,
-  // unless they set their own --tiz-reveal-delay inline.
-  const STAGGER_MS = 90;
+  // the animation). Elements revealed together are staggered in document order: the n-th gets
+  // --tiz-reveal-step: n and waits n × --tiz-stagger, unless it sets its own --tiz-reveal-delay inline.
   const MAX_STEPS = 7;
   const root = document.documentElement;
   const pending = [...document.querySelectorAll<HTMLElement>('[data-reveal]:not(.is-in)')];
@@ -140,7 +139,7 @@ const image =
   const reveal = (elements: HTMLElement[]) => {
     elements.forEach((el, i) => {
       if (!el.style.getPropertyValue('--tiz-reveal-delay')) {
-        el.style.setProperty('--tiz-reveal-stagger', `${Math.min(i, MAX_STEPS) * STAGGER_MS}ms`);
+        el.style.setProperty('--tiz-reveal-step', String(Math.min(i, MAX_STEPS)));
       }
       el.classList.add('is-in');
     });

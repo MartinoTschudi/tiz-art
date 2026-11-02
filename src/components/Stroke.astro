@@ -57,7 +57,7 @@ const style = [
     transform: rotate(var(--tiz-stroke-r, -5deg));
     pointer-events: none;
     animation: tiz-stroke var(--tiz-dur-stroke) var(--tiz-ease-brush) both;
-    animation-delay: var(--tiz-stroke-d, calc(var(--tiz-reveal-delay, 0ms) + var(--tiz-reveal-stagger, 0ms)));
+    animation-delay: var(--tiz-stroke-d, calc(var(--tiz-reveal-delay, 0ms) + var(--tiz-reveal-step, 0) * var(--tiz-stagger)));
   }
 
   .tiz-stroke--2 {

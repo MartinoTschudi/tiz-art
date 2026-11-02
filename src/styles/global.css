@@ -277,7 +277,7 @@ a:hover {
 
   .js [data-reveal].is-in {
     animation: tiz-settle var(--tiz-dur-settle) var(--tiz-ease-settle) backwards;
-    animation-delay: calc(var(--tiz-reveal-delay, 0ms) + var(--tiz-reveal-stagger, 0ms));
+    animation-delay: calc(var(--tiz-reveal-delay, 0ms) + var(--tiz-reveal-step, 0) * var(--tiz-stagger));
   }
 
   .js [data-reveal='write'].is-in {
