@@ -53,7 +53,7 @@ Se leggi **«E-mail o password non corretti»**: controlla le maiuscole e gli sp
 - quante opere hai (e quante sono nascoste);
 - i pulsanti **Profilo** e **Cambia l’ordine**;
 - le tue opere, nell’ordine del sito. Ogni opera mostra la foto, il titolo, l’anno e le misure.
-  - **★ In evidenza**: appare nella pagina iniziale del sito.
+  - **★ In evidenza**: le prime 3 sono i quadri grandi in cima alla pagina iniziale (vedi § 9).
   - **Nascosta**: non compare nelle pagine del sito. Non è però segreta: non caricare mai foto o testi privati.
 - in basso il grande pulsante **+ Nuova opera**;
 - in alto **↻** (ricarica la lista) ed **Esci**.
@@ -77,10 +77,12 @@ Tocca un’opera per aprirla e modificarla.
    Sul sito appaiono come «100 × 140 cm», solo se ci sono tutte e due.
 6. **Tecnica**, per esempio «Acrilico su tela». Mentre scrivi l’admin ti propone quelle che hai già usato.
 7. **Collezione**: il nome della serie, per esempio «noi, DONNA.». Puoi lasciarlo vuoto.
-8. **Testo**: il racconto dell’opera. Per un **nuovo paragrafo lascia una riga vuota**.
-9. **In evidenza in home**: accendilo se vuoi l’opera nella pagina iniziale.
-10. **Visibile sul sito**: è già acceso. Spegnilo solo se l’opera non deve ancora vedersi.
-11. Tocca **Salva**.
+8. **Colore della pennellata**: il colore della pennellata dietro al quadro, sul sito (vedi § 9a).
+   Se non sai, lascia **Automatico**.
+9. **Testo**: il racconto dell’opera. Per un **nuovo paragrafo lascia una riga vuota**.
+10. **In evidenza in home**: accendilo se vuoi l’opera tra i quadri grandi in cima alla pagina iniziale (§ 9).
+11. **Visibile sul sito**: è già acceso. Spegnilo solo se l’opera non deve ancora vedersi.
+12. Tocca **Salva**.
 
 Vedi «Preparo le foto…», «Carico la foto 1 di 2…», «Pubblico…». Tieni lo schermo acceso finché non hai finito.
 Poi **Fatto!** «… sarà online tra circa 2 minuti».
@@ -136,11 +138,29 @@ Nella lista l’opera ha l’etichetta **Nascosta**. Per farla tornare, riaccend
 
 ## 9. Mettere un’opera in evidenza nella pagina iniziale
 
+In cima alla pagina iniziale ci sono **tre quadri grandi**, accanto al tuo motto. Sono le **prime 3 opere
+in evidenza**, nell’ordine della lista.
+
 1. Apri l’opera.
 2. Accendi **In evidenza in home**.
 3. Tocca **Salva**.
 
-Nella lista compare **★ In evidenza**. Bastano 4–6 opere in evidenza.
+Nella lista compare **★ In evidenza**. Ne bastano **3**: se ne accendi di più, contano solo le prime 3
+della lista (per scegliere quali, cambia l’ordine, § 10). Se sono meno di 3, il sito aggiunge le prime opere
+della lista. Il sito sistema da solo i tre quadri: il più quadrato viene grande, il più alto e stretto va
+di fianco.
+
+## 9a. Il colore della pennellata
+
+Sul sito, dietro a ogni quadro c’è una **pennellata di colore**, come un segno sul muro dello studio.
+Puoi scegliere tu il colore:
+
+1. Apri l’opera.
+2. In **Colore della pennellata** tocca un colore: **Ocra**, **Rosso**, **Terracotta**, **Ottanio** o **Blu**.
+3. Tocca **Salva**.
+
+Con **Automatico** (già scelto per le opere nuove) il colore lo decide il sito, alternandoli lungo la
+lista. Il colore non tocca mai il quadro: la foto resta com’è.
 
 ## 10. Cambiare l’ordine delle opere
 
@@ -261,6 +281,12 @@ Opzioni: `--skip-verify`, `--force`, `--out <file>`; senza terminale legge le va
 
 Lo stato del finto GitHub è su `http://localhost:8787/__state`. Il parametro `?api=` funziona solo su
 `localhost`: sul sito vero viene ignorato.
+
+### Il campo «colore»
+Ogni `opera.json` ha `colore` (`"ocra"`, `"rosso"`, `"terracotta"`, `"ottanio"`, `"blu"` o `null` =
+automatico, CONTRACTS §4.1). Un file salvato da un admin più vecchio può non averlo: il sito lo legge come
+`null`, `npm run check:content` dà solo un avviso (non un errore) e il prossimo **Salva** di Tiziana lo
+aggiunge.
 
 ### Se Tiziana chiama
 - «Problema nell’ultima pubblicazione»: apri **Dettagli** (GitHub Actions), guarda il passo fallito.
