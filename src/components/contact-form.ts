@@ -83,6 +83,7 @@ function setup(root: HTMLElement) {
   // while the form is not active); the no-JS notice is not needed.
   form.noValidate = true;
   submit.disabled = false;
+  submit.removeAttribute('aria-describedby');
   form.querySelector('[data-contact-offline]')?.remove();
 
   const choose = (work: ChosenOpera | null) => {
@@ -104,6 +105,9 @@ function setup(root: HTMLElement) {
     else delete status.dataset.tone;
     statusTitle.textContent = title;
     statusText.textContent = text;
+    // The slot is below the privacy note: on a phone it may be under the fold after "Invia". (An
+    // error summary needs no scrolling: focus goes to the first wrong field.)
+    if (tone === 'inactive' || tone === 'failure') status.scrollIntoView({ block: 'nearest' });
   };
 
   const validate = (field: Field) => {

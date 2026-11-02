@@ -81,7 +81,7 @@ const worksJson = JSON.stringify(works).replace(/</g, '\\u003c');
     <div class="chip" hidden data-opera-chip>
       <span class="chip__thumb" data-opera-thumb></span>
       <p class="chip__text">
-        <span class="chip__label">Mi interessa</span>
+        <span class="chip__label">Mi interessa</span>{' '}
         <span class="chip__title" data-opera-title></span>
       </p>
       <button class="chip__remove" type="button" aria-label="Rimuovi l’opera dal messaggio" data-opera-clear>
@@ -105,6 +105,9 @@ const worksJson = JSON.stringify(works).replace(/</g, '\\u003c');
           img.alt = '';
           img.width = work.width;
           img.height = work.height;
+          // The CSS size, set before the file arrives (a late thumbnail must not move the fields).
+          img.style.setProperty('--w', work.width + 'px');
+          img.style.setProperty('--h', work.height + 'px');
           img.decoding = 'async';
           img.src = work.thumb;
           chip.querySelector('[data-opera-thumb]').appendChild(img);
@@ -165,10 +168,22 @@ const worksJson = JSON.stringify(works).replace(/</g, '\\u003c');
     </div>
 
     <div class="actions">
-      <button class="tiz-btn actions__submit" type="submit" disabled={!active} data-submit>
+      <button
+        class="tiz-btn actions__submit"
+        type="submit"
+        disabled={!active}
+        aria-describedby={active ? undefined : 'contatto-offline'}
+        data-submit
+      >
         <span>Invia <span aria-hidden="true">→</span></span>
       </button>
-      {/* Reserved height: messages appear here without moving anything. */}
+      <p class="privacy">
+        Nome, <span class="nowrap">e-mail</span> e messaggio servono solo per risponderti: li ricevo
+        per <span class="nowrap">e-mail</span> tramite il servizio Web3Forms, che può trattarli all’estero.
+        Non li uso per nient’altro.
+      </p>
+      {/* Last in the form, with the height of the tallest message reserved: a message never moves
+          anything, and while there is none the space is only part of the margin above the footer. */}
       <div class="actions__slot">
         <p class="status" role="status" data-status>
           <strong class="status__title" data-status-title></strong>{' '}
@@ -176,7 +191,7 @@ const worksJson = JSON.stringify(works).replace(/</g, '\\u003c');
         </p>
         {
           !active && (
-            <p class="status status--offline" data-tone="inactive" data-contact-offline>
+            <p class="status status--offline" id="contatto-offline" data-tone="inactive" data-contact-offline>
               <strong class="status__title">{MESSAGES.inactiveTitle}</strong>{' '}
               <span>Per ora i messaggi non partono.</span>
             </p>
@@ -184,12 +199,6 @@ const worksJson = JSON.stringify(works).replace(/</g, '\\u003c');
         }
       </div>
     </div>
-
-    <p class="privacy">
-      Nome, <span class="nowrap">e-mail</span> e messaggio servono solo per risponderti: li ricevo
-      per <span class="nowrap">e-mail</span> tramite il servizio Web3Forms, che può trattarli all’estero.
-      Non li uso per nient’altro.
-    </p>
 
     {/* Honeypot: invisible to people, bots tend to tick it (Web3Forms rejects the POST then). */}
     <div class="trap" aria-hidden="true">
@@ -214,7 +223,7 @@ const worksJson = JSON.stringify(works).replace(/</g, '\\u003c');
 
 <style>
   /* ── Form: one column. The reserved error line under each field is part of the spacing, so the
-     fields sit about 30 px apart as in the frames, with or without an error. ── */
+     fields sit 26 / 30 px apart as in the frames (phone / desktop), with or without an error. ── */
   .contact-form {
     display: flex;
     flex-direction: column;
@@ -243,13 +252,13 @@ const worksJson = JSON.stringify(works).replace(/</g, '\\u003c');
     display: flex;
   }
 
-  /* The painting whole, inside the box (never cropped); the only effect is its shadow. */
+  /* The painting whole, fitted into the box by the build (--w / --h: 96 × 64 at most; 7/8 of that on
+     phones, as in frame 1k), never cropped. Its only effect is the small shadow of frame 1j: the tela
+     shadow is sized for whole paintings and would spill out of the chip. */
   .chip__thumb :global(img) {
-    width: auto;
-    height: auto;
-    max-width: 84px;
-    max-height: 56px;
-    box-shadow: var(--tiz-shadow-tela);
+    width: calc(var(--w) * 7 / 8);
+    height: calc(var(--h) * 7 / 8);
+    box-shadow: 0 8px 16px -8px color-mix(in srgb, var(--tiz-terra) 50%, transparent);
   }
 
   .chip__text {
@@ -310,7 +319,7 @@ const worksJson = JSON.stringify(works).replace(/</g, '\\u003c');
   .field__label {
     font-size: 15px;
     font-weight: 500;
-    line-height: 1.2;
+    line-height: 1;
     color: var(--tiz-terra-2);
     transition: color var(--tiz-dur-fast) var(--tiz-ease-settle);
   }
@@ -359,22 +368,22 @@ const worksJson = JSON.stringify(works).replace(/</g, '\\u003c');
     transition: background-color 600000s 0s;
   }
 
-  /* Reserved line: an error appearing does not push the form around. */
+  /* Reserved line: an error appearing does not push the form around. Closer to its own field than
+     to the next label. */
   .field__error {
-    min-height: calc(14px * 1.4);
-    margin-top: -2px;
+    min-height: calc(14px * 1.3);
+    margin-top: -4px;
     font-size: 14px;
-    line-height: 1.4;
+    line-height: 1.3;
     color: var(--tiz-error);
   }
 
-  /* ── Send ── */
+  /* ── Send: the button, the privacy note, then the reserved message slot ── */
   .actions {
     display: flex;
     flex-direction: column;
     align-items: stretch;
-    gap: 12px;
-    margin-top: 2px;
+    gap: 16px;
   }
 
   .actions__submit {
@@ -387,8 +396,9 @@ const worksJson = JSON.stringify(works).replace(/</g, '\\u003c');
     cursor: not-allowed;
   }
 
+  /* The tallest message: the not-active note, title + two lines, at 320 px and in the 1024 px column. */
   .actions__slot {
-    min-height: 68px;
+    min-height: 88px;
   }
 
   .status {
@@ -438,7 +448,6 @@ const worksJson = JSON.stringify(works).replace(/</g, '\\u003c');
   }
 
   .privacy {
-    margin-top: 6px;
     max-width: 34em;
     font-size: 14px;
     line-height: 1.45;
@@ -455,18 +464,17 @@ const worksJson = JSON.stringify(works).replace(/</g, '\\u003c');
 
   @media (min-width: 640px) {
     .contact-form {
-      gap: 8px;
+      gap: 10px;
     }
 
     .chip {
       gap: 16px;
-      margin-bottom: 22px;
       padding: 12px;
     }
 
     .chip__thumb :global(img) {
-      max-width: 96px;
-      max-height: 64px;
+      width: var(--w);
+      height: var(--h);
     }
 
     .chip__title {
@@ -483,7 +491,6 @@ const worksJson = JSON.stringify(works).replace(/</g, '\\u003c');
 
     .actions__slot {
       align-self: stretch;
-      min-height: 64px;
     }
   }
 

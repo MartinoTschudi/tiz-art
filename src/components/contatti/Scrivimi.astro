@@ -13,8 +13,8 @@
  * (text-shadow) that keeps the bristles away from the glyphs: measured in Chrome at 1280 and 390 px,
  * the background behind every glyph pixel is ≥ 4.6:1. "Scrivimi" is large text (3:1) and needs none.
  * Without the halo the line would be invisible on the bare lino until the stroke passes; with it, it
- * would glow there for a moment, so the line is written in too, 0.4 s behind the stroke (the stroke's
- * edge stays ≥ 60 px ahead of the text's at every width).
+ * would glow there for a moment, so the line is written in too, after "Scrivimi" has started and
+ * 0.8 s behind the stroke (the stroke's edge stays well ahead of the text's at every width).
  */
 import Stroke from '../Stroke.astro';
 
@@ -29,7 +29,7 @@ const Title = titleId ? 'h1' : 'p';
 <div class="scrivimi" aria-hidden={titleId ? undefined : 'true'}>
   <Stroke class="scrivimi__stroke" color="var(--tiz-ottanio)" rotate="-4deg" delay="0.1s" />
   <Title class="scrivimi__title tiz-write" id={titleId} style="--d: 0.7s">Scrivimi</Title>
-  <p class="scrivimi__line tiz-write" style="--d: 0.5s">
+  <p class="scrivimi__line tiz-write" style="--d: 0.9s">
     <span class="scrivimi__more">Per un quadro, per vedere le tele dal vivo, o solo per due parole. </span>Leggo
     tutto e rispondo io, di persona.
   </p>
