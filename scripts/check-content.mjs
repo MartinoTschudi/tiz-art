@@ -32,7 +32,7 @@ const WEB3FORMS_KEY_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a
 const COLORI = ['ocra', 'rosso', 'terracotta', 'ottanio', 'blu'];
 
 // Pages of the new site (CONTRACTS.md 5.1). An old WordPress path must never replace one of them.
-const FIXED_PAGES = ['/', '/opere/', '/chi-sono/', '/contatti/'];
+const FIXED_PAGES = ['/', '/opere/', '/chi-sono/', '/contatti/', '/contatti/grazie/'];
 const RESERVED_PREFIXES = ['/opere/', '/admin/', '/_astro/'];
 
 const WARN_IMAGE_BYTES = 3 * 1024 * 1024;

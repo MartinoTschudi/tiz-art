@@ -330,6 +330,7 @@ const ERROR_CASES = [
   ['old path without trailing slash', setSito({ redirectVecchioSito: { '/2023/09/23/vecchia': '/' } }), /invalid old path "\/2023\/09\/23\/vecchia"/],
   ['old path with a query', setSito({ redirectVecchioSito: { '/?p=12/': '/' } }), /invalid old path/],
   ['old path replacing a page', setSito({ redirectVecchioSito: { '/opere/': '/' } }), /old path "\/opere\/", which would replace a page/],
+  ['old path replacing the contact form’s thank-you page', setSito({ redirectVecchioSito: { '/contatti/grazie/': '/' } }), /old path "\/contatti\/grazie\/", which would replace a page/],
   ['old path inside the admin', setSito({ redirectVecchioSito: { '/admin/vecchio/': '/' } }), /would replace a page/],
   ['target that is not a site path', setSito({ redirectVecchioSito: { '/vecchia/': 'https://example.com/' } }), /invalid target "https:\/\/example\.com\/"/],
   ['redirect to itself', setSito({ redirectVecchioSito: { '/vecchia/': '/vecchia/' } }), /redirects "\/vecchia\/" to itself/],
