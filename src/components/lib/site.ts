@@ -41,3 +41,11 @@ export const routes = {
   /** Contact form with the artwork pre-selected (read by ContactForm). */
   contattiOpera: (slug: string) => withBase(`contatti/?opera=${encodeURIComponent(slug)}`),
 } as const;
+
+/**
+ * Short line under a series title on the home page (site copy, not admin data). Keyed by the exact
+ * `collezione`; a series without an entry simply shows no line.
+ */
+export const SERIE_NOTE: Record<string, string> = {
+  'noi, DONNA.': 'Sorellanza, coraggio, gioventù, istinto. Donne che chiudono gli occhi per guardarsi dentro.',
+};

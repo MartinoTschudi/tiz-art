@@ -3,6 +3,7 @@
  */
 import { getCollection, getEntry, type CollectionEntry } from 'astro:content';
 import { SITE } from './site';
+import { paintName, paintVar, type PaintName } from './composition';
 
 export type Opera = CollectionEntry<'opere'>;
 export type Profilo = CollectionEntry<'profilo'>;
@@ -120,4 +121,46 @@ export function operaDescription(data: Opera['data']): string {
   if (data.testo.trim()) return excerpt(data.testo);
   const facts = [data.anno, data.tecnica.toLowerCase(), formatDimensions(data)].filter(Boolean).join(', ');
   return excerpt(`«${data.titolo}»${facts ? `, ${facts}` : ''}. Un’opera di ${SITE.nome}.`);
+}
+
+/**
+ * Colour of the work's brushstroke: its `colore`, or the automatic one from its position in the
+ * published list (lib/composition.ts → paintName), so it is the same on every page. `published` =
+ * getPublishedOpere(). Reads `colore` defensively: works saved by an older admin have no such key.
+ */
+export function operaPaint(opera: Opera, published: readonly Opera[]): PaintName {
+  const colore = (opera.data as Record<string, unknown>).colore;
+  return paintName(typeof colore === 'string' ? colore : null, published.findIndex(({ id }) => id === opera.id));
+}
+
+/** The paint as a CSS value for Stroke: "var(--tiz-ottanio)". */
+export function operaPaintVar(opera: Opera, published: readonly Opera[]): string {
+  return paintVar(operaPaint(opera, published));
+}
+
+/** A work in the plain shape the composition rules take (heroSlots, pickQuote, pickSeries). */
+export interface ComposableOpera {
+  id: string;
+  w: number | null;
+  h: number | null;
+  /** width / height from the centimetres, else from the cover photo. */
+  ratio: number;
+  featured: boolean;
+  testo: string;
+  collezione: string;
+  anno: number | null;
+  opera: Opera;
+}
+
+/**
+ *   const works = composable(await getPublishedOpere());
+ *   const hero = heroSlots(works);                          // hero.large?.opera …
+ *   const quote = pickQuote(works, hero.picked.map((w) => w.id));
+ */
+export function composable(opere: readonly Opera[]): ComposableOpera[] {
+  return opere.map((opera) => {
+    const { larghezza: w, altezza: h, immagini, inEvidenza, testo, collezione, anno } = opera.data;
+    const ratio = w && h ? w / h : immagini[0].width / immagini[0].height;
+    return { id: opera.id, w, h, ratio, featured: inEvidenza, testo, collezione, anno, opera };
+  });
 }
