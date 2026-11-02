@@ -1,31 +1,156 @@
 ---
 /**
- * 404 page (dist/404.html; GitHub Pages serves it for any unknown URL, so every link is absolute
- * with the base path).
+ * 404 page (dist/404.html) in the «Lo studio» language: a handwritten heading, one line, marker links
+ * to the works and home, and a blank canvas with a brushstroke behind it (decorative).
+ *
+ * GitHub Pages serves this file for any unknown URL at any depth (/tiz-art/a/b/c/), so every link and
+ * asset URL must be absolute with the base path: links come from `routes`, assets from Astro (which
+ * writes them as /<base>/_astro/…), the stroke filter is a same-document #fragment. No canonical
+ * (`path={null}`), noindex.
  */
 import BaseLayout from '../layouts/BaseLayout.astro';
-import PageHeader from '../components/PageHeader.astro';
+import Stroke from '../components/Stroke.astro';
 import { routes } from '../components/lib/site';
 ---
 
 <BaseLayout title="Pagina non trovata" description="Questa pagina non esiste o è stata spostata." path={null} noindex>
-  <div class="container">
-    <PageHeader
-      eyebrow="Errore 404"
-      title="Pagina non trovata"
-      lead="La pagina che cerchi non esiste o è stata spostata."
-    />
-    <p class="not-found__links">
-      <a class="button" href={routes.opere}>Vedi le opere</a>
-      <a class="button button--quiet" href={routes.home}>Torna alla home</a>
-    </p>
+  <div class="nf">
+    <div class="nf__grid container">
+      <div class="nf__text">
+        <hgroup>
+          <p class="nf__label">pagina non trovata</p>
+          <h1 class="nf__title tiz-write" style="--d: 200ms">Qui la tela è ancora bianca.</h1>
+        </hgroup>
+        <p class="nf__lead">La pagina che cerchi non c’è, ma i quadri sono tutti al loro posto.</p>
+        <p class="nf__links">
+          <a class="tiz-marker" href={routes.opere}>Vedi le opere <span aria-hidden="true">→</span></a>
+          <a class="tiz-marker" href={routes.home}>Torna alla home</a>
+        </p>
+      </div>
+
+      <div class="nf__canvas" aria-hidden="true">
+        <Stroke color="var(--tiz-terracotta)" left="-20%" top="16%" width="128%" height="84%" rotate="-6deg" delay="300ms" />
+        <span class="nf__tela tiz-settle" style="--d: 500ms"></span>
+      </div>
+    </div>
   </div>
 </BaseLayout>
 
 <style>
-  .not-found__links {
+  /* The stroke reaches into the gutter: clip at the page edge, never scroll sideways. */
+  .nf {
+    overflow-x: clip;
+  }
+
+  .nf__grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 56px;
+    padding-block: 28px 72px;
+  }
+
+  .nf__text {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    max-width: var(--tiz-measure);
+  }
+
+  .nf__label {
+    width: fit-content;
+    color: var(--tiz-terracotta);
+    font: 400 36px/1 var(--tiz-font-mano);
+    transform: rotate(-2deg);
+    transform-origin: left;
+  }
+
+  .nf__title {
+    margin-top: 14px;
+    font: 400 64px/0.9 var(--tiz-font-mano);
+  }
+
+  .nf__lead {
+    max-width: 30em;
+    font-size: 18px;
+    line-height: 1.6;
+  }
+
+  .nf__links {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--space-3);
+    align-items: center;
+    gap: 8px 32px;
+  }
+
+  /* A plain word space before the arrow, as on Chi sono (frame 1h). */
+  .nf__links .tiz-marker {
+    gap: 0.3em;
+  }
+
+  /* A blank canvas leaning in the studio (decorative): 4:5, the painting shadow, a stroke behind. */
+  .nf__canvas {
+    position: relative;
+    isolation: isolate;
+    width: min(190px, 100% - 40px);
+    margin-left: 40px;
+  }
+
+  .nf__tela {
+    display: block;
+    aspect-ratio: 4 / 5;
+    background: var(--tiz-linen), var(--tiz-gesso);
+    box-shadow: var(--tiz-shadow-tela);
+  }
+
+  @media (min-width: 640px) {
+    .nf__grid {
+      gap: 64px;
+      padding-block: 48px 96px;
+    }
+
+    .nf__label {
+      font-size: 40px;
+    }
+
+    .nf__title {
+      font-size: 88px;
+    }
+
+    .nf__lead {
+      font-size: 20px;
+    }
+
+    .nf__canvas {
+      width: 260px;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .nf__grid {
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      /* Room for the stroke, which reaches 20% of the canvas to its left: never over the text. */
+      column-gap: clamp(112px, 10vw, 140px);
+      padding-block: 72px 120px;
+    }
+
+    .nf__text {
+      gap: 28px;
+    }
+
+    .nf__label {
+      font-size: 44px;
+    }
+
+    .nf__title {
+      margin-top: 20px;
+      font-size: clamp(96px, 9vw, 120px);
+      line-height: 0.88;
+    }
+
+    .nf__canvas {
+      width: 320px;
+      margin: 0 40px 0 0;
+    }
   }
 </style>
