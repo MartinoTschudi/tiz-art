@@ -96,10 +96,17 @@ export function withSaved(data, result) {
   return { ...data, opere };
 }
 
-/** The loaded data with the new order of reorder() (`ordini`: slug → ordine). */
+/**
+ * The loaded data with the new order of reorder() (`ordini`: slug → ordine). reorder() rewrote the
+ * works whose `ordine` changed in the current format, so those are no longer `outdated`.
+ */
 export function withOrder(data, ordini) {
   const opere = data.opere
-    .map((o) => (ordini[o.slug] === undefined ? o : { ...o, data: { ...o.data, ordine: ordini[o.slug] } }))
+    .map((o) => {
+      const ordine = ordini[o.slug];
+      if (ordine === undefined) return o;
+      return { ...o, data: { ...o.data, ordine }, outdated: Boolean(o.outdated) && o.data.ordine === ordine };
+    })
     .sort(compareOpere);
   return { ...data, opere };
 }

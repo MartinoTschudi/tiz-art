@@ -235,6 +235,19 @@ describe('Store: artworks', () => {
     assert.equal(reloaded.outdated, false, 'now in the admin’s format');
   });
 
+  test('«Salva l’ordine» rewrites a work without «colore»: withOrder no longer marks it outdated', async () => {
+    const before = await store.load();
+    assert.equal(before.opere.find((o) => o.slug === LEGACY).outdated, true);
+    const order = await store.reorder(before.opere.map((o) => o.slug).reverse());
+    assert.notEqual(order.ordini[LEGACY], seedWork(LEGACY).data.ordine, 'the reorder rewrites the legacy work');
+    const after = await store.load();
+    assert.equal(after.opere.find((o) => o.slug === LEGACY).outdated, false);
+    assert.match(mock.read(`${OPERE}/${LEGACY}/opera.json`), /\n {2}"colore": null,\n/);
+    // What the admin shows right after the reorder is what the next load says (an unchanged «Salva» makes no commit).
+    const view = (d) => d.opere.map((o) => [o.slug, o.data, o.outdated]);
+    assert.deepEqual(view(withOrder(before, order.ordini)), view(after));
+  });
+
   test('hide: pubblicata false is saved as a normal edit', async () => {
     await store.saveOpera({ slug: 'istinto', fields: fields({ titolo: 'Istinto', pubblicata: false }), photos: [{ file: '01.jpg' }] });
     assert.equal(assertValidFolder('istinto').pubblicata, false);
