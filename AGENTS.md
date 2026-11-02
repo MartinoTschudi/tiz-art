@@ -50,8 +50,8 @@ or assets, also the `/tiz-art/` build above. These are the same checks Deploy ru
 - **Text**: user-facing text is Italian with correct typography (’ « » … ×); code comments in English.
   Artwork texts are plain text (`\n\n` = paragraph), always rendered as text, never as HTML/Markdown.
 - **Site**: semantic HTML, no UI framework, no Tailwind, no trackers or third-party scripts. All design values
-  are custom properties in `src/styles/tokens.css`; the redesign brief is `docs/DESIGN-HANDOFF.md`. Artwork
-  images go through `astro:assets` (AVIF/WebP); never crop a painting.
+  are custom properties in `src/styles/tokens.css`; the design («Lo studio») is described as built in
+  `docs/DESIGN-HANDOFF.md`. Artwork images go through `astro:assets` (AVIF/WebP); never crop a painting.
 - **Admin**: plain ES modules, no build step, no CDN, no external fonts; strict CSP in `index.html`. Never
   put untrusted strings into `innerHTML` (use `textContent`/DOM APIs). Phone first: 375 px wide, touch
   targets ≥ 44 px. It reads data only from the GitHub API, never from the deployed site.
@@ -69,6 +69,6 @@ or assets, also the `/tiz-art/` build above. These are the same checks Deploy ru
 | Site address and base path, redirects, sitemap | `astro.config.mjs` (from `SITE_URL` / `BASE_PATH`) |
 | Admin | `public/admin/` (`js/` modules, `setup/` page); local mock: `scripts/dev/admin-dev.mjs` |
 | Content validator | `scripts/check-content.mjs` |
-| Tests | `scripts/test/` (`admin-*.test.mjs`, `content-*.test.mjs`; `npm test` runs every `scripts/test/*.test.mjs` through the glob in `package.json`, there is no index file). The admin tests use the committed fixture `scripts/test/fixtures/repo/`, never the live `src/content` (Deploy runs `npm test` after every save of Tiziana) |
-| Docs | `docs/SETUP.md` (owner), `docs/GUIDA-ADMIN.md` (Tiziana, Italian), `docs/DESIGN-HANDOFF.md` |
+| Tests | `scripts/test/` (`admin-*.test.mjs`, `content-*.test.mjs`, and the site's design rules `composition`, `home`, `opera`, `chi`, `contatti`; `npm test` runs every `scripts/test/*.test.mjs` through the glob in `package.json`, there is no index file). The admin tests use the committed fixture `scripts/test/fixtures/repo/`, never the live `src/content` (Deploy runs `npm test` after every save of Tiziana) |
+| Docs | `docs/SETUP.md` (owner), `docs/GUIDA-ADMIN.md` (Tiziana, Italian), `docs/DESIGN-HANDOFF.md` (the site's design as built) |
 | Site icons | `public/favicon.svg` → `node scripts/dev/site-icons.mjs` renders `favicon-32.png` and `apple-touch-icon.png` |

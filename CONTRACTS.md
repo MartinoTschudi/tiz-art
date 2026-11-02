@@ -14,9 +14,9 @@ page has a "Chiedi di quest’opera" action that opens the contact form pre-fill
 Her mother-tongue admin (`/admin/`) runs on a phone: log in, take/choose photos, fill a few fields,
 save. Saving commits to GitHub; GitHub Actions rebuilds and publishes the site (≈1–3 minutes).
 
-The visual design is intentionally **basic and neutral** for now. A designer (Claude Design) will
-redesign the public site later, so the structure must be clean, semantic and easy to restyle
-(see `docs/DESIGN-HANDOFF.md`). The admin keeps its own simple, phone-first look.
+The public site is built in the design **«Lo studio»** by Claude Design; `docs/DESIGN-HANDOFF.md`
+describes it as built. Its structure stays clean, semantic and easy to restyle. The admin keeps its own
+simple, phone-first look.
 
 ## 2. Stack
 
@@ -102,7 +102,8 @@ package.json, CONTRACTS.md       fixed — do not edit (report needed changes in
 | `pubblicata` | boolean | `false` = hidden everywhere on the public site (draft), no page generated |
 | `creataIl`, `aggiornataIl` | string | ISO 8601 UTC |
 
-- **Brushstroke colour.** The site paints the stroke with `var(--tiz-<colore>)` (design tokens: ocra
+- **Brushstroke colour.** Every stroke behind this work, on every page (lists, the work's page, Chi sono,
+  the home hero and quote band), is `var(--tiz-<colore>)` (design tokens: ocra
   `#d6982b`, rosso `#c3262b`, terracotta `#b5532f`, ottanio `#1d7377`, blu `#2c55a0`). When `colore` is
   `null` (or the key is missing), the colour is automatic:
   `PAINT_CYCLE = ['ocra', 'rosso', 'ottanio', 'terracotta', 'blu']`, indexed by the work's position in the full
@@ -150,21 +151,23 @@ package.json, CONTRACTS.md       fixed — do not edit (report needed changes in
 
 | path | content |
 |---|---|
-| `/` | **Hero composition**: the motto (last word in rosso; the artist's name when the motto is empty) and up to 3 works = the first 3 published `inEvidenza` works in display order, filled up with the first published works not already picked when fewer than 3. Slots by aspect ratio: the most square → large (ties: larger canvas, then display order), the tallest of the rest → narrow, the other → small; the handwritten note "{titolo}, {anno}" under the large one. Below 1024 px: motto → the large work → paragraph. Then the **series section**: the `collezione` of the first hero work (else the most common non-empty one) with the highest `anno` of its works and up to 5 of its published works that are not in the hero or the quote ("Le ultime opere" and the first 5 such works when no work has a series), and the link "Tutte le {n} opere →". Then the **quote band**: the first sentence (20–140 chars) of a published work's text outside the hero, searched from the last work in display order backwards, with that painting; hidden when there is none; the attribution links to the work. Then the large home footer. No bio teaser, no contact call-to-action |
+| `/` | **Hero composition**: the motto (last word in rosso; the artist's name when the motto is empty) and up to 3 works = the first 3 published `inEvidenza` works in display order, filled up with the first published works not already picked when fewer than 3. Slots by aspect ratio: the most square → large (ties: larger canvas, then display order), the tallest of the rest → narrow, the other → small; the handwritten note "{titolo}, {anno}" under the large one; the intro paragraph with "Guarda le opere →". Below 1024 px: motto → the large work → paragraph. Then the **series section**: the `collezione` of the first hero work (else the most common non-empty one) with the highest `anno` of its works and up to 5 of its published works that are not in the hero or the quote ("Le ultime opere" and the first 5 such works when no work has a series), and the link "Tutte le {n} opere →". Then the **quote band**: the first sentence (20–140 chars) of a published work's text outside the hero, searched from the last work in display order backwards, with that painting; hidden when there is none; the attribution links to the work. Then the large home footer. No bio teaser, no contact call-to-action |
 | `/opere/` | ONE list of all published works in display order (`ordine`), hung at real relative scale ("{n} tele, appese come nello studio"; "1 tela"). No grouping or filtering by `collezione` |
 | `/opere/<slug>/` | the cover on a stage with the work's brushstroke behind it (whole painting); the other photos as thumbnails under it (tap = swap the stage image; without JS a link to the full-size JPEG); tap on the stage = full-screen viewer with zoom, keyboard + swipe; "{nn} / {total} · {collezione}" (series part omitted when empty), title, `<dl>` Anno / Misure / Tecnica (empty ones skipped), her text + "— TIZ" (the block is omitted when the text is empty), "Chiedi di quest’opera →" → `/contatti/?opera=<slug>`, previous/next work (wrapping around). Phone: a fixed bottom bar with ← · the button · → |
-| `/chi-sono/` | `profilo.ritratto` (4:5 crop allowed here only: it is a photo, not a painting) with an ocra brushstroke and the note "nello studio"; without a portrait the first hero painting, uncropped, captioned «titolo», anno. Name, motto (last word in rosso), bio (`profilo.bio`, plain text), links to the works and to the contact page |
+| `/chi-sono/` | `profilo.ritratto` (4:5 crop allowed here only: it is a photo, not a painting) with an ocra brushstroke and the note "nello studio"; without a portrait the first hero painting, uncropped, captioned «titolo», anno. Name, motto (last word in rosso), bio (`profilo.bio`, plain text), "Vedi le opere" and "Scrivimi →" |
 | `/contatti/` | contact form (5.4) |
 | `/contatti/grazie/` | the form's success page for visitors without JS (5.4); `noindex`, not in the sitemap |
-| `/404.html` | Italian 404 with link home |
+| `/404.html` | Italian 404: "Qui la tela è ancora bianca.", "Vedi le opere →" and "Torna alla home" |
 | old WordPress paths | static redirect pages from `sito.json` `redirectVecchioSito` (meta refresh + canonical, noindex); a target artwork that is hidden or deleted redirects to `/opere/` instead |
 | `/admin/anteprime.json` | section 6 |
 | `/sitemap-index.xml`, `/robots.txt` | sitemap of public pages only (not `/contatti/grazie/`); robots allows all except `/admin/` (preview: disallow all) |
 
-Header: "TIZ" + name → home; nav Opere · Chi sono · Contatti, the active section marked (`aria-current`, also on
-`/opere/<slug>/`). On phones a "Menu" button opens a full-screen menu; without JS the three links show as a row.
-Footer: "TIZ" and "© {year} Tiziana Tschudi Belloli"; the home page has a larger footer with the motto and the
-nav Opere · Chi sono · Scrivimi (= Contatti).
+Header: "TIZ" + name → home; nav Opere · Chi sono · Contatti with the marker on the current section:
+`aria-current="page"` on its own page, `aria-current="true"` on a page inside it (`/opere/<slug>/`,
+`/contatti/grazie/`). On phones a "Menu" button opens a full-screen menu ("Chiudi" closes it); without JS the
+three links show as a row.
+Footer: "TIZ" and "© {year} Tiziana Tschudi Belloli"; the home page has a larger footer with the motto, the
+nav Opere · Chi sono · Scrivimi (= Contatti) and "© {year} Tiziana Tschudi Belloli · tiz-art.ch".
 **No address, phone, e-mail or social links anywhere.**
 
 ### 5.2 Images
@@ -192,8 +195,8 @@ chip and clears the input. An unknown or hidden slug is ignored.
 (`sito.json`), `subject` ("Nuovo messaggio da tiz-art.ch" or "Richiesta su «Titolo» — tiz-art.ch"),
 `from_name` "tiz-art.ch", `name`, `email`, `message`, `opera` (title + URL when chosen). A filled honeypot
 fakes success and sends nothing (it is not sent to Web3Forms). Italian validation: the error shows inline
-under its field (`aria-describedby`) and the input is kept; the button is disabled while sending; error and
-status lines reserve their height (no layout shift).
+under its field (`aria-describedby`) and the input is kept; the button ("Invia →") is disabled while sending;
+error and status lines reserve their height (no layout shift).
 
 **Success**: "Grazie!" replaces the form (focus moved to it, announced through `aria-live`), with "Scrivi
 ancora" to bring back an empty form.
