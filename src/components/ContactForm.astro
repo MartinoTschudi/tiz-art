@@ -25,7 +25,7 @@
 import Grazie from './contatti/Grazie.astro';
 import { SITE, absoluteUrl, routes } from './lib/site';
 import type { Opera } from './lib/opere';
-import { CONTACT_THUMB_WIDTH, webpUrl } from './lib/images';
+import { CONTACT_THUMB_SCALE, webpUrl } from './lib/images';
 import { FROM_NAME, LIMITS, MESSAGES, MIN_MESSAGE, SUBJECT, WEB3FORMS_ENDPOINT } from './lib/contatti';
 
 interface Props {
@@ -40,7 +40,8 @@ const active = SITE.web3formsAccessKey !== '';
 const redirect = absoluteUrl(routes.contattiGrazie);
 
 // The chip's thumbnail box (CSS px, desktop; CSS scales it down on phones). The painting is fitted
-// inside it, never cropped: 64 px high, or narrower when it is very wide.
+// inside it, never cropped: 64 px high, or lower when it is very wide. The file is twice that size
+// (e.g. Estasi 31 × 64 → a 62 px wide WebP), never more.
 const THUMB_BOX = { width: 96, height: 64 };
 
 const works = await Promise.all(
@@ -48,12 +49,13 @@ const works = await Promise.all(
     const cover = opera.data.immagini[0];
     const ratio = cover.width / cover.height;
     const height = Math.min(THUMB_BOX.height, Math.round(THUMB_BOX.width / ratio));
+    const width = Math.max(1, Math.round(height * ratio));
     return {
       slug: opera.id,
       titolo: opera.data.titolo,
       url: absoluteUrl(routes.opera(opera.id)),
-      thumb: await webpUrl(cover, CONTACT_THUMB_WIDTH),
-      width: Math.max(1, Math.round(height * ratio)),
+      thumb: await webpUrl(cover, CONTACT_THUMB_SCALE * width),
+      width,
       height,
     };
   }),
@@ -182,8 +184,9 @@ const worksJson = JSON.stringify(works).replace(/</g, '\\u003c');
         per <span class="nowrap">e-mail</span> tramite il servizio Web3Forms, che può trattarli all’estero.
         Non li uso per nient’altro.
       </p>
-      {/* Last in the form, with the height of the tallest message reserved: a message never moves
-          anything, and while there is none the space is only part of the margin above the footer. */}
+      {/* Last in the form, with the height of the tallest message reserved (see .actions__slot): a
+          message never moves anything, and while there is none the space is part of the margin
+          above the footer. */}
       <div class="actions__slot">
         <p class="status" role="status" data-status>
           <strong class="status__title" data-status-title></strong>{' '}
@@ -368,13 +371,15 @@ const worksJson = JSON.stringify(works).replace(/</g, '\\u003c');
     transition: background-color 600000s 0s;
   }
 
-  /* Reserved line: an error appearing does not push the form around. Closer to its own field than
-     to the next label. */
+  /* Reserved line: an error appearing does not push the form around. It sits right under its own
+     underline and keeps its distance from the next label (14 px desktop, 10 phone; it was 11 / 7),
+     within the frames' field spacing (26 / 30 px). */
   .field__error {
-    min-height: calc(14px * 1.3);
-    margin-top: -4px;
+    min-height: calc(1em + 5px);
+    margin-top: -5px;
+    padding-bottom: 5px;
     font-size: var(--tiz-small);
-    line-height: 1.3;
+    line-height: 1;
     color: var(--tiz-error);
   }
 
@@ -396,9 +401,18 @@ const worksJson = JSON.stringify(works).replace(/</g, '\\u003c');
     cursor: not-allowed;
   }
 
-  /* The tallest message: the not-active note, title + two lines, at 320 px and in the 1024 px column. */
+  /* Reserved for the tallest message the form can show: while it is not active, the not-active note
+     (title + two lines, 85 px at 320 px and in the 1024 px column); once active, the failure line
+     (65 px on phones, 44 px from 640). The slot may reach 40 px into the space under the form
+     (contatti/Pagina.astro keeps at least 56 px there), so while it is empty it adds little to the
+     margin above the footer, and a message still moves nothing. */
   .actions__slot {
     min-height: 88px;
+    margin-bottom: -40px;
+  }
+
+  .contact-form[data-active='true'] .actions__slot {
+    min-height: 66px;
   }
 
   .status {
@@ -491,6 +505,10 @@ const worksJson = JSON.stringify(works).replace(/</g, '\\u003c');
 
     .actions__slot {
       align-self: stretch;
+    }
+
+    .contact-form[data-active='true'] .actions__slot {
+      min-height: 44px;
     }
   }
 
