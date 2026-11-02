@@ -152,14 +152,14 @@ di fianco.
 
 ## 9a. Il colore della pennellata
 
-Sul sito, dietro a ogni quadro c’è una **pennellata di colore**, come un segno sul muro dello studio.
-Puoi scegliere tu il colore:
+Sul sito, dietro ai quadri c’è una **pennellata di colore**, come un segno sul muro dello studio.
+Per ogni opera puoi scegliere tu il colore:
 
 1. Apri l’opera.
 2. In **Colore della pennellata** tocca un colore: **Ocra**, **Rosso**, **Terracotta**, **Ottanio** o **Blu**.
 3. Tocca **Salva**.
 
-Con **Automatico** (già scelto per le opere nuove) il colore lo decide il sito, alternandoli lungo la
+Con **Automatico** (già scelto per le opere nuove) sceglie il sito, che alterna i cinque colori lungo la
 lista. Il colore non tocca mai il quadro: la foto resta com’è.
 
 ## 10. Cambiare l’ordine delle opere
