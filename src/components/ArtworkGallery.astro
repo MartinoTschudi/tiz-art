@@ -1,125 +1,317 @@
 ---
 /**
- * Photos of one work on its page: the cover large (always whole, fits the screen height), the other
- * photos as thumbnails below. Every photo opens the full-screen viewer; without JavaScript the
- * links open the full-size JPEG.
+ * Photos of one work on its page (frames 1f / 1g): the stage with the work's brushstroke behind the
+ * painting, and the photos as a row of thumbnails under it when there is more than one.
+ *
+ * - The painting is always whole: as wide as `min(fitW × stage width, fitH × stage height × ratio)`
+ *   (≥ 640 px: 88 % × 92 % of a stage 600 / 720 px high, lower on short screens; phone: a 440 px box it
+ *   fills). The numbers are also in lib/opera.ts (`sizes`); keep them in step.
+ * - The stroke (inset 16% 14% 10% 4%, phone 20% 20% 6% −10%, rotate −5deg) wipes in on every load.
+ *   Its insets are the design's for a tall work (frame 1f); for a square or wide one they are clamped
+ *   to the cover, so it shows at least 64 px left and 24 px right of it (from 640 px), and reaches at
+ *   most 40 px above (phone 24) and 24 px below it: a wide painting never sits on a blob twice its height.
+ * - The cover's frame carries `view-transition-name: opera-<slug>`, the same name as in HungWorks, so
+ *   the painting moves from the list to this page. Never put the stage inside a [data-reveal] element.
+ * - Clicking the painting opens the full-screen viewer (ImageViewer) at the photo on the stage.
+ * - With JS a thumbnail swaps the photo on the stage with a 700 ms crossfade; without JS the stage
+ *   shows the cover and every link (stage and thumbnails) opens the full-size JPEG.
+ *
+ * Hooks for the script below: [data-gallery] > [data-gallery-slide="<i>"] (one per photo, the first
+ * is .is-current, the others [hidden]) · [data-gallery-thumb="<i>"] · [data-gallery-status].
  */
 import ResponsivePicture from './ResponsivePicture.astro';
 import ImageViewer from './ImageViewer.astro';
+import Stroke from './Stroke.astro';
 import { altText, type Opera } from './lib/opere';
 import { viewerSource } from './lib/images';
+import { stageSizes, thumbSizes } from './lib/opera';
 
 interface Props {
   opera: Opera;
+  /** Colour of the stroke, e.g. "var(--tiz-terracotta)" (lib/opere.ts → operaPaintVar). */
+  paint: string;
 }
 
-const { data } = Astro.props.opera;
-const [cover, ...details] = data.immagini;
-const coverRatio = cover.width / cover.height;
-const viewerImages = await Promise.all(
-  data.immagini.map(async (image, i) => ({ ...(await viewerSource(image)), alt: altText(data, i) })),
+const { opera, paint } = Astro.props;
+const { data } = opera;
+const photos = await Promise.all(
+  data.immagini.map(async (image, i) => {
+    const ratio = image.width / image.height;
+    return { image, ratio: ratio.toFixed(4), alt: altText(data, i), stage: stageSizes(ratio), thumb: thumbSizes(ratio), viewer: await viewerSource(image) };
+  }),
 );
-// Detail thumbnails are ratio × clamp(6rem, 18vw, 9rem) wide (see .gallery__detail): 9rem is the upper bound.
-const detailSizes = (image: { width: number; height: number }) => `${((image.width / image.height) * 9).toFixed(2)}rem`;
-// The cover is as wide as the column, unless the screen height limits it (tall paintings).
-const coverSizes = `(min-width: 64rem) min(56vw, ${Math.round(80 * coverRatio)}vh), min(100vw, ${Math.round(80 * coverRatio)}vh)`;
+const viewerImages = photos.map(({ viewer, alt }) => ({ ...viewer, alt }));
+const many = photos.length > 1;
 ---
 
-<div class="gallery" data-viewer-gallery>
-  <a
-    class="gallery__cover"
-    href={viewerImages[0].full}
-    style={`--ratio: ${coverRatio.toFixed(4)}`}
-    data-viewer-open="0"
-  >
-    <ResponsivePicture image={cover} alt={altText(data)} preset="artwork" sizes={coverSizes} priority />
-    <span class="gallery__zoom" aria-hidden="true">
-      <svg viewBox="0 0 24 24" width="20" height="20">
-        <circle cx="10.5" cy="10.5" r="6.5"></circle>
-        <path d="m15.5 15.5 5 5M10.5 7.5v6M7.5 10.5h6"></path>
-      </svg>
-    </span>
-    <span class="visually-hidden">(apri a schermo intero)</span>
-  </a>
+<div class="gallery" data-viewer-gallery data-gallery>
+  <div class="gallery__stage" style={`--ratio: ${photos[0].ratio}`}>
+    <Stroke class="gallery__stroke" color={paint} />
+    {
+      photos.map((photo, i) => (
+        <div
+          class:list={['gallery__slide', i === 0 && 'is-current']}
+          style={`--ratio: ${photo.ratio}`}
+          hidden={i > 0}
+          data-gallery-slide={i}
+        >
+          <a
+            class="gallery__frame"
+            href={photo.viewer.full}
+            style={i === 0 ? `view-transition-name: opera-${opera.id}` : undefined}
+            data-viewer-open={i}
+          >
+            <ResponsivePicture image={photo.image} alt={photo.alt} preset="artwork" sizes={photo.stage} priority={i === 0} />
+            <span class="visually-hidden">(apri a schermo intero)</span>
+          </a>
+        </div>
+      ))
+    }
+  </div>
 
   {
-    details.length > 0 && (
-      <ul class="gallery__details" role="list" aria-label="Altre immagini">
-        {details.map((image, i) => (
-          <li class="gallery__detail" style={`--ratio: ${(image.width / image.height).toFixed(4)}`}>
-            <a class="gallery__detail-link" href={viewerImages[i + 1].full} data-viewer-open={i + 1}>
-              <ResponsivePicture image={image} alt={altText(data, i + 1)} preset="thumb" sizes={detailSizes(image)} />
-              <span class="visually-hidden">(apri a schermo intero)</span>
+    many && (
+      <ul class="gallery__thumbs" role="list" aria-label="Foto dell’opera">
+        {photos.map((photo, i) => (
+          <li>
+            <a
+              class="gallery__thumb"
+              href={photo.viewer.full}
+              aria-current={i === 0 ? 'true' : undefined}
+              data-gallery-thumb={i}
+            >
+              <ResponsivePicture image={photo.image} alt={photo.alt} preset="thumb" sizes={photo.thumb} />
             </a>
           </li>
         ))}
       </ul>
     )
   }
+  {many && <p class="visually-hidden" aria-live="polite" data-gallery-status />}
 
   <ImageViewer images={viewerImages} label={`Immagini di «${data.titolo}»`} />
 </div>
 
+<script>
+  // Thumbnails swap the photo on the stage with the slides' CSS crossfade (var(--tiz-dur-fade); none
+  // with reduced motion). The stage link of the photo shown is the one that opens the viewer, at that
+  // photo.
+
+  /** The slide's transition time in ms, read from the CSS (so it follows the token). */
+  const fadeMs = (slide: HTMLElement) => {
+    const first = getComputedStyle(slide).transitionDuration.split(',')[0].trim();
+    const value = Number.parseFloat(first) || 0;
+    return first.endsWith('ms') ? value : value * 1000;
+  };
+
+  document.querySelectorAll<HTMLElement>('[data-gallery]').forEach((gallery) => {
+    const slides = [...gallery.querySelectorAll<HTMLElement>('[data-gallery-slide]')];
+    const thumbs = [...gallery.querySelectorAll<HTMLAnchorElement>('[data-gallery-thumb]')];
+    const status = gallery.querySelector<HTMLElement>('[data-gallery-status]');
+    if (slides.length < 2) return;
+
+    let current = 0;
+    let cleanup: number | undefined;
+
+    const show = async (index: number) => {
+      if (index === current || !slides[index]) return;
+      current = index;
+      thumbs.forEach((thumb, i) => (i === index ? thumb.setAttribute('aria-current', 'true') : thumb.removeAttribute('aria-current')));
+      if (status) status.textContent = `Foto ${index + 1} di ${slides.length}`;
+
+      const next = slides[index];
+      next.hidden = false;
+      const image = next.querySelector('img');
+      if (image) {
+        image.loading = 'eager';
+        // Fade in only once the photo can be painted (a broken file still swaps).
+        await image.decode().catch(() => undefined);
+      }
+      if (current !== index) return; // another thumbnail was chosen meanwhile
+
+      slides.forEach((slide, i) => {
+        slide.classList.toggle('is-current', i === index);
+        slide.inert = i !== index;
+      });
+      // The old photo is hidden (display: none) once the crossfade has run.
+      window.clearTimeout(cleanup);
+      cleanup = window.setTimeout(() => slides.forEach((slide, i) => (slide.hidden = i !== current)), fadeMs(next));
+    };
+
+    thumbs.forEach((thumb) => {
+      thumb.addEventListener('click', (event) => {
+        // Modified clicks (new tab, download…) keep the browser's default: the full-size JPEG.
+        if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+        event.preventDefault();
+        show(Number(thumb.dataset.galleryThumb));
+      });
+    });
+  });
+</script>
+
 <style>
-  .gallery__cover {
+  .gallery {
+    /* Stage height and how much of it the painting may fill (phone: the 440 px box of frame 1g). */
+    --stage-h: 440px;
+    --fit-w: 1;
+    --fit-h: 1;
+    --thumb-h: 64px;
+  }
+
+  .gallery__stage {
     position: relative;
+    isolation: isolate;
+    height: var(--stage-h);
+  }
+
+  .gallery__stage :global(.gallery__stroke) {
+    inset: 20% 20% 6% -10%;
+  }
+
+  /* The cover's height, from the stage width (100cqi) and the fit rules of .gallery__frame, and the
+     linen left above and below it: the stroke reaches at most 24 px past the cover (phone). */
+  @supports (width: 1cqi) {
+    .gallery {
+      container-type: inline-size;
+    }
+
+    .gallery__stage :global(.gallery__stroke) {
+      --frame-h: calc(min(var(--fit-w) * 100cqi, var(--stage-h) * var(--fit-h) * var(--ratio)) / var(--ratio));
+      --spare: calc((var(--stage-h) - var(--frame-h)) / 2);
+      top: max(20%, calc(var(--spare) - 24px));
+      bottom: max(6%, calc(var(--spare) - 24px));
+    }
+  }
+
+  .gallery__slide {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--tiz-dur-fade) ease;
+  }
+
+  .gallery__slide.is-current {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .gallery__slide[hidden] {
+    display: none;
+  }
+
+  /* The painting, whole: width from the stage, height from the photo. */
+  .gallery__frame {
     display: block;
-    width: min(100%, calc(var(--artwork-max-height) * var(--ratio)));
-    margin-inline: auto;
-    box-shadow: var(--shadow-art);
-    background: var(--color-placeholder);
+    width: min(calc(var(--fit-w) * 100%), calc(var(--stage-h) * var(--fit-h) * var(--ratio)));
+    box-shadow: var(--tiz-shadow-tela);
     cursor: zoom-in;
   }
 
-  .gallery__cover :global(img),
-  .gallery__detail-link :global(img) {
+  .gallery__frame :global(img) {
     width: 100%;
     height: auto;
   }
 
-  .gallery__zoom {
-    position: absolute;
-    right: var(--space-3);
-    bottom: var(--space-3);
-    display: grid;
-    place-items: center;
-    width: var(--tap-target);
-    height: var(--tap-target);
-    border-radius: var(--radius-pill);
-    background: color-mix(in srgb, var(--color-bg) 85%, transparent);
-    color: var(--color-text);
-    opacity: 0.85;
-    transition: opacity var(--duration-fast) var(--ease);
-  }
-
-  .gallery__zoom svg {
-    fill: none;
-    stroke: currentColor;
-    stroke-width: 1.6;
-    stroke-linecap: round;
-  }
-
-  .gallery__cover:hover .gallery__zoom {
-    opacity: 1;
-  }
-
-  .gallery__details {
+  .gallery__thumbs {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
-    gap: var(--space-4);
-    margin-top: var(--space-5);
+    gap: var(--tiz-s3) var(--tiz-s4);
+    margin-top: var(--tiz-s4);
   }
 
-  /* Thumbnails share one height and keep their proportions. */
-  .gallery__detail {
-    width: calc(var(--ratio) * clamp(6rem, 18vw, 9rem));
+  /* At least 44 × 44 to tap, the photo centred in it at its real proportions. */
+  .gallery__thumb {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    min-width: var(--tiz-hit);
+    padding-bottom: var(--tiz-s3);
+    color: var(--tiz-terra);
+    transition: transform var(--tiz-dur-lift) var(--tiz-ease-settle);
   }
 
-  .gallery__detail-link {
-    display: block;
-    box-shadow: var(--shadow-art);
-    background: var(--color-placeholder);
-    cursor: zoom-in;
+  .gallery__thumb :global(img) {
+    width: auto;
+    height: var(--thumb-h);
+    box-shadow: var(--tiz-shadow-tela);
+  }
+
+  /* The photo on the stage: an ocra marker under its thumbnail (never on the painting). */
+  .gallery__thumb::after {
+    content: '';
+    position: absolute;
+    inset: auto 0 0;
+    height: 4px;
+    border-radius: 2px 6px 2px 5px;
+    background: var(--tiz-ocra);
+    opacity: 0;
+    transition: opacity var(--tiz-dur-fast) var(--tiz-ease-settle);
+  }
+
+  .gallery__thumb[aria-current='true']::after {
+    opacity: 1;
+  }
+
+  @media (hover: hover) and (prefers-reduced-motion: no-preference) {
+    .gallery__thumb:hover {
+      transform: translateY(calc(var(--tiz-lift) / 2));
+    }
+  }
+
+  @media (min-width: 640px) {
+    .gallery {
+      --stage-h: 600px;
+      --fit-w: 0.88;
+      --fit-h: 0.92;
+      --thumb-h: 84px;
+    }
+
+    /* Short screens: the painting stays whole in the first screen (never taller than the design). */
+    @supports (height: 100svh) {
+      .gallery {
+        --stage-h: min(600px, max(440px, 100svh - 200px));
+      }
+    }
+
+    /* The design's inset, relative to the stage; but the stroke always shows at least 64 px left and
+       24 px right of the cover (as in frame 1f), also for square and wide works the inset alone would
+       hide behind the painting, and it stops 32 px inside the page edge (a wide work at 1024 px).
+       --frame = the cover's width (see .gallery__frame). */
+    .gallery__stage :global(.gallery__stroke) {
+      --frame: min(calc(var(--fit-w) * 100%), calc(var(--stage-h) * var(--fit-h) * var(--ratio)));
+      inset: 16% 14% 10% 4%;
+      left: max(calc(32px - var(--tiz-gutter)), min(4%, calc((100% - var(--frame)) / 2 - 64px)));
+      right: min(14%, calc((100% - var(--frame)) / 2 - 24px));
+    }
+
+    /* …and vertically at most 40 px above and 24 px below the cover. */
+    @supports (width: 1cqi) {
+      .gallery__stage :global(.gallery__stroke) {
+        top: max(16%, calc(var(--spare) - 40px));
+        bottom: max(10%, calc(var(--spare) - 24px));
+      }
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .gallery {
+      --stage-h: 720px;
+    }
+
+    /* The large stage of frame 1f: a deeper shadow. */
+    .gallery__frame {
+      box-shadow: var(--tiz-shadow-tela-l);
+    }
+
+    @supports (height: 100svh) {
+      .gallery {
+        --stage-h: min(720px, max(560px, 100svh - 180px));
+      }
+    }
   }
 </style>

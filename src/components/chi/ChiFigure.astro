@@ -1,0 +1,134 @@
+---
+/**
+ * The picture of the "Chi sono" page (frames 1h / 1i): a big brushstroke behind it and a handwritten
+ * note under it.
+ *
+ *   <ChiFigure kind="ritratto" image={profilo.ritratto} alt="…" caption="nello studio" paint="var(--tiz-ocra)" />
+ *   <ChiFigure kind="opera" image={cover} alt={altText(data)} caption="«Titolo», 2023" paint={operaPaintVar(…)} href={…} />
+ *
+ * - `kind="ritratto"`: her portrait, a photo, shown 4:5 with `object-fit: cover` (the only crop the
+ *   site allows; a 4:5 photo is shown whole).
+ * - `kind="opera"`: a painting (when there is no portrait), never cropped: fitted at its own ratio in
+ *   the same box, optionally linked to its page, with `view-transition-name: opera-<slug>` for the
+ *   morph to the Opera stage (pass `transitionName`; it must be unique on the page).
+ * Box sizes per breakpoint and the `sizes` attribute come from lib/chi.ts (keep the CSS in step).
+ * The parent places it; the stroke reaches left of it into the page gutter, so an ancestor must clip
+ * horizontally (`overflow-x: clip`) to avoid sideways scrolling on phones.
+ */
+import type { ImageMetadata } from 'astro';
+import ResponsivePicture from '../ResponsivePicture.astro';
+import Stroke from '../Stroke.astro';
+import { PORTRAIT_RATIO, chiSizes } from '../lib/chi';
+
+interface Props {
+  kind: 'ritratto' | 'opera';
+  image: ImageMetadata;
+  alt: string;
+  /** The handwritten note under the picture. */
+  caption: string;
+  /** CSS colour of the stroke, e.g. var(--tiz-ocra). */
+  paint: string;
+  /** Link of the picture (paintings: the work's page). */
+  href?: string;
+  /** view-transition-name of the picture box. */
+  transitionName?: string;
+}
+
+const { kind, image, alt, caption, paint, href, transitionName } = Astro.props;
+const photoRatio = image.width / image.height;
+const boxRatio = kind === 'ritratto' ? PORTRAIT_RATIO : photoRatio;
+const sizes = chiSizes(photoRatio, { cover: kind === 'ritratto' });
+const Media = href ? 'a' : 'div';
+const mediaStyle = ['--tiz-reveal-delay: 500ms', transitionName && `view-transition-name: ${transitionName}`].filter(Boolean).join('; ');
+---
+
+<figure class:list={['chi-figure', `chi-figure--${kind}`]} style={`--chi-ratio: ${boxRatio.toFixed(4)}`}>
+  <div class="chi-figure__frame">
+    <Stroke color={paint} left="var(--chi-sl)" top="var(--chi-st)" width="var(--chi-sw)" height="var(--chi-sh)" rotate="-6deg" delay="200ms" />
+    <Media class="chi-figure__media" href={href} data-reveal="" style={mediaStyle}>
+      <ResponsivePicture image={image} alt={alt} preset="card" sizes={sizes} priority />
+    </Media>
+  </div>
+  <figcaption class="chi-figure__note" data-reveal="write" style="--tiz-reveal-delay: 1100ms">{caption}</figcaption>
+</figure>
+
+<style>
+  .chi-figure {
+    /* The box of the picture per breakpoint: keep in step with CHI_BOXES in lib/chi.ts. */
+    --chi-box-w: 280px;
+    --chi-box-h: 350px;
+    --chi-indent: 40px;
+    /* The stroke, relative to the picture (frame 1i: left −80px, top 70px, 360 × 320 on 280 × 350). */
+    --chi-sl: -28.571%;
+    --chi-st: 20%;
+    --chi-sw: 128.571%;
+    --chi-sh: 91.429%;
+    padding-left: var(--chi-indent);
+  }
+
+  /* A painting's stroke is in its own paint, which may be dark: it ends above the caption (the
+     portrait's ocra may run under "nello studio", as in the design). */
+  .chi-figure--opera {
+    --chi-st: 10%;
+    --chi-sh: 78%;
+  }
+
+  .chi-figure__frame {
+    position: relative;
+    isolation: isolate;
+    /* Fitted inside the box at the picture's ratio (the portrait's box is 4:5), never wider than the column. */
+    width: min(var(--chi-box-w), var(--chi-box-h) * var(--chi-ratio), 100%);
+  }
+
+  .chi-figure__media {
+    display: block;
+    box-shadow: var(--tiz-shadow-tela);
+  }
+
+  .chi-figure__media :global(img) {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  /* The portrait is a photo, not a painting: a 4:5 crop is allowed here and only here. */
+  .chi-figure--ritratto .chi-figure__media :global(img) {
+    aspect-ratio: 4 / 5;
+    object-fit: cover;
+    object-position: 50% 30%;
+  }
+
+  /* As in frame 1h: a full-width line turned −3deg around its centre (so the words sit a little lower). */
+  .chi-figure__note {
+    margin: 16px 0 0 10px;
+    font: 400 var(--tiz-mano-caption) / 1 var(--tiz-font-mano);
+    text-wrap: balance;
+    overflow-wrap: anywhere;
+    transform: rotate(-3deg);
+  }
+
+  @media (min-width: 640px) {
+    .chi-figure {
+      --chi-box-w: 360px;
+      --chi-box-h: 450px;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .chi-figure {
+      --chi-box-w: 400px;
+      --chi-box-h: 500px;
+      --chi-indent: 30px;
+      /* Frame 1h: left −80px, top 90px, 520 × 440 on 400 × 500. */
+      --chi-sl: -20%;
+      --chi-st: 18%;
+      --chi-sw: 130%;
+      --chi-sh: 88%;
+    }
+
+    .chi-figure--opera {
+      --chi-st: 10%;
+      --chi-sh: 78%;
+    }
+  }
+</style>

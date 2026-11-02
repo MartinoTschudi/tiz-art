@@ -1,0 +1,99 @@
+---
+/**
+ * The fixed bottom bar of the artwork page on phones (< 640 px, frame 1g): ← previous work ·
+ * "Chiedi di quest’opera" · next work →. 88 px + the safe-area inset, lino, dashed top border, below
+ * the header's layer (--tiz-z-header) so the open phone menu covers it. The page gets the same
+ * padding at the bottom, so the footer is never hidden behind it. Plain links: works without JS.
+ * From 640 px it is not shown (ArtworkPager and the button in the page take over).
+ */
+import type { Opera } from '../lib/opere';
+import { routes } from '../lib/site';
+
+interface Props {
+  prev?: Opera;
+  next?: Opera;
+  /** The contact form with this work chosen (routes.contattiOpera). */
+  ask: string;
+}
+
+const { prev, next, ask } = Astro.props;
+---
+
+<nav class="opera-bar" aria-label="Altre opere">
+  {
+    prev && (
+      <a class="tiz-btn tiz-btn--round opera-bar__arrow" href={routes.opera(prev.id)} rel="prev" aria-label={`Opera precedente: ${prev.data.titolo}`}>
+        <span aria-hidden="true">←</span>
+      </a>
+    )
+  }
+  <a class="tiz-btn opera-bar__ask" href={ask}>Chiedi di quest’opera</a>
+  {
+    next && (
+      <a class="tiz-btn tiz-btn--round opera-bar__arrow" href={routes.opera(next.id)} rel="next" aria-label={`Opera successiva: ${next.data.titolo}`}>
+        <span aria-hidden="true">→</span>
+      </a>
+    )
+  }
+</nav>
+
+<style>
+  .opera-bar {
+    display: none;
+  }
+
+  @media (max-width: 639.98px) {
+    .opera-bar {
+      position: fixed;
+      inset: auto 0 0;
+      z-index: calc(var(--tiz-z-header) - 10);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      height: calc(var(--tiz-bar-h) + env(safe-area-inset-bottom));
+      padding: 0 max(16px, env(safe-area-inset-right)) env(safe-area-inset-bottom) max(16px, env(safe-area-inset-left));
+      border-top: var(--tiz-divider);
+      background: var(--tiz-lino);
+    }
+
+    /* Room for the bar under the footer. */
+    :global(body:has(.opera-bar)) {
+      padding-bottom: calc(var(--tiz-bar-h) + env(safe-area-inset-bottom));
+    }
+
+    /* A link that gets the keyboard focus is scrolled above the bar, never behind it. */
+    :global(html:has(.opera-bar)) {
+      scroll-padding-bottom: calc(var(--tiz-bar-h) + env(safe-area-inset-bottom));
+    }
+
+    /* Frame 1g: the arrows are 600 20px. */
+    .opera-bar__arrow {
+      font-weight: 600;
+      font-size: 20px;
+    }
+
+    .opera-bar__ask {
+      flex: 1;
+      min-width: 0;
+      height: 52px;
+      padding-inline: var(--tiz-s3);
+      font-size: 16px;
+      line-height: 1.1;
+      /* Two lines rather than overflowing, should a phone be narrower still */
+      white-space: normal;
+      text-wrap: balance;
+    }
+  }
+
+  /* 320–359 px: a little smaller, so «Chiedi di quest’opera» keeps one line (frame 1g). */
+  @media (max-width: 359.98px) {
+    .opera-bar {
+      gap: var(--tiz-s2);
+    }
+
+    .opera-bar__ask {
+      padding-inline: var(--tiz-s2);
+      font-size: 15px;
+    }
+  }
+</style>

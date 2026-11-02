@@ -1,0 +1,162 @@
+---
+/**
+ * Home quote band (frames 1b / 1c): on gesso, one painting with its stroke (in the work's own paint,
+ * as everywhere) beside the first sentence of her own text about it, in her hand, the last word in
+ * rosso; the attribution links to the work. `quote` comes from lib/composition.ts → pickQuote; the
+ * page leaves the band out when it is null.
+ * - ≥ 1024: 400px | text, the painting 340px. 640–1023: 240px | text. < 640: the text alone (1c).
+ * - The painting and the text settle in when scrolled into view; the stroke waits for them.
+ */
+import ResponsivePicture from '../ResponsivePicture.astro';
+import Stroke from '../Stroke.astro';
+import { SITE, routes } from '../lib/site';
+import { altText, formatDimensions, getPublishedOpere, operaPaintVar, type Opera } from '../lib/opere';
+import type { Quote } from '../lib/composition';
+import { QUOTE_SIZES, firstName, quoteAttribution } from '../lib/home';
+
+interface Props {
+  quote: Quote;
+  opera: Opera;
+  /** The band follows the hero directly (no series section between them). */
+  afterHero?: boolean;
+}
+
+const { quote, opera, afterHero = false } = Astro.props;
+const href = routes.opera(opera.id);
+const paint = operaPaintVar(opera, await getPublishedOpere());
+const attribution = quoteAttribution(firstName(SITE.nome), opera.data.titolo, formatDimensions(opera.data));
+---
+
+<div class:list={['home-quote', afterHero && 'home-quote--after-hero']}>
+  <div class="home-quote__inner container">
+    <div class="home-quote__work" data-reveal>
+      <div class="home-quote__frame">
+        <Stroke class="home-quote__stroke" color={paint} rotate="-5deg" shape={2} />
+        {/* The attribution below is the link for keyboards and screen readers; this one is for the mouse. */}
+        <a class="home-quote__media" href={href} tabindex="-1" aria-hidden="true" style={`view-transition-name: opera-${opera.id}`}>
+          <ResponsivePicture image={opera.data.immagini[0]} alt={altText(opera.data)} preset="card" sizes={QUOTE_SIZES} />
+        </a>
+      </div>
+    </div>
+    <figure class="home-quote__text" data-reveal>
+      <blockquote class="home-quote__quote">
+        <p>«{quote.before}<span class="home-quote__key">{quote.keyWord}</span>{quote.after}»</p>
+      </blockquote>
+      <figcaption class="home-quote__by">
+        <a href={href}>{attribution}&nbsp;<span aria-hidden="true">→</span></a>
+      </figcaption>
+    </figure>
+  </div>
+</div>
+
+<style>
+  .home-quote {
+    background: var(--tiz-gesso);
+  }
+
+  /* No series section between hero and band (few works): a little air under the hero works. */
+  .home-quote--after-hero {
+    margin-top: var(--tiz-s6);
+  }
+
+  .home-quote__inner {
+    padding-block: 56px;
+  }
+
+  /* Phone (frame 1c): the quote alone. */
+  .home-quote__work {
+    display: none;
+  }
+
+  .home-quote__frame {
+    position: relative;
+    isolation: isolate;
+    width: 85%;
+    margin-left: 7.5%;
+  }
+
+  /* 440 × 360 at −70 / 60 around the 340 px painting (frame 1b). */
+  .home-quote__frame :global(.home-quote__stroke) {
+    left: -20.6%;
+    top: 14%;
+    width: 129%;
+    height: 84.7%;
+  }
+
+  .home-quote__media {
+    display: block;
+    box-shadow: var(--tiz-shadow-tela);
+  }
+
+  .home-quote__media :global(img) {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  .home-quote__quote p {
+    font: 400 48px/1 var(--tiz-font-mano);
+    text-wrap: pretty;
+    overflow-wrap: anywhere;
+  }
+
+  .home-quote__key {
+    color: var(--tiz-rosso);
+  }
+
+  .home-quote__by {
+    margin-top: 6px;
+  }
+
+  .home-quote__by a {
+    display: inline-block;
+    padding-block: var(--tiz-s3);
+    color: var(--tiz-terra-3);
+    font-size: 15px;
+    line-height: 1.4;
+    text-decoration: none;
+    overflow-wrap: anywhere;
+  }
+
+  .home-quote__by a:hover {
+    color: var(--tiz-rosso);
+  }
+
+  @media (min-width: 640px) {
+    .home-quote__inner {
+      display: grid;
+      grid-template-columns: 240px minmax(0, 1fr);
+      gap: var(--tiz-s6);
+      align-items: center;
+      padding-block: var(--tiz-s7) var(--tiz-s8);
+    }
+
+    .home-quote__work {
+      display: block;
+    }
+
+    .home-quote__quote p {
+      font-size: 56px;
+    }
+
+    .home-quote__by {
+      margin-top: 16px;
+    }
+
+    .home-quote__by a {
+      font-size: var(--tiz-body);
+      font-weight: 500;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .home-quote__inner {
+      grid-template-columns: 400px minmax(0, 1fr);
+      gap: 96px;
+    }
+
+    .home-quote__quote p {
+      font-size: 76px;
+    }
+  }
+</style>

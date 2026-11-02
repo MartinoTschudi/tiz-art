@@ -19,9 +19,11 @@ const redirects = Object.fromEntries(
   Object.entries(sito.redirectVecchioSito).map(([from, to]) => [from, base + (artworkOnline(to) ? to : '/opere/').replace(/^\/+/, '')]),
 );
 
-// Pages that must not appear in the sitemap: the admin and the redirect pages.
+// Pages that must not appear in the sitemap: the admin, the contact form's thank-you page (CONTRACTS
+// 5.1) and the redirect pages.
 const notInSitemap = [
   new URL(`${base}admin/`, site).href,
+  new URL(`${base}contatti/grazie/`, site).href,
   ...Object.keys(redirects).map((from) => new URL(base + from.replace(/^\/+/, ''), site).href),
 ];
 

@@ -7,8 +7,10 @@
  *
  * Stored values: new work { fields: {…as typed}, photos: [{ blob, preview, width, height, id }], savedAt };
  * an edit also has `base` (the `aggiornataIl` / `aggiornatoIl` it started from) and keeps existing
- * photos as { ref }. Everything here is best effort: in private mode or when storage is full,
- * nothing is kept and the admin works as before.
+ * photos as { ref }. `fields` are the form's (screens/form.js createDraft); a draft kept by an older
+ * admin may lack a newer field (e.g. `colore`): restoring it starts from createDraft's defaults, so
+ * the missing field gets its default. Everything here is best effort: in private mode or when storage
+ * is full, nothing is kept and the admin works as before.
  */
 
 const DB_NAME = 'tiz-admin';

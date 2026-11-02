@@ -15,11 +15,20 @@
 import { defineCollection, type SchemaContext } from 'astro:content';
 import { glob } from 'astro/loaders';
 import { z } from 'astro/zod';
+import { PAINTS } from './components/lib/composition';
 
 const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const SLUG_MAX = 60;
 /** "./01.jpg", "./03-k2x9qa.jpg"… — a file in the same folder as the JSON file. */
 const IMAGE_PATH = /^\.\/[a-z0-9][a-z0-9._-]*\.(jpg|jpeg|png|webp)$/;
+
+/**
+ * Colour of the brushstroke behind the painting (CSS `var(--tiz-<colore>)`); null = automatic (the site
+ * picks one from PAINT_CYCLE by the work's position in the published list, CONTRACTS.md 4.1). The list
+ * is the site's own (composition.ts PAINTS); scripts/test/design-sync.test.mjs keeps it equal to the
+ * admin's, the validator's, the tokens and CONTRACTS.
+ */
+const COLORI = PAINTS;
 
 /** ISO 8601 date-time in UTC ("2023-09-23T12:00:00.000Z"). */
 const isoUtc = () => z.iso.datetime();
@@ -65,6 +74,9 @@ const opere = defineCollection({
       altezza: centimetres.nullable(),
       tecnica: text(120),
       collezione: text(120),
+      // A file saved before `colore` existed has no such key: read as null (automatic). The admin
+      // always writes it; scripts/check-content.mjs warns about a missing key.
+      colore: z.enum(COLORI).nullable().default(null),
       testo: text(5000),
       immagini: z.array(localImage(context)).min(1).max(8),
       ordine: z.number().int(),

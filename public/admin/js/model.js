@@ -18,9 +18,15 @@ export const ANNO_MIN = 1900;
 export const ANNO_MAX = 2100;
 export const MISURA_MAX = 1000;
 
+/**
+ * Colours of the brushstroke behind a painting on the site (`colore`, CONTRACTS.md 4.1), in the
+ * order the form shows them. `null` = automatic: the site picks one by the work's position.
+ */
+export const COLORI = ['ocra', 'rosso', 'terracotta', 'ottanio', 'blu'];
+
 /** Keys in the documented order (the serialisers write them in this order, and only these). */
 export const OPERA_KEYS = [
-  'titolo', 'anno', 'larghezza', 'altezza', 'tecnica', 'collezione', 'testo', 'immagini',
+  'titolo', 'anno', 'larghezza', 'altezza', 'tecnica', 'collezione', 'colore', 'testo', 'immagini',
   'ordine', 'inEvidenza', 'pubblicata', 'creataIl', 'aggiornataIl',
 ];
 export const PROFILO_KEYS = ['motto', 'bio', 'ritratto', 'aggiornatoIl'];
@@ -105,6 +111,13 @@ export function parseMisura(input) {
   return { value };
 }
 
+/** "ocra" → "ocra"; "", null or a missing value → null (automatic). Returns { value } or { error }. */
+export function parseColore(input) {
+  if (input == null || input === '') return { value: null };
+  if (COLORI.includes(input)) return { value: input };
+  return { error: 'Scegli uno dei colori della lista, oppure «Automatico».' };
+}
+
 /** "2024" → 2024; "" → null. Returns { value } or { error }. */
 export function parseAnno(input) {
   const text = String(input ?? '').trim();
@@ -145,6 +158,8 @@ export function parseOperaForm(form) {
   if (tecnica.length > LIMITS.tecnica) errors.tecnica = `Al massimo ${LIMITS.tecnica} caratteri.`;
   const collezione = cleanLine(form.collezione);
   if (collezione.length > LIMITS.collezione) errors.collezione = `Al massimo ${LIMITS.collezione} caratteri.`;
+  const colore = parseColore(form.colore);
+  if (colore.error) errors.colore = colore.error;
   const testo = cleanText(form.testo);
   if (testo.length > LIMITS.testo) errors.testo = `Il testo può avere al massimo ${LIMITS.testo} caratteri (ora ne ha ${testo.length}).`;
   if (Object.keys(errors).length) return { fields: null, errors };
@@ -156,6 +171,7 @@ export function parseOperaForm(form) {
       altezza: altezza.value,
       tecnica,
       collezione,
+      colore: colore.value,
       testo,
       inEvidenza: Boolean(form.inEvidenza),
       pubblicata: Boolean(form.pubblicata),
@@ -187,7 +203,21 @@ export function imageRefName(ref) {
   return m && IMAGE_FILE_RE.test(m[1]) ? m[1] : null;
 }
 
-/** All problems of an opera.json object (empty array = valid). Messages are Italian, for logs and errors. */
+/**
+ * opera.json as read from the repository → the admin's in-memory form of it. A file saved before
+ * `colore` existed has no such key: it reads as null (automatic), and the next save writes it.
+ * Anything else is left as it is (validateOpera reports it).
+ */
+export function normalizeOpera(o) {
+  if (!o || typeof o !== 'object' || Array.isArray(o) || Object.hasOwn(o, 'colore')) return o;
+  return { ...o, colore: null };
+}
+
+/**
+ * All problems of an opera.json object (empty array = valid). Strict: every key of OPERA_KEYS must be
+ * there, `colore` too (what the admin writes); use normalizeOpera first on files read from GitHub.
+ * Messages are Italian, for logs and errors.
+ */
 export function validateOpera(o) {
   const problems = [];
   if (!o || typeof o !== 'object' || Array.isArray(o)) return ['non è un oggetto JSON'];
@@ -206,6 +236,9 @@ export function validateOpera(o) {
   }
   checkString(o, 'tecnica', LIMITS.tecnica, problems);
   checkString(o, 'collezione', LIMITS.collezione, problems);
+  if (o.colore !== null && !COLORI.includes(o.colore)) {
+    problems.push(`«colore» deve essere vuoto (automatico) o uno tra ${COLORI.join(', ')}`);
+  }
   checkString(o, 'testo', LIMITS.testo, problems);
   if (!Array.isArray(o.immagini) || o.immagini.length < 1 || o.immagini.length > MAX_IMMAGINI) {
     problems.push(`«immagini» deve avere da 1 a ${MAX_IMMAGINI} foto`);

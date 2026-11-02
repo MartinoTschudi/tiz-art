@@ -1,7 +1,22 @@
 /*
- * Base styles: reset, page defaults and the few shared primitives (container, button, link,
- * eyebrow label, visually-hidden). Everything else is styled inside its component.
- * Values come from tokens.css.
+ * Base styles: reset, the linen page, links, focus, the shared primitives and the reveal system.
+ * Everything else is styled inside its component (scoped <style>). Colours, fonts, type and spacing
+ * scale, shadows and motion come from tokens.css; frame-specific layout px stay in the component.
+ *
+ * Primitives:
+ *   .container                  centred page column with the gutter (max --tiz-page-max)
+ *   .tiz-btn                    primary button / button-looking link (rosso)
+ *   .tiz-btn--dark              same shape, terra
+ *   .tiz-btn--round             48 × 48 round arrow button (phone Opera bar)
+ *   .tiz-marker                 marker link ("Tutte le opere →")
+ *   .tiz-write / .tiz-settle    one-off load animations (delay: --d), e.g. the home motto lines
+ *   .visually-hidden, .skip-link
+ *
+ * Reveal on scroll: put data-reveal on an element (data-reveal="write" for handwriting). BaseLayout's
+ * script adds .is-in when it enters the viewport; elements that enter together are staggered by
+ * --tiz-stagger (skipped when the element sets its own --tiz-reveal-delay inline). Without JS, with
+ * reduced motion and in print everything is simply visible. Strokes inside a [data-reveal] element
+ * wait for it (see Stroke.astro).
  */
 @import './tokens.css';
 
@@ -19,11 +34,13 @@
 html {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
-  scroll-padding-top: var(--space-6);
+  color-scheme: light;
+  scroll-padding-top: var(--tiz-s5);
 }
 
-/* No page scrolling behind the full-screen viewer. */
-html:has(dialog[open]) {
+/* No page scrolling behind the full-screen viewer or the phone menu. */
+html:has(dialog[open]),
+html.tiz-menu-open {
   overflow: hidden;
 }
 
@@ -38,18 +55,22 @@ body {
   min-height: 100svh;
   display: flex;
   flex-direction: column;
-  background: var(--color-bg);
-  color: var(--color-text);
-  font-family: var(--font-body);
-  font-size: var(--text-base);
-  line-height: var(--leading-body);
+  background: var(--tiz-linen), var(--tiz-lino);
+  color: var(--tiz-terra);
+  font-family: var(--tiz-font-voce);
+  font-size: var(--tiz-body);
+  font-weight: 400;
+  line-height: var(--tiz-line-body);
+  font-optical-sizing: auto;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
 }
 
 img,
 picture,
-svg {
+svg,
+video {
   display: block;
   max-width: 100%;
 }
@@ -72,14 +93,13 @@ button {
 
 h1,
 h2,
-h3 {
-  font-family: var(--font-display);
-  font-weight: var(--weight-regular);
-  line-height: var(--leading-snug);
+h3,
+h4 {
+  font-weight: 800;
+  line-height: 1.05;
   text-wrap: balance;
-  /* A long single word in a title ("Contemporaneamente") must wrap, not push the page sideways. */
+  /* A long single word in a title must wrap, not push the page sideways. */
   overflow-wrap: break-word;
-  hyphens: auto;
 }
 
 p {
@@ -96,93 +116,128 @@ a {
   color: inherit;
   text-decoration-thickness: 1px;
   text-underline-offset: 0.2em;
-  transition: color var(--duration-fast) var(--ease);
+  transition: color var(--tiz-dur-fast) var(--tiz-ease-settle);
 }
 
 a:hover {
-  color: var(--color-highlight);
+  color: var(--tiz-rosso);
 }
 
 :focus-visible {
-  outline: var(--focus-ring);
-  outline-offset: 3px;
+  outline: var(--tiz-focus);
+  outline-offset: var(--tiz-focus-offset);
 }
 
 ::selection {
-  background: var(--color-highlight);
-  color: var(--color-on-accent);
+  background: var(--tiz-ocra);
+  color: var(--tiz-terra);
 }
 
 /* ── Shared primitives ──────────────────────────────────── */
 
-/** Centred page column with side gutters. */
 .container {
   width: 100%;
-  max-width: var(--width-page);
+  max-width: var(--tiz-page-max);
   margin-inline: auto;
-  padding-inline: var(--gutter);
+  padding-inline: var(--tiz-gutter);
 }
 
-/** Small uppercase label above headings ("Opere in evidenza", "Collezione"…). */
-.eyebrow {
-  font-family: var(--font-body);
-  font-size: var(--text-xs);
-  font-weight: var(--weight-medium);
-  letter-spacing: var(--tracking-caps);
-  text-transform: uppercase;
-  color: var(--color-text-muted);
-}
-
-/** Buttons and button-looking links. `.button--quiet` = outlined secondary action. */
-.button {
+/** Primary button (rosso, lino text). Works on <a> and <button>. */
+.tiz-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: var(--space-2);
-  min-height: var(--tap-target);
-  padding: var(--space-2) var(--space-5);
-  border: var(--border-width) solid var(--color-accent);
-  border-radius: var(--radius-pill);
-  background: var(--color-accent);
-  color: var(--color-on-accent);
-  font-size: var(--text-sm);
-  font-weight: var(--weight-medium);
-  letter-spacing: 0.02em;
+  gap: var(--tiz-s3);
+  height: 52px;
+  padding: 0 26px;
+  border: 0;
+  border-radius: var(--tiz-radius-btn);
+  background: var(--tiz-rosso);
+  color: var(--tiz-lino);
+  font: 600 var(--tiz-body)/1 var(--tiz-font-voce);
+  text-align: center;
   text-decoration: none;
-  transition:
-    background-color var(--duration-fast) var(--ease),
-    color var(--duration-fast) var(--ease),
-    border-color var(--duration-fast) var(--ease);
+  white-space: nowrap;
+  transition: transform var(--tiz-dur-fast) var(--tiz-ease-settle);
 }
 
-.button:hover {
-  border-color: var(--color-highlight);
-  background: var(--color-highlight);
-  color: var(--color-on-accent);
+@media (min-width: 640px) {
+  .tiz-btn {
+    height: 56px;
+  }
 }
 
-.button--quiet {
-  background: transparent;
-  color: var(--color-text);
+.tiz-btn:hover {
+  color: var(--tiz-lino);
 }
 
-.button--quiet:hover {
-  background: transparent;
-  color: var(--color-highlight);
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .tiz-btn:not(.tiz-btn--round, :disabled, [aria-disabled='true']):hover {
+    transform: rotate(-1.5deg) scale(1.03);
+  }
 }
 
-.button:disabled {
+.tiz-btn:disabled,
+.tiz-btn[aria-disabled='true'] {
   cursor: progress;
   opacity: 0.6;
+  transform: none;
 }
 
-/** Text link with an arrow ("Tutte le opere →"). */
-.arrow-link {
+.tiz-btn--dark {
+  background: var(--tiz-terra);
+}
+
+/** Round arrow button: 48 × 48, 2px terra border. Put the arrow as text and an aria-label. */
+.tiz-btn--round {
+  flex: none;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  border: 2px solid var(--tiz-terra);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--tiz-terra);
+  font: 400 22px/1 var(--tiz-font-voce);
+}
+
+.tiz-btn--round:hover {
+  background: var(--tiz-gesso);
+  color: var(--tiz-terra);
+}
+
+/** Marker link: ocra highlighter under the text, 44px tall (phones: the band of frames 1c / 1i; from
+    640 px the slimmer band of the desktop frames, which draw it in a 37 px box). Write the arrow after
+    a space as its own (aria-hidden) element: the gap is that word space, as in the reference
+    ("Tutte le opere →"). */
+.tiz-marker {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-2);
-  min-height: var(--tap-target);
-  font-weight: var(--weight-medium);
+  gap: 0.3em;
+  min-height: var(--tiz-hit);
+  background: var(--tiz-marker);
+  color: var(--tiz-terra);
+  font: 600 var(--tiz-body)/1 var(--tiz-font-voce);
+  text-decoration: none;
+}
+
+.tiz-marker:hover {
+  color: var(--tiz-rosso);
+}
+
+@media (min-width: 640px) {
+  .tiz-marker {
+    background: var(--tiz-marker-hit);
+  }
+}
+
+/** Load animations (not tied to scrolling). Delay with --d, e.g. style="--d: .5s". */
+.tiz-write {
+  animation: tiz-write var(--tiz-dur-write) var(--tiz-ease-brush) var(--d, 0s) both;
+}
+
+.tiz-settle {
+  animation: tiz-settle var(--tiz-dur-settle) var(--tiz-ease-settle) var(--d, 0s) both;
 }
 
 .visually-hidden {
@@ -199,15 +254,59 @@ a:hover {
 
 .skip-link {
   position: absolute;
-  top: var(--space-2);
-  left: var(--space-2);
+  top: var(--tiz-s2);
+  left: var(--tiz-s2);
   z-index: 100;
-  padding: var(--space-2) var(--space-4);
-  background: var(--color-accent);
-  color: var(--color-on-accent);
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tiz-hit);
+  padding: 0 var(--tiz-s4);
+  border-radius: var(--tiz-radius-btn-s);
+  background: var(--tiz-terra);
+  color: var(--tiz-lino);
+  font-weight: 600;
+  text-decoration: none;
   transform: translateY(-200%);
 }
 
 .skip-link:focus {
+  color: var(--tiz-lino);
   transform: none;
+}
+
+/* ── Reveal on scroll ([data-reveal]) ───────────────────── */
+@media screen and (prefers-reduced-motion: no-preference) {
+  .js [data-reveal]:not(.is-in) {
+    opacity: 0;
+  }
+
+  .js [data-reveal='write']:not(.is-in) {
+    opacity: 1;
+    clip-path: inset(-30% 100% -30% -5%);
+  }
+
+  .js [data-reveal].is-in {
+    animation: tiz-settle var(--tiz-dur-settle) var(--tiz-ease-settle) backwards;
+    animation-delay: calc(var(--tiz-reveal-delay, 0ms) + var(--tiz-reveal-step, 0) * var(--tiz-stagger));
+  }
+
+  .js [data-reveal='write'].is-in {
+    animation-name: tiz-write;
+    animation-duration: var(--tiz-dur-write);
+    animation-timing-function: var(--tiz-ease-brush);
+  }
+}
+
+/* ── Cross-document view transitions (no Astro ClientRouter: the vanilla scripts need real loads) ── */
+@media (prefers-reduced-motion: no-preference) {
+  @view-transition {
+    navigation: auto;
+  }
+
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation-duration: var(--tiz-dur-fade);
+    animation-timing-function: var(--tiz-ease-settle);
+  }
 }

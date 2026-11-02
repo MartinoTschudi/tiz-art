@@ -1,0 +1,424 @@
+---
+/**
+ * Home hero (frames 1b / 1c): the motto written in her hand, the three hero works hung around it
+ * (lib/composition.ts → heroSlots) and the short intro with "Guarda le opere →".
+ *
+ * - ≥ 1024: one grid. The motto and the intro form the left column; the works hang on a "wall" on
+ *   the right that is min(622px, 52.53%) of the content box (the reference: 622 of 1184 px at 1280),
+ *   so the composition keeps its proportions from 1024 to 1280 and stops growing after that. The
+ *   heights come from the photos, so square, tall or wide works never overlap.
+ * - < 1024: flow layout: motto → the large work with its stroke and note → intro. The narrow and the
+ *   small work are hidden there (lazy, so never fetched).
+ * - ≥ 1024 the large work is at most 1.25 × its slot width high (500 px at 1280): a tall work gets
+ *   narrower instead of pushing the intro below the fold. The hero is 800 px high at 1280 (frame 1b),
+ *   less with the wall below that.
+ * - Motto lines wipe in at 0 / .5 / 1 s, the beating dot follows the last word in place of the
+ *   trailing "." or "!" (none after "?" or "…"; once per page). An empty motto shows the artist's
+ *   name instead (no dot). A long motto (lib/home.ts → mottoFlows) flows as one text at 40 / 56 px
+ *   instead of the three lines, its last word still in rosso.
+ * - Entered through a view transition (html.tiz-vt-in, set in BaseLayout on `pagereveal`), the
+ *   paintings skip their settle: the painting that morphs from the Opera page must land visible.
+ * - `alone`: nothing follows the hero on the page (only the hero works are published), so it keeps
+ *   some air above the footer.
+ * - Each stroke is in the work's own paint (`colore`, chosen in the admin; lib/opere.ts → operaPaintVar),
+ *   as everywhere on the site.
+ */
+import ResponsivePicture from '../ResponsivePicture.astro';
+import Stroke from '../Stroke.astro';
+import { SITE, routes } from '../lib/site';
+import { altText, getPublishedOpere, operaPaintVar, type ComposableOpera } from '../lib/opere';
+import { mottoParts, type HeroSlots } from '../lib/composition';
+import { HERO_SIZES, HOME_INTRO, heroNote, longestLine, mottoFlows } from '../lib/home';
+
+interface Props {
+  hero: HeroSlots<ComposableOpera>;
+  motto: string;
+  /** Nothing below the hero on the page. */
+  alone?: boolean;
+}
+
+const { hero, motto, alone = false } = Astro.props;
+const published = await getPublishedOpere();
+
+const fromMotto = mottoParts(motto);
+const parts = fromMotto.lines.length > 0 ? fromMotto : mottoParts(SITE.nome);
+const lines = parts.lines.slice(0, -1);
+const lastLine = parts.lines.at(-1) ?? '';
+const chars = longestLine(parts.lines);
+const flow = mottoFlows(parts.lines);
+// mottoParts strips a closing "." / "!": the dot stands for it. A "?" or "…" stays, without a dot.
+const dot = fromMotto.lines.length > 0 && /[\p{L}\p{N}]$/u.test(fromMotto.lastWord);
+
+const slots = (['large', 'narrow', 'small'] as const)
+  .map((slot) => ({ slot, work: hero[slot] }))
+  .filter((entry): entry is { slot: 'large' | 'narrow' | 'small'; work: ComposableOpera } => entry.work !== undefined)
+  .map(({ slot, work }) => {
+    const cover = work.opera.data.immagini[0];
+    return {
+      slot,
+      opera: work.opera,
+      paint: operaPaintVar(work.opera, published),
+      sizes: HERO_SIZES[slot],
+      ratio: (cover.width / cover.height).toFixed(4),
+    };
+  });
+
+// Load choreography of the reference: stroke, then the painting settles (≥ 1024 the note and the
+// intro follow, see the styles).
+const TIMING = {
+  large: { stroke: '.3s', settle: '.7s' },
+  narrow: { stroke: '.6s', settle: '.9s' },
+  small: { stroke: '.9s', settle: '1.1s' },
+} as const;
+const SHAPE = { large: 1, narrow: 2, small: 1 } as const;
+const ROTATE = { large: '-6deg', narrow: '8deg', small: '-3deg' } as const;
+---
+
+<section
+  class:list={['home-hero container', slots.length === 0 && 'home-hero--empty', alone && 'home-hero--alone']}
+  aria-labelledby="home-titolo"
+>
+  <div class="home-hero__grid">
+    {
+      flow ? (
+        <h1 class="home-hero__motto home-hero__motto--flow tiz-write" id="home-titolo">
+          {fromMotto.lines.length > 0 && <span class="visually-hidden">{SITE.nome} — </span>}
+          {lines.join(' ')}{' '}
+          <span class="home-hero__line--last">
+            {lastLine}
+            {dot && <span class="home-hero__dot" aria-hidden="true" />}
+          </span>
+        </h1>
+      ) : (
+        <h1 class="home-hero__motto" id="home-titolo" style={`--chars: ${chars}`}>
+          {fromMotto.lines.length > 0 && <span class="visually-hidden">{SITE.nome} — </span>}
+          {lines.map((line, i) => (
+            <>
+              <span class="home-hero__line tiz-write" style={`--d: ${i * 0.5}s`}>
+                {line}
+              </span>{' '}
+            </>
+          ))}
+          <span class="home-hero__line home-hero__line--last tiz-write" style={`--d: ${lines.length * 0.5}s`}>
+            {lastLine}
+            {dot && <span class="home-hero__dot" aria-hidden="true" />}
+          </span>
+        </h1>
+      )
+    }
+
+    {
+      slots.map(({ slot, opera, paint, sizes, ratio }) => (
+        <div class:list={['home-hero__work', `home-hero__work--${slot}`]} style={`--ratio: ${ratio}`}>
+          <div class="home-hero__frame">
+            <Stroke
+              class={`home-hero__stroke home-hero__stroke--${slot}`}
+              color={paint}
+              rotate={ROTATE[slot]}
+              delay={TIMING[slot].stroke}
+              shape={SHAPE[slot]}
+            />
+            <a class="home-hero__link tiz-settle" href={routes.opera(opera.id)} style={`--d: ${TIMING[slot].settle}`}>
+              <span class="home-hero__media" style={`view-transition-name: opera-${opera.id}`}>
+                <ResponsivePicture image={opera.data.immagini[0]} alt={altText(opera.data)} preset="card" sizes={sizes} priority={slot === 'large'} />
+              </span>
+            </a>
+          </div>
+          {
+            slot === 'large' && (
+              <p class="home-hero__note" aria-hidden="true">
+                {heroNote(opera.data.titolo, opera.data.anno)}
+              </p>
+            )
+          }
+        </div>
+      ))
+    }
+
+    <div class="home-hero__intro">
+      <p class="home-hero__text">{HOME_INTRO}</p>
+      {
+        slots.length > 0 && (
+          <a class="tiz-marker home-hero__more" href={routes.opere}>
+            Guarda le opere <span aria-hidden="true">→</span>
+          </a>
+        )
+      }
+    </div>
+  </div>
+</section>
+
+<style>
+  .home-hero {
+    /* The phone stroke reaches past the left edge of the screen: clip it there (no sideways scroll). */
+    overflow-x: clip;
+    /* cqi below = % of this content box. */
+    container-type: inline-size;
+  }
+
+  /* Nothing below the hero (only the hero works are published): keep the footer off the works. */
+  .home-hero--alone {
+    padding-bottom: var(--tiz-s7);
+  }
+
+  .home-hero__grid {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  /* ── Motto ───────────────────────────────────────────────── */
+  .home-hero__motto {
+    margin-top: 24px;
+    font: 400 92px/0.82 var(--tiz-font-mano);
+    /* 92px, smaller only when the longest line would not fit (TIZ Mano ≈ 0.31 em per character),
+       never below the 28px of her hand (a longer line wraps). Browsers without container units keep
+       the 92px above. */
+    font-size: clamp(28px, calc(290cqi / var(--chars, 11)), 92px);
+    letter-spacing: 0;
+    text-wrap: initial;
+    overflow-wrap: anywhere;
+  }
+
+  .home-hero__line {
+    display: block;
+  }
+
+  .home-hero__line--last {
+    color: var(--tiz-rosso);
+  }
+
+  /* A long motto: one text in her hand, wrapping freely (the last word still in rosso), wiped in
+     as a whole. */
+  .home-hero__motto--flow {
+    max-width: 30ch;
+    font-size: 40px;
+    line-height: 0.95;
+    text-wrap: pretty;
+    overflow-wrap: break-word;
+  }
+
+  /* The beating dot in place of the full stop (22px at 150px). */
+  .home-hero__dot {
+    display: inline-block;
+    width: 0.147em;
+    height: 0.147em;
+    margin-left: 0.04em;
+    border-radius: 50%;
+    background: var(--tiz-rosso);
+    animation: tiz-beat var(--tiz-dur-beat) ease-in-out 2.4s infinite;
+  }
+
+  /* ── Works ───────────────────────────────────────────────── */
+  .home-hero__work--narrow,
+  .home-hero__work--small {
+    display: none;
+  }
+
+  /* The painting is 290px (400px from 640) after a 40px inset; the note wraps under it. */
+  .home-hero__work--large {
+    width: 100%;
+    max-width: 330px;
+    margin-top: 40px;
+    padding-left: 40px;
+  }
+
+  .home-hero__frame {
+    position: relative;
+    isolation: isolate;
+  }
+
+  .home-hero__link {
+    display: block;
+    color: var(--tiz-terra);
+  }
+
+  /* Entered through a view transition: the painting that morphs from the Opera page is shown at once
+     (no settle), so the transition lands on it instead of on an empty slot. */
+  :global(.tiz-vt-in) .home-hero__link {
+    animation: none;
+  }
+
+  .home-hero__media {
+    display: block;
+    box-shadow: var(--tiz-shadow-tela);
+  }
+
+  .home-hero__media :global(img) {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  /* Strokes, in % of the painting (frame 1c: 340 × 240 at −40 / 60 around a 290 px painting). */
+  .home-hero__frame :global(.home-hero__stroke--large) {
+    left: -27.6%;
+    top: 20.7%;
+    width: 117%;
+    height: 82.8%;
+  }
+
+  .home-hero__note {
+    width: fit-content;
+    max-width: calc(100% - 8px);
+    margin: 10px 0 0 var(--tiz-s2);
+    font: 400 30px/1 var(--tiz-font-mano);
+    /* Around its middle, as in the frames: even a full-width note rises less than its top margin. */
+    transform: rotate(-3deg);
+    overflow-wrap: anywhere;
+  }
+
+  /* ── Intro ───────────────────────────────────────────────── */
+  .home-hero__intro {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--tiz-s3);
+    max-width: 520px;
+    margin-top: 36px;
+  }
+
+  .home-hero__text {
+    font-size: 18px;
+    line-height: 1.5;
+  }
+
+  @media (min-width: 640px) {
+    .home-hero__work--large {
+      max-width: 440px;
+    }
+
+    .home-hero__text {
+      font-size: 19px;
+    }
+
+    .home-hero__note {
+      margin-top: 14px;
+      font-size: 34px;
+    }
+  }
+
+  /* ── Desktop: the composition of frame 1b ───────────────── */
+  @media (min-width: 1024px) {
+    .home-hero__grid {
+      /* The wall of works: 622 px at 1280 (content 1184), shrinking with the page below that.
+         (Without container units: the same from the viewport width, scrollbar included.) */
+      --wall: min(622px, calc((min(100vw, var(--tiz-page-max)) - 2 * var(--tiz-gutter)) * 0.5253));
+      display: grid;
+      /* motto | 110 | 290 | 58 | 150 | 14 (px of the reference wall, as fractions of it) */
+      grid-template-columns:
+        minmax(0, 1fr) calc(var(--wall) * 0.17685) calc(var(--wall) * 0.46624) calc(var(--wall) * 0.09325)
+        calc(var(--wall) * 0.24116) calc(var(--wall) * 0.0225);
+      grid-template-rows: auto auto;
+      row-gap: calc(var(--wall) * 0.1318);
+      align-items: start;
+    }
+
+    /* The 800 px of frame 1b at 1280, scaled with the wall below that (taller works make it taller). */
+    .home-hero:not(.home-hero--empty) {
+      min-height: min(800px, 62.5vw);
+    }
+
+    .home-hero__motto {
+      /* Above the large work's stroke where it reaches into the column (never above a painting:
+         the columns do not overlap). */
+      position: relative;
+      z-index: 1;
+      grid-column: 1;
+      grid-row: 1;
+      margin-top: 40px;
+      padding-right: 24px;
+      /* 150px, smaller when the longest line would not fit in the column. */
+      font-size: clamp(28px, calc(140cqi / var(--chars, 11)), 150px);
+    }
+
+    @supports not (width: 1cqi) {
+      .home-hero__motto {
+        font-size: clamp(28px, calc((min(100vw, var(--tiz-page-max)) - 2 * var(--tiz-gutter)) * 1.4 / var(--chars, 11)), 150px);
+      }
+    }
+
+    .home-hero__motto.home-hero__motto--flow {
+      font-size: 56px;
+    }
+
+    @supports (width: 1cqi) {
+      .home-hero__grid {
+        --wall: min(622px, 52.53cqi);
+      }
+    }
+
+    /* The slot is 400 px wide at 1280 (0.643 of the wall); a work taller than 5:4 is capped at
+       1.25 × that height (500 px) and centred in the slot. */
+    .home-hero__work--large {
+      grid-column: 2 / 4;
+      grid-row: 1;
+      justify-self: center;
+      width: min(100%, calc(var(--wall) * 0.64309 * 1.25 * var(--ratio, 1)));
+      max-width: none;
+      margin-top: 30px;
+      padding-left: 0;
+    }
+
+    .home-hero__work--narrow {
+      display: block;
+      grid-column: 5;
+      grid-row: 1 / 3;
+      margin-top: calc(var(--wall) * 0.3055);
+    }
+
+    .home-hero__work--small {
+      display: block;
+      grid-column: 3;
+      grid-row: 2;
+      width: calc(var(--wall) * 0.36977);
+    }
+
+    /* After the works, the note writes and the intro settles in (frame 1b). In the flow layout
+       they are there at once, as in frame 1c. */
+    .home-hero__note {
+      animation: tiz-write var(--tiz-dur-write) var(--tiz-ease-brush) 1.6s both;
+    }
+
+    /* Frame 1b: 520 × 330 at −60 / 70 around 400 px; 230 × 300 at −50 / −30 around 150 × 325;
+       260 × 180 at 60 / 40 around 230. */
+    .home-hero__frame :global(.home-hero__stroke--large) {
+      left: -15%;
+      top: 17.5%;
+      width: 130%;
+      height: 82.5%;
+    }
+
+    .home-hero__frame :global(.home-hero__stroke--narrow) {
+      left: -33.3%;
+      top: -9.2%;
+      width: 153.3%;
+      height: 92.3%;
+    }
+
+    .home-hero__frame :global(.home-hero__stroke--small) {
+      left: 26.1%;
+      top: 17.4%;
+      width: 113%;
+      height: 78.3%;
+    }
+
+    .home-hero__intro {
+      grid-column: 1;
+      grid-row: 2;
+      gap: var(--tiz-s4);
+      max-width: 380px;
+      margin-top: 0;
+      animation: tiz-settle var(--tiz-dur-settle) var(--tiz-ease-settle) 1.4s both;
+    }
+
+    /* No works published: the motto and the intro alone, in one column. */
+    .home-hero--empty .home-hero__grid {
+      display: flex;
+    }
+
+    .home-hero--empty .home-hero__intro {
+      margin-top: var(--tiz-s6);
+    }
+  }
+</style>

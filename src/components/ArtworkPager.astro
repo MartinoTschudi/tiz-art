@@ -1,9 +1,14 @@
 ---
 /**
- * Previous / next work at the bottom of an artwork page (the list wraps around).
+ * Previous / next work at the bottom of an artwork page (frame 1f; the list wraps around): two halves
+ * with a dashed divider, each with an 84 px thumbnail, "← Precedente" / "Successiva →" and the title
+ * in her hand; gesso on hover. From 640 px only: on phones the fixed bar (opera/OperaBar.astro) has
+ * the arrows. With two works only one half shows (lib/opera.ts → neighbourIndexes).
  */
+import ResponsivePicture from './ResponsivePicture.astro';
 import { routes } from './lib/site';
 import type { Opera } from './lib/opere';
+import { pagerThumbSizes } from './lib/opera';
 
 interface Props {
   prev?: Opera;
@@ -11,70 +16,128 @@ interface Props {
 }
 
 const { prev, next } = Astro.props;
+const cover = (opera: Opera) => opera.data.immagini[0];
+const sizesOf = (opera: Opera) => pagerThumbSizes(cover(opera).width / cover(opera).height);
 ---
 
 {
   (prev || next) && (
     <nav class="pager" aria-label="Altre opere">
-      {prev && (
-        <a class="pager__link pager__link--prev" href={routes.opera(prev.id)} rel="prev">
-          <span class="pager__label">
-            <span aria-hidden="true">←</span> Precedente
-          </span>
-          <span class="pager__title">{prev.data.titolo}</span>
-        </a>
-      )}
-      {next && (
-        <a class="pager__link pager__link--next" href={routes.opera(next.id)} rel="next">
-          <span class="pager__label">
-            Successiva <span aria-hidden="true">→</span>
-          </span>
-          <span class="pager__title">{next.data.titolo}</span>
-        </a>
-      )}
+      <div class="pager__inner">
+        {prev && (
+          <a class="pager__link pager__link--prev" href={routes.opera(prev.id)} rel="prev">
+            <span class="pager__thumb">
+              <ResponsivePicture image={cover(prev)} alt="" preset="thumb" sizes={sizesOf(prev)} />
+            </span>
+            <span class="pager__text">
+              <span class="pager__label">
+                <span aria-hidden="true">←</span> Precedente<span class="visually-hidden">:</span>
+              </span>
+              <span class="pager__title">{prev.data.titolo}</span>
+            </span>
+          </a>
+        )}
+        {next && (
+          <a class="pager__link pager__link--next" href={routes.opera(next.id)} rel="next">
+            <span class="pager__text">
+              <span class="pager__label">
+                Successiva<span class="visually-hidden">:</span> <span aria-hidden="true">→</span>
+              </span>
+              <span class="pager__title">{next.data.titolo}</span>
+            </span>
+            <span class="pager__thumb">
+              <ResponsivePicture image={cover(next)} alt="" preset="thumb" sizes={sizesOf(next)} />
+            </span>
+          </a>
+        )}
+      </div>
     </nav>
   )
 }
 
 <style>
   .pager {
+    display: none;
+    border-top: var(--tiz-divider);
+  }
+
+  .pager__inner {
     display: grid;
-    /* minmax(0, …): a long title wraps instead of widening its column */
+    /* minmax(0, …): a long title wraps instead of widening its half */
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    gap: var(--space-4);
-    padding-top: var(--space-6);
-    border-top: var(--border-width) solid var(--color-line);
+    max-width: var(--tiz-page-max);
+    margin-inline: auto;
   }
 
   .pager__link {
     display: flex;
-    flex-direction: column;
-    gap: var(--space-1);
-    min-height: var(--tap-target);
+    align-items: center;
+    gap: var(--tiz-s4);
+    min-width: 0;
+    padding: 28px var(--tiz-gutter);
+    color: var(--tiz-terra);
     text-decoration: none;
+    transition: background-color var(--tiz-dur-fast) var(--tiz-ease-settle);
+  }
+
+  .pager__link:hover {
+    background: var(--tiz-gesso);
+    color: var(--tiz-terra);
+  }
+
+  /* Inside the half: the half reaches the edge of the window. */
+  .pager__link:focus-visible {
+    outline-offset: calc(-1 * var(--tiz-focus-offset) - 2px);
+  }
+
+  .pager__link--prev {
+    border-right: var(--tiz-divider);
   }
 
   .pager__link--next {
     grid-column: 2;
-    align-items: flex-end;
+    justify-content: flex-end;
     text-align: right;
   }
 
+  .pager__thumb {
+    flex: none;
+  }
+
+  .pager__thumb :global(img) {
+    width: auto;
+    height: 84px;
+    box-shadow: var(--tiz-shadow-thumb-l);
+  }
+
+  .pager__text {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .pager__link--next .pager__text {
+    align-items: flex-end;
+  }
+
   .pager__label {
-    font-size: var(--text-xs);
-    letter-spacing: var(--tracking-caps);
-    text-transform: uppercase;
-    color: var(--color-text-muted);
+    color: var(--tiz-terra-2);
+    font: 500 var(--tiz-small) / 1 var(--tiz-font-voce);
   }
 
+  /* max-width: in the right half the column is aligned to the end (shrink-to-fit), where a long
+     single word would otherwise keep its full width and run over the other half. */
   .pager__title {
-    font-family: var(--font-display);
-    font-size: var(--text-xl);
-    line-height: var(--leading-snug);
-    overflow-wrap: anywhere;
+    max-width: 100%;
+    font: 400 36px/1 var(--tiz-font-mano);
+    text-wrap: balance;
+    overflow-wrap: break-word;
   }
 
-  .pager__link:hover .pager__title {
-    color: var(--color-highlight);
+  @media (min-width: 640px) {
+    .pager {
+      display: block;
+    }
   }
 </style>

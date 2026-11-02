@@ -1,0 +1,77 @@
+---
+/**
+ * A brushstroke of colour BEHIND a painting (decorative, aria-hidden). The parent needs
+ * `position: relative; isolation: isolate` (the stroke sits at z-index −1 inside it).
+ *
+ *   <div class="work">                       ← position: relative; isolation: isolate
+ *     <Stroke color="var(--tiz-ottanio)" top="40px" left="-36px" width="80%" height="70%" rotate="-5deg" />
+ *     <ResponsivePicture … />
+ *   </div>
+ *   <Stroke color={operaPaintVar(opera, published)} inset="16% 14% 10% 4%" />
+ *
+ * - `color`: any CSS colour, normally var(--tiz-<paint>) (lib/opere.ts → operaPaintVar).
+ * - `top` / `left` / `width` / `height`, or `inset` instead: CSS lengths relative to the parent.
+ * - `rotate`: default -5deg. `delay`: animation delay (CSS time); inside a [data-reveal] element the
+ *   default is that element's reveal delay, so stroke and painting start together.
+ * - `shape`: 1 (default) or 2, the two hand-cut stroke outlines of the design.
+ * - `class`: extra class, e.g. to change the duration from a parent with :global().
+ *
+ * It wipes in from left to right on load (1100 ms); inside a [data-reveal] element it waits until the
+ * element is revealed. The cycles for lists (SWL / SWT / SWR) are in lib/composition.ts (strokeAt).
+ * The rough edge is the #tiz-rough SVG filter in BaseLayout.
+ */
+interface Props {
+  color: string;
+  top?: string;
+  left?: string;
+  width?: string;
+  height?: string;
+  inset?: string;
+  rotate?: string;
+  delay?: string;
+  shape?: 1 | 2;
+  class?: string;
+}
+
+const { color, top, left, width, height, inset, rotate, delay, shape = 1, class: className } = Astro.props;
+
+const style = [
+  `--tiz-stroke-c: ${color}`,
+  rotate && `--tiz-stroke-r: ${rotate}`,
+  delay && `--tiz-stroke-d: ${delay}`,
+  ...(inset ? [`inset: ${inset}`] : [top && `top: ${top}`, left && `left: ${left}`, width && `width: ${width}`, height && `height: ${height}`]),
+]
+  .filter(Boolean)
+  .join('; ');
+---
+
+<span aria-hidden="true" class:list={['tiz-stroke', shape === 2 && 'tiz-stroke--2', className]} style={style}></span>
+
+<style>
+  .tiz-stroke {
+    position: absolute;
+    z-index: -1;
+    background: var(--tiz-bristle), var(--tiz-stroke-c, var(--tiz-ocra));
+    border-radius: var(--tiz-radius-stroke);
+    filter: url(#tiz-rough);
+    transform: rotate(var(--tiz-stroke-r, -5deg));
+    pointer-events: none;
+    animation: tiz-stroke var(--tiz-dur-stroke) var(--tiz-ease-brush) both;
+    animation-delay: var(--tiz-stroke-d, calc(var(--tiz-reveal-delay, 0ms) + var(--tiz-reveal-step, 0) * var(--tiz-stagger)));
+  }
+
+  .tiz-stroke--2 {
+    border-radius: var(--tiz-radius-stroke-2);
+  }
+
+  /* Inside an element that is not revealed yet: hold the wipe at its start (fully clipped). */
+  :global(.js) :global([data-reveal]:not(.is-in)) .tiz-stroke {
+    animation-play-state: paused;
+  }
+
+  @media print {
+    .tiz-stroke {
+      animation: none;
+    }
+  }
+</style>

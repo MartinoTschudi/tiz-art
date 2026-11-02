@@ -5,13 +5,14 @@
   "altezza": 150,
   "tecnica": "Acrilico su tela",
   "collezione": "noi, DONNA.",
+  "colore": "terracotta",
   "testo": "Sorellanza è una parola che nel suo cuore ne racchiude un’altra: alleanza. È un patto arcaico, che nasce dalle donne che per secoli, e da secoli, si sono date sostegno, vicendevolmente, le une alle altre, per non soccombere. Come le poetesse pashtun, unite nella lotta attraverso versi di poesia ribelli.\n\nQuesto patto è una catena, composta da anelli, che vanno da qui al di là del mondo. Aldilà di tutto, di ogni credo religioso, politico e stato sociale di ogni tempo.",
   "immagini": [
     "./01.jpg"
   ],
   "ordine": 120,
-  "inEvidenza": true,
+  "inEvidenza": false,
   "pubblicata": true,
   "creataIl": "2023-09-23T12:00:00.000Z",
-  "aggiornataIl": "2023-09-23T12:00:00.000Z"
+  "aggiornataIl": "2026-11-02T17:20:21.347Z"
 }

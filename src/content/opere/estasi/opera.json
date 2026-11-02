@@ -5,14 +5,15 @@
   "altezza": 130,
   "tecnica": "Acrilico su tela",
   "collezione": "noi, DONNA.",
+  "colore": "ottanio",
   "testo": "Ad ognuna il suo vissuto, ad ognuna il suo dolore, ad ognuna il suo orgoglio di sfoggiare il proprio essere come fosse un gioiello e goderne ogni attimo.",
   "immagini": [
     "./01.jpg",
     "./02.jpg"
   ],
   "ordine": 60,
-  "inEvidenza": false,
+  "inEvidenza": true,
   "pubblicata": true,
   "creataIl": "2023-12-27T12:00:00.000Z",
-  "aggiornataIl": "2023-12-27T12:00:00.000Z"
+  "aggiornataIl": "2026-11-02T17:20:21.347Z"
 }

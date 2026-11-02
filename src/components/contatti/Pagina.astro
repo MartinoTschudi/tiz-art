@@ -1,0 +1,67 @@
+---
+/**
+ * The two columns of the contact pages (frames 1j / 1k): the Scrivimi block on the left, the slot on
+ * the right (the form on /contatti/, "Grazie!" on /contatti/grazie/). Stacked below 1024 px: the block
+ * on top, then the slot.
+ *
+ * - `titleId`: passed to Scrivimi ("Scrivimi" becomes the <h1>); omit it when the slot has the h1.
+ */
+import Scrivimi from './Scrivimi.astro';
+
+interface Props {
+  titleId?: string;
+}
+
+const { titleId } = Astro.props;
+---
+
+<div class="contatti">
+  <div class="contatti__grid container">
+    <Scrivimi titleId={titleId} />
+    <div class="contatti__main">
+      <slot />
+    </div>
+  </div>
+</div>
+
+<style>
+  /* The stroke of the block reaches past the gutter: clip it at the viewport, never scroll sideways. */
+  .contatti {
+    overflow-x: clip;
+  }
+
+  /* The bottom padding (56 px at least) also holds up to 40 px of the form's status slot (ContactForm). */
+  .contatti__grid {
+    display: grid;
+    gap: 40px;
+    padding-block: 16px 56px;
+  }
+
+  .contatti__main {
+    min-width: 0;
+  }
+
+  @media (min-width: 640px) {
+    .contatti__grid {
+      gap: 56px;
+      padding-block: var(--tiz-s5) 88px;
+    }
+
+    .contatti__main {
+      max-width: 640px;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .contatti__grid {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: var(--tiz-s7);
+      align-items: start;
+      padding-block: var(--tiz-s6) 96px;
+    }
+
+    .contatti__main {
+      max-width: none;
+    }
+  }
+</style>

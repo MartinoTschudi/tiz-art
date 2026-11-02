@@ -3,9 +3,10 @@
  * Responsive photo (paintings, portrait): <picture> with AVIF sources and a WebP <img>, widths from a
  * preset in lib/images.ts. Width/height attributes keep the real aspect ratio (no layout shift, never
  * cropped).
- * Unstyled on purpose: the parent styles it, e.g. `.card__media :global(img) { width: 100% }`.
+ * Unstyled on purpose: the parent styles it, e.g. `.tiz-hung__media :global(img) { width: 100% }`.
+ * `sizes` comes from the layout width (e.g. lib/composition.ts → realScaleSizes for the real-scale lists).
  *
- *   <ResponsivePicture image={cover} alt="…" preset="card" sizes="(min-width: 48rem) 30vw, 90vw" />
+ *   <ResponsivePicture image={cover} alt="…" preset="card" sizes={realScaleSizes(data.larghezza)} />
  */
 import { Picture } from 'astro:assets';
 import type { ImageMetadata } from 'astro';

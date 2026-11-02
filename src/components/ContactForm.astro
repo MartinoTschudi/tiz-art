@@ -1,129 +1,222 @@
 ---
 /**
- * Contact form (CONTRACTS 5.4). Sends through Web3Forms; behaviour in contact-form.ts.
+ * Contact form (CONTRACTS 5.4, frames 1j / 1k / 1j-sent), the only way to reach the artist. Behaviour
+ * in contact-form.ts; rules and texts in lib/contatti.ts.
  *
- * - With JavaScript: Italian validation, fetch POST (JSON), messages in place, no page change.
- *   `?opera=<slug>` pre-selects the artwork and shows its thumbnail.
- * - Without JavaScript: a normal POST to Web3Forms (their own confirmation page).
- * - Empty access key in src/data/sito.json: the form renders, sending says it is not active yet.
+ * - With JavaScript: Italian validation (the error under its field, the input kept), JSON POST to
+ *   Web3Forms with fetch; "Grazie!" then replaces the form (focus moved to it, announced) and
+ *   "Scrivi ancora" brings back an empty form.
+ *   `?opera=<slug>` of a published work shows the chip "Mi interessa «…»" with its × (≥ 44 px): the
+ *   works are embedded below as JSON, and a tiny inline script draws the chip while the page is parsed,
+ *   so it never pushes the fields down after the first paint.
+ * - Without JavaScript: a normal POST to Web3Forms with the fields it expects (access_key, subject,
+ *   from_name, name, email, message, botcheck, redirect); Web3Forms then sends the visitor to
+ *   /contatti/grazie/ (absolute URL, base path included).
+ * - Empty access key (src/data/sito.json): the form renders; after validation, sending shows
+ *   "Il modulo non è ancora attivo" (the build prints a warning). Without JS that notice shows at once
+ *   and the button is off, so nothing is posted to Web3Forms in vain.
+ *
+ * Hooks for the script: [data-contact] (root), form[data-contact-form] (data-active),
+ * script[data-contact-opere], [data-opera-chip] (+ data-slug, [data-opera-thumb], [data-opera-title],
+ * [data-opera-clear]), [data-error-for], [data-submit], [data-status] (data-tone, [data-status-title],
+ * [data-status-text]), [data-contact-offline], [data-contact-success], [data-grazie-title],
+ * [data-contact-again], [data-contact-live].
  */
+import Grazie from './contatti/Grazie.astro';
 import { SITE, absoluteUrl, routes } from './lib/site';
-import { metaLine, type Opera } from './lib/opere';
-import { CONTACT_THUMB_WIDTH, webpUrl } from './lib/images';
+import type { Opera } from './lib/opere';
+import { CONTACT_THUMB_SCALE, webpUrl } from './lib/images';
+import { FROM_NAME, LIMITS, MESSAGES, MIN_MESSAGE, SUBJECT, WEB3FORMS_ENDPOINT } from './lib/contatti';
 
 interface Props {
+  /** Published works, in display order (getPublishedOpere()). */
   opere: Opera[];
+  /** id of the heading that names the form ("Scrivimi"). */
+  labelledBy?: string;
 }
 
-const WEB3FORMS_ENDPOINT = 'https://api.web3forms.com/submit';
-const SUBJECT = 'Nuovo messaggio da tiz-art.ch';
+const { opere, labelledBy } = Astro.props;
+const active = SITE.web3formsAccessKey !== '';
+const redirect = absoluteUrl(routes.contattiGrazie);
 
-const options = await Promise.all(
-  Astro.props.opere.map(async (opera) => ({
-    slug: opera.id,
-    titolo: opera.data.titolo,
-    meta: metaLine(opera.data),
-    url: absoluteUrl(routes.opera(opera.id)),
-    thumb: await webpUrl(opera.data.immagini[0], CONTACT_THUMB_WIDTH),
-  })),
+// The chip's thumbnail box (CSS px, desktop; CSS scales it down on phones). The painting is fitted
+// inside it, never cropped: 64 px high, or lower when it is very wide. The file is twice that size
+// (e.g. Estasi 31 × 64 → a 62 px wide WebP), never more.
+const THUMB_BOX = { width: 96, height: 64 };
+
+const works = await Promise.all(
+  opere.map(async (opera) => {
+    const cover = opera.data.immagini[0];
+    const ratio = cover.width / cover.height;
+    const height = Math.min(THUMB_BOX.height, Math.round(THUMB_BOX.width / ratio));
+    const width = Math.max(1, Math.round(height * ratio));
+    return {
+      slug: opera.id,
+      titolo: opera.data.titolo,
+      url: absoluteUrl(routes.opera(opera.id)),
+      thumb: await webpUrl(cover, CONTACT_THUMB_SCALE * width),
+      width,
+      height,
+    };
+  }),
 );
+// Inside <script type="application/json">: "<" escaped, so no title can close the element.
+const worksJson = JSON.stringify(works).replace(/</g, '\\u003c');
 ---
 
-<form
-  class="contact-form"
-  method="post"
-  action={WEB3FORMS_ENDPOINT}
-  data-contact-form
-  data-active={SITE.web3formsAccessKey ? 'true' : 'false'}
->
-  <input type="hidden" name="access_key" value={SITE.web3formsAccessKey} />
-  <input type="hidden" name="subject" value={SUBJECT} />
-  <input type="hidden" name="from_name" value="tiz-art.ch" />
+<div class="contact" data-contact>
+  <form
+    class="contact-form"
+    method="post"
+    action={WEB3FORMS_ENDPOINT}
+    aria-labelledby={labelledBy}
+    data-contact-form
+    data-active={active ? 'true' : 'false'}
+  >
+    <input type="hidden" name="access_key" value={SITE.web3formsAccessKey} />
+    <input type="hidden" name="subject" value={SUBJECT} />
+    <input type="hidden" name="from_name" value={FROM_NAME} />
+    <input type="hidden" name="redirect" value={redirect} />
+    {/* Title + URL of the chosen work; disabled (not sent) while none is chosen. */}
+    <input type="hidden" name="opera" value="" disabled />
 
-  {
-    options.length > 0 && (
-      <div class="contact-form__field">
-        <label class="contact-form__label" for="contatto-opera">
-          Opera <span class="contact-form__optional">(facoltativo)</span>
-        </label>
-        <select class="contact-form__control" id="contatto-opera" name="opera">
-          <option value="">Nessuna in particolare</option>
-          {options.map((option) => (
-            <option value={option.slug} data-title={option.titolo} data-url={option.url} data-thumb={option.thumb} data-meta={option.meta}>
-              {option.titolo}
-            </option>
-          ))}
-        </select>
-        <figure class="contact-form__opera" hidden data-opera-preview>
-          <img class="contact-form__opera-image" alt="" width="80" height="80" data-opera-image />
-          <figcaption>
-            <span class="contact-form__opera-title" data-opera-title></span>
-            <span class="contact-form__opera-meta" data-opera-meta></span>
-          </figcaption>
-        </figure>
+    <div class="chip" hidden data-opera-chip>
+      <span class="chip__thumb" data-opera-thumb></span>
+      <p class="chip__text">
+        <span class="chip__label">Mi interessa</span>{' '}
+        <span class="chip__title" data-opera-title></span>
+      </p>
+      <button class="chip__remove" type="button" aria-label="Rimuovi l’opera dal messaggio" data-opera-clear>
+        <span aria-hidden="true">×</span>
+      </button>
+    </div>
+    <script type="application/json" data-contact-opere set:html={worksJson} />
+    <script is:inline>
+      // Runs while the page is parsed (before the first paint, so the fields never jump): show the chip
+      // when ?opera= names a published work (the JSON above). contact-form.ts reads data-slug.
+      (function () {
+        try {
+          var slug = new URLSearchParams(location.search).get('opera');
+          var form = document.currentScript && document.currentScript.closest('form');
+          if (!slug || !form) return;
+          var works = JSON.parse(form.querySelector('[data-contact-opere]').textContent);
+          var work = works.filter(function (w) { return w.slug === slug; })[0];
+          if (!work) return;
+          var chip = form.querySelector('[data-opera-chip]');
+          var img = document.createElement('img');
+          img.alt = '';
+          img.width = work.width;
+          img.height = work.height;
+          // The CSS size, set before the file arrives (a late thumbnail must not move the fields).
+          img.style.setProperty('--w', work.width + 'px');
+          img.style.setProperty('--h', work.height + 'px');
+          img.decoding = 'async';
+          img.src = work.thumb;
+          chip.querySelector('[data-opera-thumb]').appendChild(img);
+          chip.querySelector('[data-opera-title]').textContent = work.titolo;
+          chip.querySelector('[data-opera-clear]').setAttribute('aria-label', 'Rimuovi «' + work.titolo + '» dal messaggio');
+          chip.dataset.slug = work.slug;
+          chip.hidden = false;
+        } catch (error) {
+          // No chip: the message simply goes without a work.
+        }
+      })();
+    </script>
+
+    <div class="field">
+      <label class="field__label" for="contatto-nome">Il tuo nome</label>
+      <input
+        class="field__control"
+        id="contatto-nome"
+        name="name"
+        type="text"
+        autocomplete="name"
+        required
+        maxlength={LIMITS.name}
+        aria-describedby="contatto-nome-errore"
+      />
+      <p class="field__error" id="contatto-nome-errore" data-error-for="name"></p>
+    </div>
+
+    <div class="field">
+      <label class="field__label" for="contatto-email">La tua e-mail, per risponderti</label>
+      <input
+        class="field__control"
+        id="contatto-email"
+        name="email"
+        type="email"
+        autocomplete="email"
+        autocapitalize="off"
+        spellcheck="false"
+        required
+        maxlength={LIMITS.email}
+        aria-describedby="contatto-email-errore"
+      />
+      <p class="field__error" id="contatto-email-errore" data-error-for="email"></p>
+    </div>
+
+    <div class="field">
+      <label class="field__label" for="contatto-messaggio">Il tuo messaggio</label>
+      <textarea
+        class="field__control field__control--area"
+        id="contatto-messaggio"
+        name="message"
+        rows="5"
+        required
+        minlength={MIN_MESSAGE}
+        maxlength={LIMITS.message}
+        aria-describedby="contatto-messaggio-errore"></textarea>
+      <p class="field__error" id="contatto-messaggio-errore" data-error-for="message"></p>
+    </div>
+
+    <div class="actions">
+      <button
+        class="tiz-btn actions__submit"
+        type="submit"
+        disabled={!active}
+        aria-describedby={active ? undefined : 'contatto-offline'}
+        data-submit
+      >
+        <span>Invia <span aria-hidden="true">→</span></span>
+      </button>
+      <p class="privacy">
+        Nome, <span class="nowrap">e-mail</span> e messaggio servono solo per risponderti: li ricevo
+        per <span class="nowrap">e-mail</span> tramite il servizio Web3Forms, che può trattarli all’estero.
+        Non li uso per nient’altro.
+      </p>
+      {/* Last in the form, with the height of the tallest message reserved (see .actions__slot): a
+          message never moves anything, and while there is none the space is part of the margin
+          above the footer. */}
+      <div class="actions__slot">
+        <p class="status" role="status" data-status>
+          <strong class="status__title" data-status-title></strong>{' '}
+          <span data-status-text></span>
+        </p>
+        {
+          !active && (
+            <p class="status status--offline" id="contatto-offline" data-tone="inactive" data-contact-offline>
+              <strong class="status__title">{MESSAGES.inactiveTitle}</strong>{' '}
+              <span>Per ora i messaggi non partono.</span>
+            </p>
+          )
+        }
       </div>
-    )
-  }
+    </div>
 
-  <div class="contact-form__field">
-    <label class="contact-form__label" for="contatto-nome">Nome</label>
-    <input
-      class="contact-form__control"
-      id="contatto-nome"
-      name="name"
-      type="text"
-      autocomplete="name"
-      required
-      maxlength="120"
-      aria-describedby="contatto-nome-errore"
-    />
-    <p class="contact-form__error" id="contatto-nome-errore" data-error-for="name"></p>
+    {/* Honeypot: invisible to people, bots tend to tick it (Web3Forms rejects the POST then). */}
+    <div class="trap" aria-hidden="true">
+      <label>Non compilare questo campo <input type="checkbox" name="botcheck" tabindex="-1" autocomplete="off" /></label>
+    </div>
+  </form>
+
+  <div class="success" hidden data-contact-success>
+    <Grazie level={2} id="contatto-grazie" focusable>
+      <button class="tiz-marker" type="button" data-contact-again>Scrivi ancora</button>
+    </Grazie>
   </div>
 
-  <div class="contact-form__field">
-    <label class="contact-form__label" for="contatto-email">E-mail</label>
-    <input
-      class="contact-form__control"
-      id="contatto-email"
-      name="email"
-      type="email"
-      autocomplete="email"
-      required
-      maxlength="200"
-      aria-describedby="contatto-email-errore"
-    />
-    <p class="contact-form__error" id="contatto-email-errore" data-error-for="email"></p>
-  </div>
-
-  <div class="contact-form__field">
-    <label class="contact-form__label" for="contatto-messaggio">Messaggio</label>
-    <textarea
-      class="contact-form__control contact-form__control--textarea"
-      id="contatto-messaggio"
-      name="message"
-      rows="7"
-      required
-      minlength="10"
-      maxlength="5000"
-      aria-describedby="contatto-messaggio-errore"></textarea>
-    <p class="contact-form__error" id="contatto-messaggio-errore" data-error-for="message"></p>
-  </div>
-
-  <!-- Honeypot: invisible to people, bots tend to tick it. -->
-  <div class="contact-form__trap" aria-hidden="true">
-    <label>Non compilare questo campo <input type="checkbox" name="botcheck" tabindex="-1" autocomplete="off" /></label>
-  </div>
-
-  <div class="contact-form__actions">
-    <button class="button contact-form__submit" type="submit" data-submit>Invia messaggio</button>
-    <p class="contact-form__status" role="status" data-status></p>
-  </div>
-
-  <p class="contact-form__privacy">
-    Nome, e-mail e messaggio servono solo per risponderti: li ricevo per e-mail tramite il servizio
-    Web3Forms, che può trattarli all’estero. Non li uso per nient’altro.
-  </p>
-</form>
+  <p class="visually-hidden" aria-live="polite" data-contact-live></p>
+</div>
 
 <script>
   import { initContactForms } from './contact-form';
@@ -132,100 +225,250 @@ const options = await Promise.all(
 </script>
 
 <style>
+  /* ── Form: one column. The reserved error line under each field is part of the spacing, so the
+     fields sit 26 / 30 px apart as in the frames (phone / desktop), with or without an error. ── */
   .contact-form {
-    display: grid;
-    gap: var(--space-5);
-    max-width: var(--width-text);
-  }
-
-  .contact-form__field {
-    display: grid;
-    gap: var(--space-2);
-  }
-
-  .contact-form__label {
-    font-size: var(--text-sm);
-    font-weight: var(--weight-medium);
-  }
-
-  .contact-form__optional {
-    font-weight: var(--weight-regular);
-    color: var(--color-text-muted);
-  }
-
-  .contact-form__control {
-    width: 100%;
-    min-height: var(--tap-target);
-    padding: var(--space-2) var(--space-3);
-    border: var(--border-width) solid var(--color-line-strong);
-    border-radius: var(--radius-md);
-    background: var(--color-surface);
-    font-size: max(16px, var(--text-base)); /* ≥ 16 px: iOS does not zoom into the field */
-    transition: border-color var(--duration-fast) var(--ease);
-  }
-
-  .contact-form__control:hover {
-    border-color: var(--color-text-muted);
-  }
-
-  .contact-form__control:focus-visible {
-    border-color: var(--color-highlight);
-    outline-offset: 1px;
-  }
-
-  .contact-form__control[aria-invalid='true'] {
-    border-color: var(--color-error);
-  }
-
-  .contact-form__control--textarea {
-    min-height: 10rem;
-    resize: vertical;
-  }
-
-  .contact-form__opera {
     display: flex;
-    align-items: center;
-    gap: var(--space-4);
-    padding: var(--space-3);
-    border: var(--border-width) solid var(--color-line);
-    border-radius: var(--radius-md);
-    background: var(--color-surface);
+    flex-direction: column;
+    gap: 6px;
   }
 
-  .contact-form__opera[hidden] {
+  .contact-form[hidden],
+  .chip[hidden],
+  .success[hidden] {
     display: none;
   }
 
-  .contact-form__opera-image {
-    width: 5rem;
-    height: 5rem;
-    object-fit: contain;
-    background: var(--color-placeholder);
+  /* ── Chip "Mi interessa «…»" ── */
+  .chip {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: var(--tiz-s4);
+    padding: 10px;
+    border-radius: var(--tiz-radius-btn);
+    background: var(--tiz-gesso);
   }
 
-  .contact-form__opera figcaption {
+  .chip__thumb {
+    flex: none;
+    display: flex;
+  }
+
+  /* The painting whole, fitted into the box by the build (--w / --h: 96 × 64 at most; 7/8 of that on
+     phones, as in frame 1k), never cropped. Its only effect is the small shadow of frame 1j: the tela
+     shadow is sized for whole paintings and would spill out of the chip. */
+  .chip__thumb :global(img) {
+    width: calc(var(--w) * 7 / 8);
+    height: calc(var(--h) * 7 / 8);
+    box-shadow: var(--tiz-shadow-thumb);
+  }
+
+  .chip__text {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--tiz-s1);
+  }
+
+  .chip__label {
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1;
+    color: var(--tiz-terra-2);
+  }
+
+  /* A very long title (up to 120 characters) stops after 4 lines; the whole title stays in the text. */
+  .chip__title {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 4;
+    line-clamp: 4;
+    overflow: hidden;
+    font-family: var(--tiz-font-mano);
+    font-size: 28px;
+    line-height: 1.05;
+    overflow-wrap: anywhere;
+  }
+
+  .chip__remove {
+    flex: none;
     display: grid;
+    place-items: center;
+    width: var(--tiz-hit);
+    height: var(--tiz-hit);
+    padding: 0;
+    border: 0;
+    border-radius: var(--tiz-radius-btn-s);
+    background: transparent;
+    color: var(--tiz-terra);
+    font: 500 22px/1 var(--tiz-font-voce);
+    transition: background-color var(--tiz-dur-fast) var(--tiz-ease-settle);
   }
 
-  .contact-form__opera-title {
-    font-family: var(--font-display);
-    font-size: var(--text-lg);
+  .chip__remove:hover {
+    background: var(--tiz-lino);
+    color: var(--tiz-rosso);
   }
 
-  .contact-form__opera-meta {
-    font-size: var(--text-xs);
-    color: var(--color-text-muted);
+  /* ── Fields with the underline ── */
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
   }
 
-  /* Reserved line: an error appearing does not push the form around. */
-  .contact-form__error {
-    min-height: 1.4em;
-    font-size: var(--text-xs);
-    line-height: 1.4;
-    color: var(--color-error);
+  .field__label {
+    font-size: 15px;
+    font-weight: 500;
+    line-height: 1;
+    color: var(--tiz-terra-2);
+    transition: color var(--tiz-dur-fast) var(--tiz-ease-settle);
   }
 
-  .contact-form__trap {
+  .field:focus-within .field__label {
+    color: var(--tiz-terra);
+  }
+
+  .field__control {
+    width: 100%;
+    min-height: var(--tiz-hit);
+    padding: 10px 0;
+    border: 0;
+    border-bottom: 2px solid var(--tiz-terra);
+    border-radius: 0;
+    background: transparent;
+    color: var(--tiz-terra);
+    font: 400 20px/1.2 var(--tiz-font-voce);
+    appearance: none;
+    transition:
+      border-color var(--tiz-dur-fast) var(--tiz-ease-settle),
+      box-shadow var(--tiz-dur-fast) var(--tiz-ease-settle);
+  }
+
+  .field__control--area {
+    display: block;
+    line-height: 1.45;
+    resize: vertical;
+  }
+
+  /* Focus: the underline turns rosso and doubles (the transparent outline shows in forced colours). */
+  .field__control:focus-visible {
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+    border-bottom-color: var(--tiz-rosso);
+    box-shadow: 0 2px 0 var(--tiz-rosso);
+  }
+
+  .field__control[aria-invalid='true'] {
+    border-bottom-color: var(--tiz-error);
+  }
+
+  /* Browser autofill keeps the underline look (no coloured box). */
+  .field__control:-webkit-autofill {
+    -webkit-text-fill-color: var(--tiz-terra);
+    transition: background-color 600000s 0s;
+  }
+
+  /* Reserved line: an error appearing does not push the form around. It sits right under its own
+     underline and keeps its distance from the next label (14 px desktop, 10 phone; it was 11 / 7),
+     within the frames' field spacing (26 / 30 px). */
+  .field__error {
+    min-height: calc(1em + 5px);
+    margin-top: -5px;
+    padding-bottom: 5px;
+    font-size: var(--tiz-small);
+    line-height: 1;
+    color: var(--tiz-error);
+  }
+
+  /* ── Send: the button, the privacy note, then the reserved message slot ── */
+  .actions {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+
+  .actions__submit {
+    height: 56px;
+    padding: 0 30px;
+  }
+
+  /* Off only without JS while the form is not active (the note under it says why). */
+  .actions__submit:disabled {
+    cursor: not-allowed;
+  }
+
+  /* Reserved for the tallest message the form can show: while it is not active, the not-active note
+     (title + two lines, 85 px at 320 px and in the 1024 px column); once active, the failure line
+     (65 px on phones, 44 px from 640). The slot may reach 40 px into the space under the form
+     (contatti/Pagina.astro keeps at least 56 px there), so while it is empty it adds little to the
+     margin above the footer, and a message still moves nothing. */
+  .actions__slot {
+    min-height: 88px;
+    margin-bottom: -40px;
+  }
+
+  .contact-form[data-active='true'] .actions__slot {
+    min-height: 66px;
+  }
+
+  .status {
+    font-size: 15px;
+    font-weight: 500;
+    line-height: 1.45;
+  }
+
+  .status__title {
+    display: block;
+    font-weight: 700;
+  }
+
+  .status__title:empty {
+    display: none;
+  }
+
+  .status[data-tone='busy'] {
+    color: var(--tiz-terra-2);
+  }
+
+  .status[data-tone='error'],
+  .status[data-tone='failure'] {
+    color: var(--tiz-error);
+  }
+
+  /* Not active yet: a quiet gesso note, not an error (nothing the visitor did wrong). */
+  .status[data-tone='inactive'] {
+    padding: 10px 14px;
+    border-radius: var(--tiz-radius-btn);
+    background: var(--tiz-gesso);
+    color: var(--tiz-terra-3);
+    font-weight: 400;
+  }
+
+  .status[data-tone='inactive'] .status__title {
+    color: var(--tiz-terra);
+  }
+
+  /* The no-JS notice: with the script, the same note appears only after "Invia". */
+  :global(.js) .status--offline {
+    display: none;
+  }
+
+  .nowrap {
+    white-space: nowrap;
+  }
+
+  .privacy {
+    max-width: 34em;
+    font-size: var(--tiz-small);
+    line-height: 1.45;
+    color: var(--tiz-terra-2);
+  }
+
+  .trap {
     position: absolute;
     left: -100vw;
     width: 1px;
@@ -233,32 +476,45 @@ const options = await Promise.all(
     overflow: hidden;
   }
 
-  .contact-form__actions {
-    display: grid;
-    gap: var(--space-3);
-    justify-items: start;
+  @media (min-width: 640px) {
+    .contact-form {
+      gap: 10px;
+    }
+
+    .chip {
+      gap: 16px;
+      padding: var(--tiz-s3);
+    }
+
+    .chip__thumb :global(img) {
+      width: var(--w);
+      height: var(--h);
+    }
+
+    .chip__title {
+      font-size: 30px;
+    }
+
+    .field__control {
+      font-size: 22px;
+    }
+
+    .actions {
+      align-items: flex-start;
+    }
+
+    .actions__slot {
+      align-self: stretch;
+    }
+
+    .contact-form[data-active='true'] .actions__slot {
+      min-height: 44px;
+    }
   }
 
-  .contact-form__submit {
-    min-width: 13rem; /* same width for "Invia messaggio" and "Invio in corso…" */
-  }
-
-  .contact-form__status {
-    min-height: 3.3em; /* room for two lines of feedback, reserved */
-    font-size: var(--text-sm);
-  }
-
-  .contact-form__status[data-tone='success'] {
-    color: var(--color-success);
-  }
-
-  .contact-form__status[data-tone='error'] {
-    color: var(--color-error);
-  }
-
-  .contact-form__privacy {
-    max-width: 40rem;
-    font-size: var(--text-sm);
-    color: var(--color-text-muted);
+  @media (min-width: 1024px) {
+    .contact-form {
+      padding-top: 24px;
+    }
   }
 </style>

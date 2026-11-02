@@ -42,7 +42,8 @@ GitHub Pages serves it.
  Contact form on /contatti/ ──fetch──▶ api.web3forms.com ──e-mail──▶ Tiziana's inbox
 ```
 
-- **Site**: [Astro 7](https://astro.build), static output, plain CSS with design tokens, no UI framework.
+- **Site**: [Astro 7](https://astro.build), static output, plain CSS with design tokens, no UI framework;
+  design «Lo studio» by Claude Design ([docs/DESIGN-HANDOFF.md](docs/DESIGN-HANDOFF.md)).
   Artwork photos are converted by Astro (`astro:assets` + sharp) into AVIF/WebP in several widths.
 - **Admin**: `public/admin/`, plain ES modules served as-is at `<site>/admin/`. Login = e-mail + password,
   which decrypt a GitHub fine-grained token stored in `public/admin/auth.json` (AES-256-GCM, PBKDF2-SHA256
@@ -81,7 +82,7 @@ scripts/dev/admin-dev.mjs      local mock of the GitHub API for the admin (npm r
 scripts/test/                  node:test suites, no network: npm test runs every scripts/test/*.test.mjs (glob in package.json);
                                fixtures/repo/ = small copy of src/content for the admin tests (never the live content)
 scripts/dev/site-icons.mjs     renders public/favicon-32.png + apple-touch-icon.png from public/favicon.svg
-docs/                          SETUP (owner), GUIDA-ADMIN (Tiziana), DESIGN-HANDOFF (designer)
+docs/                          SETUP (owner), GUIDA-ADMIN (Tiziana), DESIGN-HANDOFF (the site's design)
 CONTRACTS.md                   the binding spec: data formats, pages, admin behaviour, deploy
 ```
 
@@ -93,7 +94,7 @@ Requirements: **Node.js 22.23.4 or newer** (`.nvmrc` = 22; Astro 7.4 refuses old
 git clone https://github.com/MartinoTschudi/tiz-art.git && cd tiz-art
 npm ci                  # exactly the locked dependencies
 npm run dev             # http://localhost:4321
-npm test                # all tests (admin, setup, content check), no network
+npm test                # all tests (admin, setup, content check, the site's design rules), no network
 npm run check:content   # validate src/content and src/data/sito.json
 npm run build           # static site in dist/
 npm run preview         # serve dist/
@@ -125,7 +126,7 @@ admin always talks to the real repository.
 | [AGENTS.md](AGENTS.md) | AI assistants, developers | How to work in this repository safely |
 | [docs/SETUP.md](docs/SETUP.md) | Martino | One-time setup: Pages, token, admin login, contact form, domain switch, troubleshooting |
 | [docs/GUIDA-ADMIN.md](docs/GUIDA-ADMIN.md) | Tiziana (Italian) | Using the admin on the phone |
-| [docs/DESIGN-HANDOFF.md](docs/DESIGN-HANDOFF.md) | designer | Structure, tokens and components for the redesign |
+| [docs/DESIGN-HANDOFF.md](docs/DESIGN-HANDOFF.md) | developers, designers | The «Lo studio» design as built: pages, components, tokens, images, behaviour |
 
 No password, token or API key is stored in this repository in readable form. The admin token exists only
 encrypted inside `public/admin/auth.json`; the Web3Forms key is public by design.

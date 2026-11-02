@@ -22,11 +22,11 @@ import type { ImageMetadata } from 'astro';
 import { absoluteUrl } from './site';
 
 export const WIDTHS = {
-  /** Cards in the justified grids (home, /opere/). */
+  /** Paintings in lists and compositions: HungWorks (Opere, home series), home hero and quote, Chi sono. */
   card: [360, 540, 720, 960, 1280],
-  /** Main image of an artwork page. */
+  /** The stage of an artwork page. */
   artwork: [540, 720, 960, 1280, 1600],
-  /** Small thumbnails (extra photos on an artwork page). */
+  /** Small thumbnails on an artwork page: the extra photos under the stage, the previous / next pager. */
   thumb: [360, 540, 720],
   /** Full-screen viewer, below the original. */
   viewer: [1280, 1920],
@@ -38,8 +38,11 @@ export const FALLBACK_WIDTH = 960;
 export const OG_BOX = 1200;
 export const OG_QUALITY = 75;
 export const ADMIN_THUMB_WIDTH = 480;
-/** Thumbnail shown next to the contact form when an artwork is chosen. */
-export const CONTACT_THUMB_WIDTH = 240;
+/**
+ * Thumbnail in the contact form's chip when an artwork is chosen: drawn at most 96 × 64 CSS px (the
+ * painting fitted in that box), its WebP is this many times that size (sharp on 2× screens).
+ */
+export const CONTACT_THUMB_SCALE = 2;
 
 /** Same aspect ratio, at most `width` wide (Astro does not upscale, so neither do the attributes). */
 function fit(src: ImageMetadata, width: number) {

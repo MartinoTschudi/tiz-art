@@ -3,12 +3,11 @@
  */
 import { getCollection, getEntry, type CollectionEntry } from 'astro:content';
 import { SITE } from './site';
+import { heroSlots, paintName, paintVar, type PaintName } from './composition';
+import { neighbourIndexes } from './opera';
 
 export type Opera = CollectionEntry<'opere'>;
 export type Profilo = CollectionEntry<'profilo'>;
-
-/** Works on the home page when none is marked "in evidenza". */
-const FEATURED_FALLBACK = 6;
 
 /** `ordine` ascending; ties: newest `creataIl` first (CONTRACTS 4.1). */
 function byOrder(a: Opera, b: Opera): number {
@@ -25,11 +24,13 @@ export async function getPublishedOpere(): Promise<Opera[]> {
   return (await getCollection('opere', ({ data }) => data.pubblicata)).sort(byOrder);
 }
 
-/** Home-page selection: the works "in evidenza", or the first few if none is marked. */
-export async function getFeaturedOpere(): Promise<Opera[]> {
-  const published = await getPublishedOpere();
-  const featured = published.filter(({ data }) => data.inEvidenza);
-  return featured.length > 0 ? featured : published.slice(0, FEATURED_FALLBACK);
+/**
+ * The first work of the home hero (heroSlots: the first one «in evidenza», else the first published
+ * work), or undefined when nothing is published. BaseLayout shares its cover when a page has no image
+ * of its own; Chi sono shows it when there is no portrait. `published` = getPublishedOpere().
+ */
+export function firstHeroWork(published: readonly Opera[]): Opera | undefined {
+  return heroSlots(composable(published)).picked[0]?.opera;
 }
 
 export async function getProfilo(): Promise<Profilo['data']> {
@@ -57,34 +58,23 @@ export function groupByCollezione(opere: Opera[]): Gruppo[] {
     .sort((a, b) => Number(a.collezione === '') - Number(b.collezione === ''));
 }
 
-/** Previous / next published work (wraps around), for the artwork page. */
+/** Previous / next published work for the artwork page (wraps around; lib/opera.ts → neighbourIndexes). */
 export function neighbours(opere: Opera[], slug: string): { prev?: Opera; next?: Opera } {
-  const index = opere.findIndex((opera) => opera.id === slug);
-  if (index === -1 || opere.length < 2) return {};
-  return {
-    prev: opere[(index - 1 + opere.length) % opere.length],
-    next: opere[(index + 1) % opere.length],
-  };
+  const { prev, next } = neighbourIndexes(opere.length, opere.findIndex((opera) => opera.id === slug));
+  return { prev: prev === undefined ? undefined : opere[prev], next: next === undefined ? undefined : opere[next] };
 }
 
 // Italian decimal comma ("100,5"), exactly as the admin shows sizes and asks her to type them.
 // ('it-CH' would print "100.5"; sizes are ≤ 1000, so no thousands separator is ever needed.)
 const numberFormat = new Intl.NumberFormat('it', { maximumFractionDigits: 1, useGrouping: false });
 
-/** "100 × 140 cm" (width × height), or null unless both are set. */
+/**
+ * "100 × 140 cm" (width × height), or null unless both are set. The spaces are no-break spaces
+ * (U+00A0): a size never wraps inside itself (no "cm" alone on a line).
+ */
 export function formatDimensions({ larghezza, altezza }: Opera['data']): string | null {
   if (larghezza == null || altezza == null) return null;
-  return `${numberFormat.format(larghezza)} × ${numberFormat.format(altezza)} cm`;
-}
-
-/** Year and size, whichever are set: ["2023", "100 × 140 cm"]. */
-export function metaParts(data: Opera['data']): string[] {
-  return [data.anno ? String(data.anno) : '', formatDimensions(data) ?? ''].filter(Boolean);
-}
-
-/** Short line for cards and lists: "2023 · 100 × 140 cm". */
-export function metaLine(data: Opera['data']): string {
-  return metaParts(data).join(' · ');
+  return `${numberFormat.format(larghezza)}\u00a0×\u00a0${numberFormat.format(altezza)}\u00a0cm`;
 }
 
 /** «Titolo», Tiziana Tschudi Belloli, 2023 (+ ", dettaglio N" for the extra photos). */
@@ -120,4 +110,45 @@ export function operaDescription(data: Opera['data']): string {
   if (data.testo.trim()) return excerpt(data.testo);
   const facts = [data.anno, data.tecnica.toLowerCase(), formatDimensions(data)].filter(Boolean).join(', ');
   return excerpt(`«${data.titolo}»${facts ? `, ${facts}` : ''}. Un’opera di ${SITE.nome}.`);
+}
+
+/**
+ * Colour of the work's brushstroke: its `colore`, or the automatic one from its position in the
+ * published list (lib/composition.ts → paintName), so it is the same on every page. `published` =
+ * getPublishedOpere(). (A file of an older admin without the key reads as null: the schema defaults it.)
+ */
+export function operaPaint(opera: Opera, published: readonly Opera[]): PaintName {
+  return paintName(opera.data.colore, published.findIndex(({ id }) => id === opera.id));
+}
+
+/** The paint as a CSS value for Stroke: "var(--tiz-ottanio)". */
+export function operaPaintVar(opera: Opera, published: readonly Opera[]): string {
+  return paintVar(operaPaint(opera, published));
+}
+
+/** A work in the plain shape the composition rules take (heroSlots, pickQuote, pickSeries). */
+export interface ComposableOpera {
+  id: string;
+  w: number | null;
+  h: number | null;
+  /** width / height from the centimetres, else from the cover photo. */
+  ratio: number;
+  featured: boolean;
+  testo: string;
+  collezione: string;
+  anno: number | null;
+  opera: Opera;
+}
+
+/**
+ *   const works = composable(await getPublishedOpere());
+ *   const hero = heroSlots(works);                          // hero.large?.opera …
+ *   const quote = pickQuote(works, hero.picked.map((w) => w.id));
+ */
+export function composable(opere: readonly Opera[]): ComposableOpera[] {
+  return opere.map((opera) => {
+    const { larghezza: w, altezza: h, immagini, inEvidenza, testo, collezione, anno } = opera.data;
+    const ratio = w && h ? w / h : immagini[0].width / immagini[0].height;
+    return { id: opera.id, w, h, ratio, featured: inEvidenza, testo, collezione, anno, opera };
+  });
 }

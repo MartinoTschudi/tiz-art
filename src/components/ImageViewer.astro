@@ -2,6 +2,12 @@
 /**
  * Full-screen viewer (<dialog>) for the photos of one work. Behaviour: image-viewer.ts.
  * Must sit inside the element with `data-viewer-gallery` that holds the `[data-viewer-open]` links.
+ *
+ * Look («Lo studio»): the lino ground, the painting whole in the middle with its shadow, round
+ * 48 px buttons with a terra border (+ / − zoom, × close; ← → and the counter "1 / 3" below when there
+ * are several photos), the counter in the voice font. Arrows and × are text characters, as in the
+ * design. Hooks (keep them): data-viewer-stage, -image, -zoom, -close, -announcer; optional -prev,
+ * -next, -counter; state classes .is-zoomed and .is-dragging on the dialog.
  */
 import type { ViewerSource } from './lib/images';
 
@@ -17,18 +23,13 @@ const many = images.length > 1;
 
 <dialog class="viewer" aria-label={label} data-viewer data-images={JSON.stringify(images)}>
   <div class="viewer__bar viewer__bar--top">
-    <button class="viewer__button" type="button" aria-pressed="false" data-viewer-zoom>
-      <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
-        <circle cx="10.5" cy="10.5" r="6.5"></circle>
-        <path d="m15.5 15.5 5 5M10.5 7.5v6M7.5 10.5h6" class="viewer__zoom-in"></path>
-        <path d="m15.5 15.5 5 5M7.5 10.5h6" class="viewer__zoom-out"></path>
-      </svg>
+    <button class="tiz-btn tiz-btn--round viewer__button viewer__button--zoom" type="button" aria-pressed="false" data-viewer-zoom>
+      <span class="viewer__zoom-in" aria-hidden="true">+</span>
+      <span class="viewer__zoom-out" aria-hidden="true">−</span>
       <span class="visually-hidden">Ingrandisci</span>
     </button>
-    <button class="viewer__button" type="button" autofocus data-viewer-close>
-      <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
-        <path d="m6 6 12 12M18 6 6 18"></path>
-      </svg>
+    <button class="tiz-btn tiz-btn--round viewer__button viewer__button--close" type="button" autofocus data-viewer-close>
+      <span aria-hidden="true">×</span>
       <span class="visually-hidden">Chiudi</span>
     </button>
   </div>
@@ -40,17 +41,13 @@ const many = images.length > 1;
   {
     many && (
       <div class="viewer__bar viewer__bar--bottom">
-        <button class="viewer__button" type="button" data-viewer-prev>
-          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
-            <path d="m14.5 6-6 6 6 6" />
-          </svg>
+        <button class="tiz-btn tiz-btn--round viewer__button" type="button" data-viewer-prev>
+          <span aria-hidden="true">←</span>
           <span class="visually-hidden">Immagine precedente</span>
         </button>
-        <p class="viewer__counter" aria-hidden="true" data-viewer-counter></p>
-        <button class="viewer__button" type="button" data-viewer-next>
-          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
-            <path d="m9.5 6 6 6-6 6" />
-          </svg>
+        <p class="viewer__counter" aria-hidden="true" data-viewer-counter />
+        <button class="tiz-btn tiz-btn--round viewer__button" type="button" data-viewer-next>
+          <span aria-hidden="true">→</span>
           <span class="visually-hidden">Immagine successiva</span>
         </button>
       </div>
@@ -67,7 +64,8 @@ const many = images.length > 1;
 
 <style>
   .viewer {
-    --viewer-bar: calc(var(--tap-target) + var(--space-5));
+    /* Height of a bar of buttons: the 48 px button + its padding. */
+    --viewer-bar: calc(48px + 2 * var(--tiz-s3));
 
     position: fixed;
     inset: 0;
@@ -79,28 +77,31 @@ const many = images.length > 1;
     padding: 0;
     border: 0;
     overflow: hidden;
-    background: var(--color-viewer-bg);
-    color: var(--color-viewer-text);
+    background: var(--tiz-linen), var(--tiz-viewer-bg);
+    color: var(--tiz-terra);
     touch-action: none; /* gestures are handled by the script */
     user-select: none;
     -webkit-user-select: none;
   }
 
   .viewer::backdrop {
-    background: var(--color-viewer-bg);
+    background: var(--tiz-viewer-bg);
   }
 
   .viewer__stage {
     position: absolute;
-    inset: var(--viewer-bar) var(--gutter);
+    inset: var(--viewer-bar) max(var(--tiz-gutter), env(safe-area-inset-right)) var(--viewer-bar)
+      max(var(--tiz-gutter), env(safe-area-inset-left));
     display: grid;
     place-items: center;
   }
 
+  /* Whole and unfiltered; only the shadow of the design. The script sets its size. */
   .viewer__image {
     max-width: none;
+    box-shadow: var(--tiz-shadow-tela);
     transform-origin: center;
-    transition: transform var(--duration) var(--ease);
+    transition: transform var(--tiz-dur-fast) var(--tiz-ease-settle);
     cursor: zoom-in;
     -webkit-user-drag: none;
   }
@@ -119,46 +120,36 @@ const many = images.length > 1;
     z-index: 1;
     display: flex;
     align-items: center;
-    gap: var(--space-3);
-    padding: var(--space-3) var(--gutter);
+    gap: var(--tiz-s3);
+    padding: var(--tiz-s3) max(var(--tiz-gutter), env(safe-area-inset-right)) var(--tiz-s3)
+      max(var(--tiz-gutter), env(safe-area-inset-left));
   }
 
   .viewer__bar--top {
     top: 0;
     justify-content: flex-end;
-    padding-top: max(var(--space-3), env(safe-area-inset-top));
+    padding-top: max(var(--tiz-s3), env(safe-area-inset-top));
   }
 
   .viewer__bar--bottom {
     bottom: 0;
     justify-content: center;
-    padding-bottom: max(var(--space-3), env(safe-area-inset-bottom));
+    padding-bottom: max(var(--tiz-s3), env(safe-area-inset-bottom));
   }
 
+  /* Over a zoomed painting the buttons stay readable: a lino disc. */
   .viewer__button {
-    display: inline-grid;
-    place-items: center;
-    width: var(--tap-target);
-    height: var(--tap-target);
-    padding: 0;
-    border: var(--border-width) solid var(--color-viewer-control-border);
-    border-radius: var(--radius-pill);
-    background: var(--color-viewer-control);
-    color: inherit;
-    backdrop-filter: blur(6px);
-    transition: background-color var(--duration-fast) var(--ease);
+    background: var(--tiz-lino);
+    font-size: 24px;
   }
 
   .viewer__button:hover {
-    background: var(--color-viewer-control-hover);
+    background: var(--tiz-gesso);
   }
 
-  .viewer__button svg {
-    fill: none;
-    stroke: currentColor;
-    stroke-width: 1.6;
-    stroke-linecap: round;
-    stroke-linejoin: round;
+  .viewer__button--zoom,
+  .viewer__button--close {
+    font-size: 30px;
   }
 
   .viewer__zoom-out,
@@ -172,11 +163,16 @@ const many = images.length > 1;
 
   .viewer__counter {
     min-width: 4.5em;
-    padding: var(--space-1) var(--space-3);
-    border-radius: var(--radius-pill);
-    background: var(--color-viewer-control);
-    font-size: var(--text-sm);
+    padding: var(--tiz-s2) var(--tiz-s3);
+    border-radius: var(--tiz-radius-btn-s);
+    color: var(--tiz-terra-2);
+    font: 500 15px/1 var(--tiz-font-voce);
     font-variant-numeric: tabular-nums;
     text-align: center;
+  }
+
+  /* Readable over a zoomed painting. */
+  .viewer.is-zoomed .viewer__counter {
+    background: var(--tiz-lino);
   }
 </style>
