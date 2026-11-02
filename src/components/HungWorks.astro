@@ -1,0 +1,191 @@
+---
+/**
+ * Works "hung by eye" at real relative scale (handoff "Signature elements §2"): Opere, the Home
+ * series, any number of works and any format.
+ *
+ *   <div class="container">
+ *     <HungWorks opere={list} headingLevel={2} priorityCount={3} label="Opere" />
+ *   </div>
+ *
+ * - Place it in a box with the gutter as side padding (`.container`): strokes may reach into the
+ *   gutter and are clipped at its outer edge, so they never cause horizontal scrolling.
+ * - Each painting is cm × k px wide (k = --tiz-k: 2.3 ≥ 1024, 2.0 at 640–1023, 2.2 below), never
+ *   wider than the list; 100 cm when `larghezza` is missing (then no size line). Height = the photo.
+ * - ≥ 640: wrapped rows with the MT margin-top cycle; < 640: one column with the AL align cycle.
+ * - Even indexes get a stroke in the work's paint (lib/opere.ts → operaPaint). `offset` shifts all
+ *   the cycles (e.g. to continue a list).
+ * - Items settle in when scrolled into view ([data-reveal], staggered 90 ms) and lift on hover.
+ * - The painting box carries `view-transition-name: opera-<slug>` for the morph to the Opera page;
+ *   names must be unique on a page, so pass `transitionNames={false}` to a second list of the same works.
+ */
+import ResponsivePicture from './ResponsivePicture.astro';
+import Stroke from './Stroke.astro';
+import { routes } from './lib/site';
+import { altText, formatDimensions, getPublishedOpere, operaPaintVar, type Opera } from './lib/opere';
+import { DEFAULT_CM, hungAt, realScaleSizes } from './lib/composition';
+
+interface Props {
+  /** The works, in the order to show them. */
+  opere: Opera[];
+  /** Index offset for the MT / AL / stroke cycles. */
+  offset?: number;
+  /** Heading level of each title, to fit the page outline. */
+  headingLevel?: 2 | 3 | 4;
+  /** How many of the first paintings are above the fold (loaded eagerly). */
+  priorityCount?: number;
+  /** view-transition-name on each painting (default true). */
+  transitionNames?: boolean;
+  /** aria-label of the list. */
+  label?: string;
+}
+
+const { opere, offset = 0, headingLevel = 3, priorityCount = 0, transitionNames = true, label } = Astro.props;
+const Heading = `h${headingLevel}` as 'h2' | 'h3' | 'h4';
+const published = await getPublishedOpere();
+
+const items = opere.map((opera, i) => {
+  const { data } = opera;
+  const place = hungAt(offset + i);
+  return {
+    opera,
+    place,
+    cm: data.larghezza ?? DEFAULT_CM,
+    size: formatDimensions(data),
+    paint: operaPaintVar(opera, published),
+    sizes: realScaleSizes(data.larghezza),
+    priority: i < priorityCount,
+  };
+});
+---
+
+{
+  items.length > 0 && (
+    <div class="tiz-hung">
+      <ul class="tiz-hung__list" role="list" aria-label={label}>
+        {items.map(({ opera, place, cm, size, paint, sizes, priority }) => (
+          <li class="tiz-hung__item" data-reveal data-opera={opera.id} style={`--cm: ${cm}; --mt: ${place.mt}px; --al: ${place.align}`}>
+            <a class="tiz-hung__link" href={routes.opera(opera.id)}>
+              {place.stroke && (
+                <Stroke color={paint} left={place.stroke.left} top={place.stroke.top} width="80%" height="70%" rotate={place.stroke.rotate} />
+              )}
+              <div class="tiz-hung__media" style={transitionNames ? `view-transition-name: opera-${opera.id}` : undefined}>
+                <ResponsivePicture image={opera.data.immagini[0]} alt={altText(opera.data)} preset="card" sizes={sizes} priority={priority} />
+              </div>
+              <div class="tiz-hung__caption">
+                <Heading class="tiz-hung__title">{opera.data.titolo}</Heading>
+                {size && <p class="tiz-hung__size">{size}</p>}
+              </div>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
+<style>
+  .tiz-hung {
+    /* Reach to the outer edge of the gutter, and clip strokes there (never a horizontal scroll). */
+    margin-inline: calc(-1 * var(--tiz-gutter));
+    padding-inline: var(--tiz-gutter);
+    overflow-x: clip;
+  }
+
+  .tiz-hung__list {
+    display: flex;
+    flex-direction: column;
+    gap: 52px;
+  }
+
+  .tiz-hung__item {
+    align-self: var(--al, flex-start);
+    width: min(calc(var(--cm, 100) * var(--tiz-k) * 1px), 100%);
+    min-width: 0;
+  }
+
+  .tiz-hung__link {
+    position: relative;
+    isolation: isolate;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    color: var(--tiz-terra);
+    text-decoration: none;
+    transition:
+      transform var(--tiz-dur-lift) var(--tiz-ease-settle),
+      color var(--tiz-dur-fast) var(--tiz-ease-settle);
+  }
+
+  .tiz-hung__link:hover {
+    color: var(--tiz-rosso);
+  }
+
+  .tiz-hung__media {
+    box-shadow: var(--tiz-shadow-tela);
+  }
+
+  .tiz-hung__media :global(img) {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  .tiz-hung__caption {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .tiz-hung__title {
+    font: 400 var(--tiz-mano-caption) / 1 var(--tiz-font-mano);
+    letter-spacing: 0;
+    text-wrap: pretty;
+    /* A narrow canvas (60 cm ≈ 130 px) must break a long word instead of overflowing. */
+    overflow-wrap: anywhere;
+  }
+
+  .tiz-hung__size {
+    color: var(--tiz-terra-2);
+    font-size: var(--tiz-small);
+    line-height: 1.3;
+  }
+
+  @media (min-width: 640px) {
+    .tiz-hung__list {
+      flex-direction: row;
+      flex-wrap: wrap;
+      justify-content: space-around;
+      align-items: flex-start;
+      gap: 48px 56px;
+    }
+
+    .tiz-hung__item {
+      align-self: auto;
+      margin-top: var(--mt, 0);
+    }
+
+    .tiz-hung__link {
+      gap: 12px;
+    }
+
+    .tiz-hung__caption {
+      gap: 4px;
+    }
+
+    .tiz-hung__size {
+      line-height: 1;
+    }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .tiz-hung__link:focus-visible {
+      transform: translateY(var(--tiz-lift));
+    }
+  }
+
+  @media (hover: hover) and (prefers-reduced-motion: no-preference) {
+    .tiz-hung__link:hover {
+      transform: translateY(var(--tiz-lift));
+    }
+  }
+</style>
