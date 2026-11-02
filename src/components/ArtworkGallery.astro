@@ -70,11 +70,10 @@ const many = photos.length > 1;
     many && (
       <ul class="gallery__thumbs" role="list" aria-label="Foto dell’opera">
         {photos.map((photo, i) => (
-          <li class="gallery__thumb-item">
+          <li>
             <a
               class="gallery__thumb"
               href={photo.viewer.full}
-              style={`--ratio: ${photo.ratio}`}
               aria-current={i === 0 ? 'true' : undefined}
               data-gallery-thumb={i}
             >

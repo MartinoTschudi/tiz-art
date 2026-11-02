@@ -31,7 +31,7 @@ const sizesOf = (opera: Opera) => pagerThumbSizes(cover(opera).width / cover(ope
             </span>
             <span class="pager__text">
               <span class="pager__label">
-                <span aria-hidden="true">←</span> Precedente
+                <span aria-hidden="true">←</span> Precedente<span class="visually-hidden">:</span>
               </span>
               <span class="pager__title">{prev.data.titolo}</span>
             </span>
@@ -41,7 +41,7 @@ const sizesOf = (opera: Opera) => pagerThumbSizes(cover(opera).width / cover(ope
           <a class="pager__link pager__link--next" href={routes.opera(next.id)} rel="next">
             <span class="pager__text">
               <span class="pager__label">
-                Successiva <span aria-hidden="true">→</span>
+                Successiva<span class="visually-hidden">:</span> <span aria-hidden="true">→</span>
               </span>
               <span class="pager__title">{next.data.titolo}</span>
             </span>
