@@ -1,137 +1,272 @@
 ---
 /**
- * About the artist: motto, bio and a picture — her portrait when the admin has one, otherwise the
- * first work of the home-page selection (linked to its page).
+ * About the artist (frames 1h desktop, 1i phone): her portrait with an ocra brushstroke and the note
+ * "nello studio" — or, without a portrait, the first hero painting, uncropped, captioned «titolo», anno
+ * and linked to its page — next to "chi sono", her name (h1), the motto (last word in rosso), her bio
+ * (`profilo.bio`, plain text) and the links to the works and to the contact page.
+ *
+ * Desktop (≥ 1024): picture left (it stays in view while the long bio scrolls, when the window is tall
+ * enough), text right (max 620px). Below 1024 everything stacks: "chi sono" + name, the picture, then
+ * the motto, the bio and the links. Empty motto or bio: that block is left out.
  */
 import BaseLayout from '../layouts/BaseLayout.astro';
-import PageHeader from '../components/PageHeader.astro';
+import ChiFigure from '../components/chi/ChiFigure.astro';
 import PlainText from '../components/PlainText.astro';
-import ResponsivePicture from '../components/ResponsivePicture.astro';
 import { SITE, routes } from '../components/lib/site';
-import { altText, excerpt, getFeaturedOpere, getProfilo } from '../components/lib/opere';
+import { altText, composable, excerpt, getProfilo, getPublishedOpere, operaPaintVar } from '../components/lib/opere';
+import { heroSlots, mottoParts, splitLastWord } from '../components/lib/composition';
 import { socialImage } from '../components/lib/images';
 import { personJsonLd } from '../components/lib/structured-data';
 
-const profilo = await getProfilo();
+const [profilo, published] = await Promise.all([getProfilo(), getPublishedOpere()]);
+
 const portraitAlt = `Ritratto di ${SITE.nome}`;
 const portraitShare = profilo.ritratto ? await socialImage(profilo.ritratto, portraitAlt) : undefined;
-const work = profilo.ritratto ? undefined : (await getFeaturedOpere())[0];
+
+// Without a portrait: the first work of the home hero (its first featured work in display order).
+const work = profilo.ritratto ? undefined : heroSlots(composable(published)).picked[0]?.opera;
+const workShare = work ? await socialImage(work.data.immagini[0], altText(work.data)) : undefined;
+
 const description = excerpt(profilo.bio || profilo.motto || `${SITE.nome} (${SITE.firma}), pittrice.`);
-const imageSizes = '(min-width: 64rem) 34vw, 92vw';
+// The motto as she wrote it (punctuation kept), its last word in rosso.
+const motto = mottoParts(profilo.motto).lines.length > 0 ? splitLastWord(profilo.motto) : null;
+const hasBio = profilo.bio.trim() !== '';
+const hasPicture = Boolean(profilo.ritratto || work);
 ---
 
 <BaseLayout
   title="Chi sono"
   description={description}
   path="chi-sono/"
-  ogImage={portraitShare}
+  ogImage={portraitShare ?? workShare}
   jsonLd={[personJsonLd({ description: profilo.motto || undefined, image: portraitShare?.url })]}
 >
-  <div class="about container">
-    <PageHeader eyebrow={SITE.nome} title="Chi sono" />
+  <div class="chi">
+    <div class:list={['chi__grid container', !hasPicture && 'chi__grid--solo']}>
+      <hgroup class="chi__head">
+        <p class="chi__label">chi sono</p>
+        <h1 class="chi__name">{SITE.nome}</h1>
+      </hgroup>
 
-    <div class="about__body">
-      <div class="about__text">
+      {
+        hasPicture && (
+          <div class="chi__picture">
+            {profilo.ritratto ? (
+              <ChiFigure kind="ritratto" image={profilo.ritratto} alt={portraitAlt} caption="nello studio" paint="var(--tiz-ocra)" />
+            ) : (
+              work && (
+                <ChiFigure
+                  kind="opera"
+                  image={work.data.immagini[0]}
+                  alt={altText(work.data)}
+                  caption={`«${work.data.titolo}»${work.data.anno ? `, ${work.data.anno}` : ''}`}
+                  paint={operaPaintVar(work, published)}
+                  href={routes.opera(work.id)}
+                  transitionName={`opera-${work.id}`}
+                />
+              )
+            )}
+          </div>
+        )
+      }
+
+      <div class="chi__text">
         {
-          profilo.motto && (
-            <blockquote class="about__motto">
-              <p>{profilo.motto}</p>
-            </blockquote>
+          motto && (
+            <p class="chi__motto" data-reveal="write" style="--tiz-reveal-delay: 400ms">
+              {motto.before}
+              {motto.word && <span class="chi__heart">{motto.word}</span>}
+              {motto.after}
+            </p>
           )
         }
-        <div class="about__bio">
-          <PlainText text={profilo.bio} />
-        </div>
-        <p class="about__links">
-          <a class="button" href={routes.opere}>Vedi le opere</a>
-          <a class="button button--quiet" href={routes.contatti}>Scrivimi</a>
+        {
+          hasBio && (
+            <div class="chi__bio">
+              <PlainText text={profilo.bio} />
+            </div>
+          )
+        }
+        <p class="chi__links">
+          <a class="tiz-btn tiz-btn--dark" href={routes.opere}>Vedi le opere</a>
+          <a class="tiz-marker" href={routes.contatti}>Scrivimi <span aria-hidden="true">→</span></a>
         </p>
       </div>
-
-      {
-        profilo.ritratto && (
-          <figure class="about__figure">
-            <ResponsivePicture image={profilo.ritratto} alt={portraitAlt} preset="card" sizes={imageSizes} priority />
-          </figure>
-        )
-      }
-      {
-        work && (
-          <figure class="about__figure">
-            <a href={routes.opera(work.id)}>
-              <ResponsivePicture image={work.data.immagini[0]} alt={altText(work.data)} preset="card" sizes={imageSizes} priority />
-            </a>
-            <figcaption class="about__caption">
-              «{work.data.titolo}»{work.data.anno && `, ${work.data.anno}`}
-            </figcaption>
-          </figure>
-        )
-      }
     </div>
   </div>
 </BaseLayout>
 
 <style>
-  .about__body {
+  /* The stroke behind the picture reaches into the gutter: clip at the page edge, never scroll sideways. */
+  .chi {
+    overflow-x: clip;
+  }
+
+  /* Phone first (frame 1i): one column — "chi sono" + name, the picture, then motto, bio, links. */
+  .chi__grid {
     display: grid;
-    gap: var(--space-8);
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      'head'
+      'picture'
+      'text';
+    padding-block: 20px 56px;
   }
 
-  .about__figure {
-    max-width: 28rem;
+  .chi__head {
+    grid-area: head;
+    max-width: var(--tiz-measure);
   }
 
-  .about__figure :global(img) {
-    width: 100%;
-    height: auto;
-    box-shadow: var(--shadow-art);
+  .chi__label {
+    width: fit-content;
+    color: var(--tiz-terracotta);
+    font: 400 36px/1 var(--tiz-font-mano);
+    transform: rotate(-2deg);
+    transform-origin: left;
   }
 
-  .about__caption {
-    margin-top: var(--space-3);
-    font-size: var(--text-sm);
-    color: var(--color-text-muted);
+  .chi__name {
+    margin-top: 4px;
+    font-size: var(--tiz-h1-name);
+    font-weight: 800;
+    line-height: 0.9;
+    letter-spacing: -0.04em;
+    /* As in frame 1i ("Tiziana Tschudi / Belloli"); balanced from 1024 (frame 1h). */
+    text-wrap: wrap;
   }
 
-  .about__motto {
-    max-width: 24ch;
-    margin-bottom: var(--space-6);
-    font-family: var(--font-display);
-    font-size: var(--text-2xl);
-    font-style: italic;
-    line-height: var(--leading-snug);
+  .chi__picture {
+    grid-area: picture;
+    margin-top: 40px;
   }
 
-  .about__motto::before {
-    content: '';
-    display: block;
-    width: 3rem;
-    height: 2px;
-    margin-bottom: var(--space-4);
-    background: var(--color-highlight);
+  .chi__text {
+    grid-area: text;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    max-width: var(--tiz-measure);
+    /* Frame 1i has 40px under the picture; the note "nello studio" already takes part of it. */
+    padding-top: 28px;
   }
 
-  .about__bio {
-    font-size: var(--text-lg);
+  .chi__motto {
+    font: 400 48px/1 var(--tiz-font-mano);
+    /* Keep the line breaks of the design: the last word may stand alone. */
+    text-wrap: wrap;
+    overflow-wrap: break-word;
   }
 
-  .about__links {
+  .chi__heart {
+    color: var(--tiz-rosso);
+  }
+
+  /* Paragraphs are 1em apart (PlainText): 18px on phones as in frame 1i, 20px from 640. */
+  .chi__bio {
+    font-size: 18px;
+    line-height: 1.6;
+  }
+
+  .chi__links {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--space-3);
-    margin-top: var(--space-7);
+    align-items: center;
+    gap: 12px 28px;
+    margin-top: 6px;
   }
 
-  @media (min-width: 64rem) {
-    .about__body {
-      grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
-      align-items: start;
+  .chi__links .tiz-marker {
+    gap: 0.3em;
+  }
+
+  /* Frame 1h: the dark button is 52px high, padding 0 24px. */
+  .chi__links .tiz-btn {
+    height: 52px;
+    padding-inline: 24px;
+  }
+
+  @media (min-width: 640px) {
+    .chi__grid {
+      padding-block: 32px 80px;
     }
 
-    .about__figure {
-      justify-self: end;
-      /* full width of its column (max 28rem) before the image loads: no jump, no 0×0 figure */
-      width: 100%;
+    .chi__label {
+      font-size: 40px;
+    }
+
+    .chi__picture {
+      margin-top: 48px;
+    }
+
+    .chi__text {
+      gap: 22px;
+      padding-top: 36px;
+    }
+
+    .chi__motto {
+      font-size: 56px;
+    }
+
+    .chi__bio {
+      font-size: 20px;
+    }
+  }
+
+  /* Desktop (frame 1h): grid 460px 1fr, gap 88px; the picture spans both rows of the right column. */
+  @media (min-width: 1024px) {
+    .chi__grid {
+      grid-template-columns: clamp(430px, 36vw, 460px) minmax(0, 1fr);
+      grid-template-rows: auto 1fr;
+      grid-template-areas:
+        'picture head'
+        'picture text';
+      column-gap: clamp(56px, 6.875vw, 88px);
+      align-items: start;
+      padding-block: 56px 96px;
+    }
+
+    .chi__grid--solo {
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-areas:
+        'head'
+        'text';
+    }
+
+    .chi__label {
+      font-size: 44px;
+    }
+
+    .chi__name {
+      margin-top: 20px;
+      line-height: 0.88;
+      text-wrap: balance;
+    }
+
+    .chi__picture {
+      margin-top: 40px;
+    }
+
+    .chi__text {
+      gap: 28px;
+      padding-top: 28px;
+    }
+
+    .chi__motto {
+      font-size: 64px;
+      text-wrap: balance;
+    }
+
+    .chi__links {
+      margin-top: 0;
+    }
+  }
+
+  /* The bio is long: the picture stays in view while it scrolls (only where the whole picture fits). */
+  @media (min-width: 1024px) and (min-height: 720px) {
+    .chi__picture {
+      position: sticky;
+      top: 40px;
     }
   }
 </style>
