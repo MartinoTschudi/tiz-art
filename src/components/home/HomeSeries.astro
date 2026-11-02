@@ -84,21 +84,21 @@ const note = series.name ? SERIE_NOTE[series.name] : undefined;
     max-width: 340px;
     margin-top: var(--tiz-s4);
     color: var(--tiz-terra-3);
-    font-size: 17px;
+    font-size: var(--tiz-body);
     line-height: 1.5;
   }
 
   /* Home captions show the title only (showSize={false}, frames 1b / 1c); the works hang a little
      closer than on Opere. */
   .home-series__works {
-    --tiz-hung-gap: 48px;
-    --tiz-hung-gap-row: 40px;
-    --tiz-hung-gap-col: 48px;
+    --hung-gap: var(--tiz-s6);
+    --hung-gap-row: 40px;
+    --hung-gap-col: var(--tiz-s6);
     padding-block: 36px 24px;
   }
 
   .home-series__more {
-    padding-block: 8px 64px;
+    padding-block: var(--tiz-s2) 64px;
   }
 
   @media (min-width: 640px) {
@@ -109,7 +109,7 @@ const note = series.name ? SERIE_NOTE[series.name] : undefined;
       justify-content: space-between;
       gap: 24px 40px;
       /* 40 + the 40 above the works = the 80 px of frame 1b between title and works. */
-      padding-block: 80px 40px;
+      padding-block: var(--tiz-s7) 40px;
     }
 
     .home-series__title {
@@ -128,7 +128,7 @@ const note = series.name ? SERIE_NOTE[series.name] : undefined;
     }
 
     .home-series__note {
-      margin: 0 0 12px;
+      margin: 0 0 var(--tiz-s3);
       font-size: 19px;
     }
 
@@ -143,7 +143,7 @@ const note = series.name ? SERIE_NOTE[series.name] : undefined;
     }
 
     .home-series__more .tiz-marker {
-      padding-inline: 4px;
+      padding-inline: var(--tiz-s1);
       font-size: 19px;
     }
   }

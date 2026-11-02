@@ -108,7 +108,7 @@ const attribution = quoteAttribution(firstName(SITE.nome), opera.data.titolo, fo
 
   .home-quote__by a {
     display: inline-block;
-    padding-block: 12px;
+    padding-block: var(--tiz-s3);
     color: var(--tiz-terra-3);
     font-size: 15px;
     line-height: 1.4;
@@ -124,9 +124,9 @@ const attribution = quoteAttribution(firstName(SITE.nome), opera.data.titolo, fo
     .home-quote__inner {
       display: grid;
       grid-template-columns: 240px minmax(0, 1fr);
-      gap: 48px;
+      gap: var(--tiz-s6);
       align-items: center;
-      padding-block: 80px 120px;
+      padding-block: var(--tiz-s7) var(--tiz-s8);
     }
 
     .home-quote__work {
@@ -142,7 +142,7 @@ const attribution = quoteAttribution(firstName(SITE.nome), opera.data.titolo, fo
     }
 
     .home-quote__by a {
-      font-size: 17px;
+      font-size: var(--tiz-body);
       font-weight: 500;
     }
   }

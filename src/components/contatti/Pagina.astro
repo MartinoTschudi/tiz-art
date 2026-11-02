@@ -43,7 +43,7 @@ const { titleId } = Astro.props;
   @media (min-width: 640px) {
     .contatti__grid {
       gap: 56px;
-      padding-block: 32px 88px;
+      padding-block: var(--tiz-s5) 88px;
     }
 
     .contatti__main {
@@ -54,9 +54,9 @@ const { titleId } = Astro.props;
   @media (min-width: 1024px) {
     .contatti__grid {
       grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-      gap: 80px;
+      gap: var(--tiz-s7);
       align-items: start;
-      padding-block: 48px 96px;
+      padding-block: var(--tiz-s6) 96px;
     }
 
     .contatti__main {

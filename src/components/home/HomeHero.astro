@@ -215,7 +215,7 @@ const ROTATE = { large: '-6deg', narrow: '8deg', small: '-3deg' } as const;
   .home-hero__note {
     width: fit-content;
     max-width: calc(100% - 8px);
-    margin: 10px 0 0 8px;
+    margin: 10px 0 0 var(--tiz-s2);
     font: 400 30px/1 var(--tiz-font-mano);
     /* Around its middle, as in the frames: even a full-width note rises less than its top margin. */
     transform: rotate(-3deg);
@@ -227,7 +227,7 @@ const ROTATE = { large: '-6deg', narrow: '8deg', small: '-3deg' } as const;
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    gap: 12px;
+    gap: var(--tiz-s3);
     max-width: 520px;
     margin-top: 36px;
   }
@@ -347,7 +347,7 @@ const ROTATE = { large: '-6deg', narrow: '8deg', small: '-3deg' } as const;
     .home-hero__intro {
       grid-column: 1;
       grid-row: 2;
-      gap: 20px;
+      gap: var(--tiz-s4);
       max-width: 380px;
       margin-top: 0;
       animation: tiz-settle var(--tiz-dur-settle) var(--tiz-ease-settle) 1.4s both;

@@ -233,7 +233,7 @@ const motto = splitLastWord((await getProfilo()).motto);
     align-items: center;
     min-height: var(--tiz-hit);
     color: var(--tiz-terra);
-    font: 500 17px/1 var(--tiz-font-voce);
+    font: 500 var(--tiz-body)/1 var(--tiz-font-voce);
     text-decoration: none;
     white-space: nowrap;
   }
@@ -316,14 +316,14 @@ const motto = splitLastWord((await getProfilo()).motto);
       overflow-x: hidden;
       overflow-y: auto;
       overscroll-behavior: contain;
-      padding: 120px max(var(--tiz-gutter), env(safe-area-inset-right)) max(48px, env(safe-area-inset-bottom))
+      padding: var(--tiz-s8) max(var(--tiz-gutter), env(safe-area-inset-right)) max(var(--tiz-s6), env(safe-area-inset-bottom))
         max(var(--tiz-gutter), env(safe-area-inset-left));
       background: var(--tiz-linen), var(--tiz-lino);
     }
 
     .tiz-header.is-open :global(.tiz-menu__stroke) {
       display: block;
-      animation-duration: 700ms;
+      animation-duration: var(--tiz-dur-menu-stroke);
       animation-delay: 0s;
     }
 
@@ -335,8 +335,8 @@ const motto = splitLastWord((await getProfilo()).motto);
     .tiz-header.is-open .tiz-nav__link {
       font: 800 64px/1.05 var(--tiz-font-voce);
       letter-spacing: -0.03em;
-      animation: tiz-settle 500ms var(--tiz-ease-settle) both;
-      animation-delay: calc(150ms + var(--i, 0) * 70ms);
+      animation: tiz-settle var(--tiz-dur-menu-settle) var(--tiz-ease-settle) both;
+      animation-delay: calc(var(--tiz-menu-delay) + var(--i, 0) * var(--tiz-menu-stagger));
     }
 
     .tiz-header.is-open .tiz-nav__link[aria-current] .tiz-nav__label {

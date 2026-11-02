@@ -39,7 +39,7 @@ const Title = titleId ? 'h1' : 'p';
   .scrivimi {
     position: relative;
     isolation: isolate;
-    padding: 48px 24px 56px;
+    padding: var(--tiz-s6) 24px 56px;
     color: var(--tiz-lino);
   }
 
@@ -61,7 +61,7 @@ const Title = titleId ? 'h1' : 'p';
   .scrivimi__line {
     margin-top: 16px;
     max-width: 380px;
-    font-size: 17px;
+    font-size: var(--tiz-body);
     line-height: 1.5;
     color: var(--tiz-lino);
     text-shadow:
@@ -79,7 +79,7 @@ const Title = titleId ? 'h1' : 'p';
   @media (min-width: 640px) {
     .scrivimi {
       max-width: 560px;
-      padding: 64px 32px 88px;
+      padding: 64px var(--tiz-s5) 88px;
     }
 
     .scrivimi :global(.scrivimi__stroke) {
@@ -103,7 +103,7 @@ const Title = titleId ? 'h1' : 'p';
   @media (min-width: 1024px) {
     .scrivimi {
       max-width: none;
-      padding: 80px 40px 120px;
+      padding: var(--tiz-s7) 40px var(--tiz-s8);
     }
 
     /* 170 px at 1280 (frame 1j), smaller down to 1024 so the word stays inside its column. */

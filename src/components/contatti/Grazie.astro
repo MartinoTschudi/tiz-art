@@ -33,7 +33,7 @@ const Heading = level === 1 ? 'h1' : 'h2';
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    gap: 20px;
+    gap: var(--tiz-s4);
   }
 
   .grazie__title {
@@ -59,7 +59,7 @@ const Heading = level === 1 ? 'h1' : 'h2';
   .grazie__actions {
     display: flex;
     flex-wrap: wrap;
-    gap: 4px 32px;
+    gap: var(--tiz-s1) var(--tiz-s5);
   }
 
   /* The marker as a <button> ("Scrivi ancora"): no button chrome. */
@@ -81,7 +81,7 @@ const Heading = level === 1 ? 'h1' : 'h2';
 
   @media (min-width: 1024px) {
     .grazie {
-      padding-top: 80px;
+      padding-top: var(--tiz-s7);
     }
 
     .grazie__title {

@@ -52,7 +52,7 @@ import { routes } from '../components/lib/site';
   .nf__text {
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: var(--tiz-s4);
     max-width: var(--tiz-measure);
   }
 
@@ -79,7 +79,7 @@ import { routes } from '../components/lib/site';
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 8px 32px;
+    gap: var(--tiz-s2) var(--tiz-s5);
   }
 
   /* A blank canvas leaning in the studio (decorative): 4:5, the painting shadow, a stroke behind. */
@@ -100,7 +100,7 @@ import { routes } from '../components/lib/site';
   @media (min-width: 640px) {
     .nf__grid {
       gap: 64px;
-      padding-block: 48px 96px;
+      padding-block: var(--tiz-s6) 96px;
     }
 
     .nf__label {
@@ -126,7 +126,7 @@ import { routes } from '../components/lib/site';
       align-items: center;
       /* Room for the stroke, which reaches 20% of the canvas to its left: never over the text. */
       column-gap: clamp(112px, 10vw, 140px);
-      padding-block: 72px 120px;
+      padding-block: 72px var(--tiz-s8);
     }
 
     .nf__text {
@@ -138,7 +138,7 @@ import { routes } from '../components/lib/site';
     }
 
     .nf__title {
-      margin-top: 20px;
+      margin-top: var(--tiz-s4);
       font-size: clamp(96px, 9vw, 120px);
       line-height: 0.88;
     }

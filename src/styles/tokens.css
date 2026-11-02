@@ -1,6 +1,8 @@
 /*
- * TIZ design tokens («Lo studio»): every colour, font, size, space, shape, timing and keyframe of the
- * public site. Components and pages only use these custom properties.
+ * TIZ design tokens («Lo studio»): the colours, fonts, type scale, spacing scale, gutters, shapes,
+ * shadows, motion and keyframes of the public site. Components take these from here; only the
+ * frame-specific layout numbers (a box width, an offset, a margin read off one frame) are written as
+ * px in the component that uses them. A value that equals a token is written as the token.
  * Source: the Claude Design handoff tokens.css, plus the few extra tokens marked "site".
  * (The admin in public/admin/ has its own styles and does not use this file.)
  *
@@ -53,11 +55,15 @@
   --tiz-font-voce: 'Bricolage Grotesque', system-ui, sans-serif; /* everything else */
 
   /* ── Type scale (desktop → phone via clamp) ──────────────── */
-  --tiz-mano-xl: clamp(92px, 11.72vw, 150px); /* line-height .82 — home motto (150 = the 1280 frame) */
+  /* The handoff's scale. Three of its steps are not read by the site, because those pages size the
+     text in the frames' fixed steps per breakpoint: --tiz-mano-xl (the home motto: HomeHero, from the
+     length of its longest line), --tiz-mano-m (the home quote: HomeQuote 48 / 56 / 76px) and
+     --tiz-display («Opere»: 84 / 120 / 150px). Kept as the design system's values; do not tune them. */
+  --tiz-mano-xl: clamp(92px, 11vw, 150px); /* line-height .82 — home motto (design scale, unused) */
   --tiz-mano-l: clamp(64px, 7vw, 92px); /* line-height .88 — opera title */
-  --tiz-mano-m: clamp(40px, 5vw, 76px); /* quotes */
+  --tiz-mano-m: clamp(40px, 5vw, 76px); /* quotes (design scale, unused) */
   --tiz-mano-s: clamp(28px, 2.4vw, 34px); /* captions, notes */
-  --tiz-display: clamp(84px, 11.72vw, 150px); /* weight 800, ls -0.05em, lh .8 — 84 phone, 150 at 1280 */
+  --tiz-display: clamp(64px, 11vw, 150px); /* weight 800, ls -0.05em, lh .8 (design scale, unused) */
   --tiz-h1-name: clamp(52px, 7vw, 88px); /* weight 800, ls -0.04em */
   --tiz-lead: clamp(19px, 1.6vw, 22px); /* lh 1.5 */
   --tiz-body: 17px; /* lh 1.55; 18–20px on Chi sono */
@@ -125,6 +131,11 @@
   --tiz-dur-beat: 1600ms; /* the dot after "cuore" */
   --tiz-stagger: 90ms; /* between paintings that settle together */
   --tiz-lift: -6px;
+  /* site: the phone menu (frame 1c-menu): a faster stroke, links settling at 150 / 220 / 290 ms */
+  --tiz-dur-menu-stroke: 700ms;
+  --tiz-dur-menu-settle: 500ms;
+  --tiz-menu-delay: 150ms;
+  --tiz-menu-stagger: 70ms;
 
   /* Real-scale factor: canvas width px = cm × k */
   --tiz-k: 2.2; /* phone; 2.0 tablet; 2.3 desktop */

@@ -110,7 +110,7 @@ const hasPicture = Boolean(profilo.ritratto || work);
       'head'
       'picture'
       'text';
-    padding-block: 20px 56px;
+    padding-block: var(--tiz-s4) 56px;
   }
 
   .chi__head {
@@ -127,7 +127,7 @@ const hasPicture = Boolean(profilo.ritratto || work);
   }
 
   .chi__name {
-    margin-top: 4px;
+    margin-top: var(--tiz-s1);
     font-size: var(--tiz-h1-name);
     font-weight: 800;
     line-height: 0.9;
@@ -173,7 +173,7 @@ const hasPicture = Boolean(profilo.ritratto || work);
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 12px 28px;
+    gap: var(--tiz-s3) 28px;
     margin-top: 6px;
   }
 
@@ -185,7 +185,7 @@ const hasPicture = Boolean(profilo.ritratto || work);
 
   @media (min-width: 640px) {
     .chi__grid {
-      padding-block: 32px 80px;
+      padding-block: var(--tiz-s5) var(--tiz-s7);
     }
 
     .chi__label {
@@ -193,7 +193,7 @@ const hasPicture = Boolean(profilo.ritratto || work);
     }
 
     .chi__picture {
-      margin-top: 48px;
+      margin-top: var(--tiz-s6);
     }
 
     .chi__text {
@@ -235,7 +235,7 @@ const hasPicture = Boolean(profilo.ritratto || work);
     }
 
     .chi__name {
-      margin-top: 20px;
+      margin-top: var(--tiz-s4);
       line-height: 0.88;
       text-wrap: balance;
     }

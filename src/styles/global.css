@@ -1,6 +1,7 @@
 /*
  * Base styles: reset, the linen page, links, focus, the shared primitives and the reveal system.
- * Everything else is styled inside its component (scoped <style>). Values come from tokens.css.
+ * Everything else is styled inside its component (scoped <style>). Colours, fonts, type and spacing
+ * scale, shadows and motion come from tokens.css; frame-specific layout px stay in the component.
  *
  * Primitives:
  *   .container                  centred page column with the gutter (max --tiz-page-max)
@@ -153,7 +154,7 @@ a:hover {
   border-radius: var(--tiz-radius-btn);
   background: var(--tiz-rosso);
   color: var(--tiz-lino);
-  font: 600 17px/1 var(--tiz-font-voce);
+  font: 600 var(--tiz-body)/1 var(--tiz-font-voce);
   text-align: center;
   text-decoration: none;
   white-space: nowrap;
@@ -214,7 +215,7 @@ a:hover {
   min-height: var(--tiz-hit);
   background: var(--tiz-marker);
   color: var(--tiz-terra);
-  font: 600 17px/1 var(--tiz-font-voce);
+  font: 600 var(--tiz-body)/1 var(--tiz-font-voce);
   text-decoration: none;
 }
 

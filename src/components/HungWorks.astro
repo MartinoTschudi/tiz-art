@@ -19,7 +19,7 @@
  *   names must be unique on a page, so pass `transitionNames={false}` to a second list of the same works.
  * - Captions: the title, then "{w} × {h} cm" unless `showSize={false}` (the Home series, frames 1b / 1c).
  * - Spacing between the works: set these custom properties on a parent (never restyle the inside):
- *   `--tiz-hung-gap` (phone column, default 52px), `--tiz-hung-gap-row` / `--tiz-hung-gap-col`
+ *   `--hung-gap` (phone column, default 52px), `--hung-gap-row` / `--hung-gap-col`
  *   (wrapped rows from 640 px, default 48px / 56px).
  */
 import ResponsivePicture from './ResponsivePicture.astro';
@@ -100,7 +100,7 @@ const items = opere.map((opera, i) => {
   .tiz-hung__list {
     display: flex;
     flex-direction: column;
-    gap: var(--tiz-hung-gap, 52px);
+    gap: var(--hung-gap, 52px);
   }
 
   .tiz-hung__item {
@@ -162,7 +162,7 @@ const items = opere.map((opera, i) => {
       flex-wrap: wrap;
       justify-content: space-around;
       align-items: flex-start;
-      gap: var(--tiz-hung-gap-row, 48px) var(--tiz-hung-gap-col, 56px);
+      gap: var(--hung-gap-row, var(--tiz-s6)) var(--hung-gap-col, 56px);
     }
 
     .tiz-hung__item {
@@ -171,11 +171,11 @@ const items = opere.map((opera, i) => {
     }
 
     .tiz-hung__link {
-      gap: 12px;
+      gap: var(--tiz-s3);
     }
 
     .tiz-hung__caption {
-      gap: 4px;
+      gap: var(--tiz-s1);
     }
 
     .tiz-hung__size {
