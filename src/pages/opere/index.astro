@@ -19,7 +19,7 @@ const note = opereCountNote(opere.length);
 
 const description =
   `Tutte le opere di ${SITE.nome} (${SITE.firma})` +
-  (series.length > 0 ? `, tra cui ${series.length > 1 ? 'le serie' : 'la serie'} ${quoted}` : '.');
+  (series.length > 0 ? `, tra cui ${series.length > 1 ? 'le serie' : 'la serie'} ${quoted}.` : '.');
 ---
 
 <BaseLayout title="Opere" description={description} path="opere/">

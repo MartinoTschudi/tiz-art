@@ -68,10 +68,13 @@ export function neighbours(opere: Opera[], slug: string): { prev?: Opera; next?:
 // ('it-CH' would print "100.5"; sizes are ≤ 1000, so no thousands separator is ever needed.)
 const numberFormat = new Intl.NumberFormat('it', { maximumFractionDigits: 1, useGrouping: false });
 
-/** "100 × 140 cm" (width × height), or null unless both are set. */
+/**
+ * "100 × 140 cm" (width × height), or null unless both are set. The spaces are no-break spaces
+ * (U+00A0): a size never wraps inside itself (no "cm" alone on a line).
+ */
 export function formatDimensions({ larghezza, altezza }: Opera['data']): string | null {
   if (larghezza == null || altezza == null) return null;
-  return `${numberFormat.format(larghezza)} × ${numberFormat.format(altezza)} cm`;
+  return `${numberFormat.format(larghezza)}\u00a0×\u00a0${numberFormat.format(altezza)}\u00a0cm`;
 }
 
 /** «Titolo», Tiziana Tschudi Belloli, 2023 (+ ", dettaglio N" for the extra photos). */
