@@ -1,6 +1,7 @@
 /**
  * "Nuova opera" / "Modifica opera": one scrolling form.
- *   Foto (1–8) · Titolo · Anno · Misure · Tecnica · Collezione · Testo · In evidenza · Visibile
+ *   Foto (1–8) · Titolo · Anno · Misure · Tecnica · Collezione · Colore della pennellata · Testo ·
+ *   In evidenza · Visibile
  * plus, when editing, "Vedi sul sito" and "Elimina opera".
  *
  * The form state is a "draft" object. For a new work the app keeps it in memory and in IndexedDB
@@ -9,12 +10,15 @@
  * reopened: a back swipe, a reload or an expired key never throws them away.
  */
 import { h, icon, topbar, stickyBar, confirmSheet, toast, progress, siteButton } from '../ui.js';
-import { MAX_IMMAGINI, LIMITS, parseOperaForm, formatNumber } from '../model.js';
+import { MAX_IMMAGINI, LIMITS, COLORI, parseOperaForm, formatNumber } from '../model.js';
 import { workKey } from '../drafts.js';
 import { existingPhoto, readyPhoto, newPhoto, releasePhoto, toSavePhoto, photosReady } from '../photos.js';
 import { pickerButtons, photoMedia } from './photo-ui.js';
 
-const FIELD_ORDER = ['foto', 'titolo', 'anno', 'larghezza', 'altezza', 'tecnica', 'collezione', 'testo'];
+const FIELD_ORDER = ['foto', 'titolo', 'anno', 'larghezza', 'altezza', 'tecnica', 'collezione', 'colore', 'testo'];
+
+/** Choices of «Colore della pennellata»: '' = Automatico (colore null), then COLORI. */
+const COLORE_LABELS = { '': 'Automatico', ocra: 'Ocra', rosso: 'Rosso', terracotta: 'Terracotta', ottanio: 'Ottanio', blu: 'Blu' };
 
 /** "Carico la foto 2 di 3…" while uploading, "Pubblico…" while committing (shared with profile.js). */
 export function saveProgress(ev) {
@@ -36,6 +40,7 @@ export function createDraft(opera) {
       altezza: d && d.altezza != null ? formatNumber(d.altezza) : '',
       tecnica: d ? d.tecnica : '',
       collezione: d ? d.collezione : '',
+      colore: d && d.colore ? d.colore : '', // '' = Automatico
       testo: d ? d.testo : '',
       inEvidenza: d ? d.inEvidenza : false,
       pubblicata: d ? d.pubblicata : true,
@@ -268,6 +273,43 @@ export function renderForm(app, { opera, draft, restored = false }) {
 
   const datalist = (id, values) => h('datalist', { id }, values.map((v) => h('option', { value: v })));
 
+  /** «Colore della pennellata»: six radio buttons drawn as big swatches with their names. */
+  function colorePicker() {
+    // Anything but a known colour (e.g. null from an old draft) shows, and saves, as Automatico.
+    const current = COLORI.includes(draft.fields.colore) ? draft.fields.colore : '';
+    draft.fields.colore = current;
+    const options = ['', ...COLORI].map((value) => {
+      const id = `in-colore-${value || 'auto'}`;
+      const input = h('input', { type: 'radio', name: 'colore', id, value, class: 'swatch-input', checked: value === current });
+      input.addEventListener('change', () => {
+        if (!input.checked) return;
+        draft.fields.colore = value;
+        showError('colore', '');
+        changed();
+      });
+      return h(
+        'label',
+        { class: 'swatch', for: id },
+        input,
+        h(
+          'span',
+          { class: 'swatch-face' },
+          h('span', { class: `swatch-chip swatch-${value || 'auto'}`, 'aria-hidden': 'true' }, icon('check', 'icon swatch-check')),
+          h('span', { class: 'swatch-name' }, COLORE_LABELS[value]),
+        ),
+      );
+    });
+    sections.colore = h(
+      'fieldset',
+      { class: 'field swatch-field', id: 'field-colore', 'aria-describedby': 'hint-colore err-colore' },
+      h('legend', { class: 'label' }, 'Colore della pennellata'),
+      h('p', { class: 'hint', id: 'hint-colore' }, 'È il colore della pennellata dietro al quadro, sul sito. Se non sai, lascia «Automatico».'),
+      h('div', { class: 'swatches' }, options),
+      errorEl('colore'),
+    );
+    return sections.colore;
+  }
+
   function toggle(name, label, hint) {
     const input = h('input', { type: 'checkbox', role: 'switch', class: 'switch', id: `in-${name}`, checked: draft.fields[name] });
     input.addEventListener('change', () => {
@@ -346,7 +388,8 @@ export function renderForm(app, { opera, draft, restored = false }) {
   async function save() {
     const fields = validate();
     if (!fields) return;
-    if (!isNew && !isDirty()) return toast('Nessuna modifica da salvare.');
+    // An `outdated` file (e.g. saved before «Colore» existed) is rewritten even without a change.
+    if (!isNew && !isDirty() && !opera.outdated) return toast('Nessuna modifica da salvare.');
     await runSave(fields);
   }
 
@@ -462,11 +505,12 @@ export function renderForm(app, { opera, draft, restored = false }) {
       datalist('list-tecnica', suggestions(opere, 'tecnica')),
       field('collezione', 'Collezione', collezione, { optional: true, hint: 'Il nome della serie. Scrivi o scegli tra quelle già usate.' }),
       datalist('list-collezione', suggestions(opere, 'collezione')),
+      colorePicker(),
       field('testo', 'Testo', testo, { optional: true, hint: 'Per andare a capo con un nuovo paragrafo lascia una riga vuota.', after: testoCount }),
       h(
         'section',
         { class: 'field toggles' },
-        toggle('inEvidenza', 'In evidenza in home', 'Appare nella selezione della pagina iniziale.'),
+        toggle('inEvidenza', 'In evidenza in home', 'Le prime 3 opere in evidenza (nell’ordine della lista) formano la composizione grande in cima alla pagina iniziale.'),
         toggle('pubblicata', 'Visibile sul sito', 'Se lo togli, l’opera non compare nelle pagine del sito. Non è però segreta: non caricare foto o testi privati.'),
       ),
       isNew
