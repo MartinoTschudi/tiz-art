@@ -50,8 +50,10 @@ All in `src/components/`. Each `.astro` file has its own scoped `<style>`.
 
 | File | Purpose | Props / data |
 |---|---|---|
-| `SiteHeader.astro` | "TIZ" signature + name → home, nav Opere · Chi sono · Contatti (`aria-current` on the active section). Below 48 rem only "TIZ" is visible | — (reads `Astro.url`) |
-| `SiteFooter.astro` | Signature, © year + name, link Contatti | — |
+| `SiteHeader.astro` | "TIZ" + name → home, nav Opere · Chi sono · Contatti (`aria-current` + ocra marker on the active section). Below 640 px: "Menu" button → full-screen overlay (focus trap, Esc, page inert); without JS a row of links | `back?` (`{ href, label }`: phone back link instead of Menu; BaseLayout `headerBack`) |
+| `SiteFooter.astro` | Dashed border, "TIZ", © year + name. `home`: big TIZ + motto, nav with "Scrivimi" | `variant?` (`default`/`home`; BaseLayout `footerVariant`) |
+| `Stroke.astro` | Decorative brushstroke behind a painting (parent: `position: relative; isolation: isolate`); wipes in on load, or when its `[data-reveal]` parent is revealed | `color`, `top`/`left`/`width`/`height` or `inset`, `rotate?`, `delay?`, `shape?` (1/2), `class?` |
+| `HungWorks.astro` | Works "hung by eye" at real scale (cm × `--tiz-k`), MT / AL cycles, strokes on even indexes, reveal + hover lift, `view-transition-name: opera-<slug>`. Put it in a `.container` | `opere`, `offset?`, `headingLevel?` (2/3/4), `priorityCount?`, `transitionNames?`, `label?` |
 | `PageHeader.astro` | Title block of inner pages: small label, h1, lead | `title`, `eyebrow?`, `lead?` |
 | `ArtworkGrid.astro` | Justified rows of works (each row one height, real proportions, left → right order). Pure CSS | `opere`, `headingLevel?` (2/3), `priorityCount?` (eager covers above the fold), `label?` |
 | `ArtworkCard.astro` | One work in a grid: cover, title, "2023 · 100 × 140 cm" | `opera`, `headingLevel?`, `priority?` |
@@ -67,8 +69,9 @@ Helpers (TypeScript, no markup) in `src/components/lib/`:
 
 | File | What |
 |---|---|
-| `site.ts` | `SITE` (name, signature, Web3Forms key), `BASE`, `routes.*` (every internal URL, base path included), `withBase()`, `absoluteUrl()`, `IS_PREVIEW` |
+| `site.ts` | `SITE` (name, signature, Web3Forms key), `BASE`, `routes.*` (every internal URL, base path included), `withBase()`, `absoluteUrl()`, `IS_PREVIEW`, `SERIE_NOTE` (line under a series title on the home) |
 | `opere.ts` | Queries (`getPublishedOpere`, `getFeaturedOpere`, `getAllOpere`, `getProfilo`, `groupByCollezione`, `neighbours`) and text helpers (`formatDimensions` → "100 × 140 cm", `metaLine`, `altText`, `paragraphs`, `excerpt`, `operaDescription`) |
+| `composition.ts` | Pure design rules, tested in `scripts/test/composition.test.mjs`: `paintName` / `PAINT_CYCLE`, `hungAt` / `strokeAt` (MT, AL, SWL, SWT, SWR), `realScaleSizes`, `mottoParts`, `splitLastWord`, `heroSlots`, `firstSentence`, `pickQuote`, `pickSeries`. `opere.ts` adds `operaPaint` / `operaPaintVar` and `composable()` (works → the shapes these take) |
 | `images.ts` | Width presets and image helpers (§5) |
 | `structured-data.ts` | JSON-LD `Person` and `VisualArtwork` |
 
@@ -80,25 +83,27 @@ it for design reasons; the admin writes exactly that format).
 
 ## 4. Design tokens and styles
 
-- **`src/styles/tokens.css`** — every design value as a CSS custom property: colours
-  (`--color-*`, including the viewer’s), font stacks and type scale (`--font-*`, `--text-*`,
-  `--leading-*`, `--tracking-*`, `--weight-*`), spacing (`--space-1…9`, `--gutter`,
-  `--section-gap`), layout (`--width-page`, `--width-text`, `--header-height`, `--tap-target`,
-  `--grid-row` / `--grid-gap` / `--grid-row-gap` for the artwork grids, `--artwork-max-height`),
-  shape (`--radius-*`, `--focus-ring`, `--shadow-art`) and motion (`--duration-*`, `--ease`;
-  set to 0 under `prefers-reduced-motion`). Breakpoints used: 48 rem, 64 rem, 80 rem.
-- **`src/styles/global.css`** — reset, page defaults, and the shared primitives: `.container`,
-  `.button` / `.button--quiet`, `.arrow-link`, `.eyebrow`, `.visually-hidden`, `.skip-link`.
+- **`src/styles/tokens.css`** — the «Lo studio» tokens (all `--tiz-*`): colours (lino, gesso, filo,
+  terra, terra-2/3, rosso, ocra, terracotta, ottanio, blu), the two self-hosted fonts
+  (`--tiz-font-mano` = TIZ Mano, `--tiz-font-voce` = Bricolage Grotesque, `@font-face` here), type
+  scale, spacing `--tiz-s1…8` + `--tiz-gutter`, layout (`--tiz-page-max`, `--tiz-measure`,
+  `--tiz-hit`, `--tiz-header-h`, `--tiz-bar-h`), shapes, shadow, linen/bristle/marker gradients,
+  focus, motion and the keyframes `tiz-stroke` / `tiz-write` / `tiz-settle` / `tiz-beat`.
+  Breakpoints (px): < 640 phone, 640–1023 tablet, ≥ 1024 desktop.
+- **`src/styles/global.css`** — reset, the linen page, links, focus, the primitives `.container`,
+  `.tiz-btn` / `.tiz-btn--dark` / `.tiz-btn--round`, `.tiz-marker`, `.tiz-write` / `.tiz-settle`,
+  `.visually-hidden`, `.skip-link`, the reveal-on-scroll system (`data-reveal`, `data-reveal="write"`)
+  and the cross-document view transitions.
 - **Components** — scoped `<style>` with BEM-ish class names (`.artwork-card__title`,
   `.gallery__cover`…), values only from tokens. To style the inside of a child component from a
   parent, wrap it and use `:global()` (example: `.artwork-card__media :global(img)`).
 - `theme-color` in `BaseLayout.astro` and the colours in `public/favicon.svg` repeat
-  `--color-bg` / `--color-highlight` (they cannot read CSS variables): update them together. Then
+  `--tiz-lino` / `--tiz-rosso` (they cannot read CSS variables): update them together. Then
   regenerate `public/favicon-32.png` and `public/apple-touch-icon.png` (the iPhone home-screen icon)
   with `node scripts/dev/site-icons.mjs` (background = the fill of the SVG's `<rect>`) and commit them.
-- Fonts: system fonts only, no request to a font service. If the new design needs a web font,
-  self-host the `.woff2` files (e.g. `public/fonts/`, referenced with the base path) and preload
-  the one used by the h1.
+- Fonts: self-hosted, no request to a font service: `src/assets/fonts/*.woff2` (Vite hashes them
+  and adds the base path), `@font-face` in tokens.css, both preloaded in BaseLayout. Licences in
+  `public/fonts/OFL-*.txt`. Neither font has ← → arrows; they fall back to the system font.
 
 ## 5. Images
 

@@ -1,0 +1,28 @@
+---
+/**
+ * Design kit helper: an almost empty page that the kit shows in phone-sized frames, to see the
+ * header with the menu closed and open (`#aperto` opens it on load).
+ *
+ * TEMPORARY: delete src/pages/kit/ at the end of the redesign (see kit/index.astro).
+ */
+import BaseLayout from '../../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="Kit · intestazione" description="Kit del design: intestazione (pagina interna)." path={null} noindex>
+  <div class="container kit-blank">
+    <p>Pagina vuota per provare l’intestazione e il menu.</p>
+  </div>
+</BaseLayout>
+
+<script>
+  if (location.hash === '#aperto') {
+    document.querySelector<HTMLButtonElement>('[data-menu-toggle]')?.click();
+  }
+</script>
+
+<style>
+  .kit-blank {
+    padding-block: var(--tiz-s6);
+    color: var(--tiz-terra-2);
+  }
+</style>
