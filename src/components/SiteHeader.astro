@@ -1,7 +1,8 @@
 ---
 /**
  * Site header: "TIZ" + name (→ home) and the navigation Opere · Chi sono · Contatti. The current
- * section gets aria-current="page" and the ocra marker (artwork pages count as "Opere").
+ * section gets the ocra marker: aria-current="page" when the URL is exactly the item's page,
+ * aria-current="true" on a page inside its section (/opere/<slug>/ → Opere, /contatti/grazie/ → Contatti).
  *
  * - ≥ 640 px: the nav on the right.
  * - < 640 px with JS: a "Menu" button opens a full-screen lino overlay (ocra stroke, big links, the
@@ -32,6 +33,8 @@ const NAV = [
 ];
 
 const current = Astro.url.pathname;
+/** "page" on the item's own page, "true" on a page inside its section, else nothing. */
+const currentFor = (href: string) => (current === href ? 'page' : current.startsWith(href) ? 'true' : undefined);
 const motto = splitLastWord((await getProfilo()).motto);
 ---
 
@@ -62,7 +65,7 @@ const motto = splitLastWord((await getProfilo()).motto);
           {
             NAV.map(({ href, label }, i) => (
               <li class="tiz-nav__item" style={`--i: ${i}`}>
-                <a class="tiz-nav__link" href={href} aria-current={current.startsWith(href) ? 'page' : undefined}>
+                <a class="tiz-nav__link" href={href} aria-current={currentFor(href)}>
                   <span class="tiz-nav__label">{label}</span>
                 </a>
               </li>
@@ -239,7 +242,7 @@ const motto = splitLastWord((await getProfilo()).motto);
     color: var(--tiz-rosso);
   }
 
-  .tiz-nav__link[aria-current='page'] .tiz-nav__label {
+  .tiz-nav__link[aria-current] .tiz-nav__label {
     background: var(--tiz-marker-nav);
   }
 
@@ -336,7 +339,7 @@ const motto = splitLastWord((await getProfilo()).motto);
       animation-delay: calc(150ms + var(--i, 0) * 70ms);
     }
 
-    .tiz-header.is-open .tiz-nav__link[aria-current='page'] .tiz-nav__label {
+    .tiz-header.is-open .tiz-nav__link[aria-current] .tiz-nav__label {
       background: none;
     }
 
