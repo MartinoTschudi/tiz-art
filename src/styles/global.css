@@ -206,8 +206,10 @@ a:hover {
   color: var(--tiz-terra);
 }
 
-/** Marker link: ocra highlighter under the text, 44px tall. Write the arrow after a space as its own
-    (aria-hidden) element: the gap is that word space, as in the reference ("Tutte le opere →"). */
+/** Marker link: ocra highlighter under the text, 44px tall (phones: the band of frames 1c / 1i; from
+    640 px the slimmer band of the desktop frames, which draw it in a 37 px box). Write the arrow after
+    a space as its own (aria-hidden) element: the gap is that word space, as in the reference
+    ("Tutte le opere →"). */
 .tiz-marker {
   display: inline-flex;
   align-items: center;
@@ -221,6 +223,12 @@ a:hover {
 
 .tiz-marker:hover {
   color: var(--tiz-rosso);
+}
+
+@media (min-width: 640px) {
+  .tiz-marker {
+    background: var(--tiz-marker-hit);
+  }
 }
 
 /** Load animations (not tied to scrolling). Delay with --d, e.g. style="--d: .5s". */
