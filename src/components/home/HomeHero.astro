@@ -173,8 +173,10 @@ const ROTATE = { large: '-6deg', narrow: '8deg', small: '-3deg' } as const;
     display: none;
   }
 
+  /* The painting is 290px (400px from 640) after a 40px inset; the note wraps under it. */
   .home-hero__work--large {
     width: 100%;
+    max-width: 330px;
     margin-top: 40px;
     padding-left: 40px;
   }
@@ -182,10 +184,6 @@ const ROTATE = { large: '-6deg', narrow: '8deg', small: '-3deg' } as const;
   .home-hero__frame {
     position: relative;
     isolation: isolate;
-  }
-
-  .home-hero__work--large .home-hero__frame {
-    width: min(290px, 100%);
   }
 
   .home-hero__link {
@@ -238,8 +236,8 @@ const ROTATE = { large: '-6deg', narrow: '8deg', small: '-3deg' } as const;
   }
 
   @media (min-width: 640px) {
-    .home-hero__work--large .home-hero__frame {
-      width: min(400px, 100%);
+    .home-hero__work--large {
+      max-width: 440px;
     }
 
     .home-hero__text {
@@ -296,12 +294,9 @@ const ROTATE = { large: '-6deg', narrow: '8deg', small: '-3deg' } as const;
     .home-hero__work--large {
       grid-column: 2 / 4;
       grid-row: 1;
+      max-width: none;
       margin-top: 30px;
       padding-left: 0;
-    }
-
-    .home-hero__work--large .home-hero__frame {
-      width: 100%;
     }
 
     .home-hero__work--narrow {
