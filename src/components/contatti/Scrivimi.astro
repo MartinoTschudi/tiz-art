@@ -1,0 +1,128 @@
+---
+/**
+ * The ottanio block of the contact pages (frames 1j / 1k): a big brushstroke as the block's
+ * background, "Scrivimi" in her hand (lino, written in after the stroke) and one line in lino.
+ *
+ * - `titleId`: "Scrivimi" is the page's <h1> with this id (/contatti/; the form is labelled by it).
+ *   Without it the block is a decorative echo of the contact page (aria-hidden), as on
+ *   /contatti/grazie/, where "Grazie!" is the heading.
+ * - Phone (< 640 px, frame 1k): "Scrivimi" at 100 px and only the last sentence of the line.
+ *
+ * Contrast: lino on ottanio is 4.7:1, but the stroke's light bristle lines lift the background to
+ * 3.7:1 in places, too little for the 17–20 px line. The line therefore carries a tight ottanio halo
+ * (text-shadow) that keeps the bristles away from the glyphs: measured in Chrome at 1280 and 390 px,
+ * the background behind every glyph pixel is ≥ 4.6:1. "Scrivimi" is large text (3:1) and needs none.
+ * Without the halo the line would be invisible on the bare lino until the stroke passes; with it, it
+ * would glow there for a moment, so the line is written in too, after "Scrivimi" has started and
+ * 0.8 s behind the stroke (the stroke's edge stays well ahead of the text's at every width).
+ */
+import Stroke from '../Stroke.astro';
+
+interface Props {
+  titleId?: string;
+}
+
+const { titleId } = Astro.props;
+const Title = titleId ? 'h1' : 'p';
+---
+
+<div class="scrivimi" aria-hidden={titleId ? undefined : 'true'}>
+  <Stroke class="scrivimi__stroke" color="var(--tiz-ottanio)" rotate="-4deg" delay="0.1s" />
+  <Title class="scrivimi__title tiz-write" id={titleId} style="--d: 0.7s">Scrivimi</Title>
+  <p class="scrivimi__line tiz-write" style="--d: 0.9s">
+    <span class="scrivimi__more">Per un quadro, per vedere le tele dal vivo, o solo per due parole. </span>Leggo
+    tutto e rispondo io, di persona.
+  </p>
+</div>
+
+<style>
+  .scrivimi {
+    position: relative;
+    isolation: isolate;
+    padding: 48px 24px 56px;
+    color: var(--tiz-lino);
+  }
+
+  /* The stroke is the block's background, a little wider than the block (it bleeds into the gutter;
+     the page wrapper clips it at the viewport edge). */
+  .scrivimi :global(.scrivimi__stroke) {
+    inset: 0 -30px 0 -40px;
+  }
+
+  .scrivimi__title {
+    font-family: var(--tiz-font-mano);
+    font-size: clamp(72px, 27vw, 100px);
+    font-weight: 400;
+    line-height: 0.8;
+    color: var(--tiz-lino);
+    text-wrap: nowrap;
+  }
+
+  .scrivimi__line {
+    margin-top: 16px;
+    max-width: 380px;
+    font-size: 17px;
+    line-height: 1.5;
+    color: var(--tiz-lino);
+    text-shadow:
+      0 0 1px var(--tiz-ottanio),
+      0 0 1px var(--tiz-ottanio),
+      0 0 2px var(--tiz-ottanio),
+      0 0 3px var(--tiz-ottanio),
+      0 0 6px var(--tiz-ottanio);
+  }
+
+  .scrivimi__more {
+    display: none;
+  }
+
+  @media (min-width: 640px) {
+    .scrivimi {
+      max-width: 560px;
+      padding: 64px 32px 88px;
+    }
+
+    .scrivimi :global(.scrivimi__stroke) {
+      inset: 0 -20px 0 -40px;
+    }
+
+    .scrivimi__title {
+      font-size: 140px;
+    }
+
+    .scrivimi__line {
+      margin-top: 24px;
+      font-size: 20px;
+    }
+
+    .scrivimi__more {
+      display: inline;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .scrivimi {
+      max-width: none;
+      padding: 80px 40px 120px;
+    }
+
+    /* 170 px at 1280 (frame 1j), smaller down to 1024 so the word stays inside its column. */
+    .scrivimi__title {
+      font-size: clamp(130px, 13.3vw, 170px);
+    }
+
+    .scrivimi__line {
+      margin-top: 28px;
+    }
+  }
+
+  /* Windows high contrast: no stroke behind the text, so the forced colours take over cleanly. */
+  @media (forced-colors: active) {
+    .scrivimi,
+    .scrivimi__title,
+    .scrivimi__line {
+      color: CanvasText;
+      text-shadow: none;
+    }
+  }
+</style>

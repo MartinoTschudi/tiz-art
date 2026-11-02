@@ -1,0 +1,24 @@
+---
+/**
+ * /contatti/grazie/: where Web3Forms sends visitors without JavaScript after their message went out
+ * (the `redirect` field of ContactForm). It shows the same "Grazie!" as the form does with JavaScript
+ * (frame 1j-sent): the Scrivimi block as a decorative echo, then "Grazie!" (h1), the line and marker
+ * links to the works and home.
+ *
+ * Not a page to find: noindex, no canonical, left out of the sitemap (astro.config.mjs).
+ */
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Grazie from '../../components/contatti/Grazie.astro';
+import Pagina from '../../components/contatti/Pagina.astro';
+import { MESSAGES } from '../../components/lib/contatti';
+import { routes } from '../../components/lib/site';
+---
+
+<BaseLayout title="Grazie" description={MESSAGES.sent} path={null} noindex>
+  <Pagina>
+    <Grazie level={1}>
+      <a class="tiz-marker" href={routes.opere}><span>Guarda le opere <span aria-hidden="true">→</span></span></a>
+      <a class="tiz-marker" href={routes.home}>Torna alla home</a>
+    </Grazie>
+  </Pagina>
+</BaseLayout>

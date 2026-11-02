@@ -1,11 +1,14 @@
 ---
 /**
- * Contact page: the form is the only way to reach the artist (no e-mail, phone or address shown).
- * `?opera=<slug>` (from "Chiedi informazioni su quest’opera") pre-selects that work.
+ * Contatti (frames 1j desktop, 1k phone; 1j-sent / 1k-sent after sending). The form is the only way to
+ * reach the artist: no e-mail, phone or address anywhere.
+ *
+ * Left (on top below 1024 px): the ottanio stroke block with "Scrivimi" (the page's h1). Right: the
+ * form (ContactForm). `?opera=<slug>` from "Chiedi di quest’opera" shows the chosen work as a chip.
  */
 import BaseLayout from '../layouts/BaseLayout.astro';
-import PageHeader from '../components/PageHeader.astro';
 import ContactForm from '../components/ContactForm.astro';
+import Pagina from '../components/contatti/Pagina.astro';
 import { SITE } from '../components/lib/site';
 import { getPublishedOpere } from '../components/lib/opere';
 
@@ -14,32 +17,10 @@ const opere = await getPublishedOpere();
 
 <BaseLayout
   title="Contatti"
-  description={`Scrivi a ${SITE.nome} per informazioni sulle sue opere.`}
+  description={`Scrivi a ${SITE.nome}: per un quadro, per vedere le tele dal vivo, o solo per due parole.`}
   path="contatti/"
 >
-  <div class="contact container">
-    <PageHeader
-      eyebrow="Scrivimi"
-      title="Contatti"
-      lead="Hai una domanda su un’opera o vuoi semplicemente scrivermi? Compila il modulo: ti risponderò al più presto."
-    />
-    <div class="contact__form">
-      <ContactForm opere={opere} />
-    </div>
-  </div>
+  <Pagina titleId="contatti-titolo">
+    <ContactForm opere={opere} labelledBy="contatti-titolo" />
+  </Pagina>
 </BaseLayout>
-
-<style>
-  @media (min-width: 64rem) {
-    .contact {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
-      gap: var(--space-8);
-      align-items: start;
-    }
-
-    .contact__form {
-      padding-top: clamp(var(--space-6), 7vw, var(--space-8));
-    }
-  }
-</style>
