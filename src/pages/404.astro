@@ -21,7 +21,7 @@ import { routes } from '../components/lib/site';
           <p class="nf__label">pagina non trovata</p>
           <h1 class="nf__title tiz-write" style="--d: 200ms">Qui la tela è ancora bianca.</h1>
         </hgroup>
-        <p class="nf__lead">La pagina che cerchi non esiste, o è stata spostata. I quadri però sono tutti al loro posto.</p>
+        <p class="nf__lead">La pagina che cerchi non c’è, ma i quadri sono tutti al loro posto.</p>
         <p class="nf__links">
           <a class="tiz-marker" href={routes.opere}>Vedi le opere <span aria-hidden="true">→</span></a>
           <a class="tiz-marker" href={routes.home}>Torna alla home</a>
@@ -67,8 +67,6 @@ import { routes } from '../components/lib/site';
   .nf__title {
     margin-top: 14px;
     font: 400 64px/0.9 var(--tiz-font-mano);
-    letter-spacing: 0;
-    text-wrap: balance;
   }
 
   .nf__lead {
@@ -82,6 +80,11 @@ import { routes } from '../components/lib/site';
     flex-wrap: wrap;
     align-items: center;
     gap: 8px 32px;
+  }
+
+  /* A plain word space before the arrow, as on Chi sono (frame 1h). */
+  .nf__links .tiz-marker {
+    gap: 0.3em;
   }
 
   /* A blank canvas leaning in the studio (decorative): 4:5, the painting shadow, a stroke behind. */
