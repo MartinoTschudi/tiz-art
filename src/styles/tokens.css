@@ -1,108 +1,202 @@
 /*
- * Design tokens — every colour, font, size, space, radius, width and timing of the public site.
- * Components and pages only use these custom properties: a redesign starts here.
+ * TIZ design tokens («Lo studio»): every colour, font, size, space, shape, timing and keyframe of the
+ * public site. Components and pages only use these custom properties.
+ * Source: the Claude Design handoff tokens.css, plus the few extra tokens marked "site".
  * (The admin in public/admin/ has its own styles and does not use this file.)
+ *
+ * Breakpoints (px, as in the design): phone < 640 · tablet 640–1023 · desktop ≥ 1024.
+ * Media queries cannot read custom properties, so they are written out where needed:
+ *   @media (min-width: 640px) …   @media (min-width: 1024px) …   @media (max-width: 639.98px) …
  */
 
-:root {
-  /* ── Colour ─────────────────────────────────────────────── */
-  --color-bg: #f6f3ee; /* page background: warm paper, kind to paintings */
-  --color-surface: #fdfcfa; /* form fields, raised areas */
-  --color-text: #1d1b18;
-  --color-text-muted: #675f55;
-  --color-line: #ddd5c9;
-  --color-line-strong: #a89e90;
-  --color-accent: #1d1b18; /* primary buttons */
-  --color-on-accent: #f6f3ee;
-  --color-highlight: #9a3b2a; /* the TIZ signature, hovers, focus ring: earth red */
-  --color-placeholder: #e8e2d8; /* behind images while they load */
-  --color-success: #2b6a3d;
-  --color-error: #a3271c;
-  --color-viewer-bg: #12110f; /* full-screen image viewer */
-  --color-viewer-text: #f2eee8;
-  --color-viewer-control: rgb(18 17 15 / 0.62); /* readable over dark and over a zoomed painting */
-  --color-viewer-control-hover: rgb(58 54 50 / 0.85);
-  --color-viewer-control-border: rgb(255 255 255 / 0.2);
-
-  /* ── Typography (system fonts only, no downloads) ───────── */
-  --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  --font-serif: 'Iowan Old Style', 'Palatino Linotype', Palatino, 'Book Antiqua', 'URW Palladio L', Georgia, serif;
-  --font-body: var(--font-sans);
-  --font-display: var(--font-serif); /* headings, titles, the motto */
-
-  --text-xs: 0.8125rem;
-  --text-sm: 0.9375rem;
-  --text-base: 1.0625rem;
-  --text-lg: clamp(1.1875rem, 1.1rem + 0.4vw, 1.375rem);
-  --text-xl: clamp(1.375rem, 1.2rem + 0.8vw, 1.75rem);
-  --text-2xl: clamp(1.75rem, 1.4rem + 1.6vw, 2.625rem);
-  --text-3xl: clamp(2.25rem, 1.6rem + 3vw, 4rem);
-  --text-display: clamp(2.75rem, 1.2rem + 7vw, 7.5rem); /* the name on the home page */
-
-  --leading-tight: 1.05;
-  --leading-snug: 1.3;
-  --leading-body: 1.65;
-  --tracking-caps: 0.16em; /* small uppercase labels */
-  --tracking-tight: -0.015em; /* large serif headings */
-  --weight-regular: 400;
-  --weight-medium: 500;
-  --weight-bold: 650;
-
-  /* ── Space ──────────────────────────────────────────────── */
-  --space-1: 0.25rem;
-  --space-2: 0.5rem;
-  --space-3: 0.75rem;
-  --space-4: 1rem;
-  --space-5: 1.5rem;
-  --space-6: 2rem;
-  --space-7: 3rem;
-  --space-8: 4rem;
-  --space-9: 6rem;
-  --gutter: clamp(1rem, 4vw, 3rem); /* page side padding */
-  --section-gap: clamp(4rem, 9vw, 8rem); /* between home-page sections */
-
-  /* ── Layout ─────────────────────────────────────────────── */
-  --width-page: 90rem;
-  --width-text: 40rem; /* comfortable reading line */
-  --header-height: 4rem;
-  --tap-target: 2.75rem; /* 44 px minimum touch target */
-  --grid-row: 9.5rem; /* target row height of the artwork grids (two works per row on phones) */
-  --grid-gap: clamp(0.75rem, 2.2vw, 2rem); /* between works in a row */
-  --grid-row-gap: clamp(2rem, 4vw, 3rem); /* between rows (captions sit in it) */
-  --artwork-max-height: 80svh; /* a painting always fits the screen height on its page */
-
-  /* ── Shape ──────────────────────────────────────────────── */
-  --radius-sm: 2px;
-  --radius-md: 6px;
-  --radius-pill: 999px;
-  --border-width: 1px;
-  --focus-ring: 2px solid var(--color-highlight);
-  --shadow-art: 0 1px 2px rgb(29 27 24 / 0.08), 0 12px 28px -16px rgb(29 27 24 / 0.35); /* like hung on a wall */
-
-  /* ── Motion ─────────────────────────────────────────────── */
-  --duration-fast: 150ms;
-  --duration: 260ms;
-  --duration-slow: 480ms;
-  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+/* ── Fonts (self-hosted; Vite hashes the files and adds the base path) ─────────────────────────────
+ * TIZ Mano = Nanum Brush Script with Italian accents, « » ‹ › … – — ·, renamed (OFL Reserved Font Name).
+ * Bricolage Grotesque = one variable file, latin, wght 200–800, opsz 12–96 (optical size follows the
+ * font size through font-optical-sizing: auto, set on body). Licences: public/fonts/OFL-*.txt.
+ * Neither font has ← → arrows: they fall back to the system font, as in the design. */
+@font-face {
+  font-family: 'TIZ Mano';
+  src: url('../assets/fonts/tiz-mano.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
 }
 
-@media (min-width: 48rem) {
+@font-face {
+  font-family: 'Bricolage Grotesque';
+  src: url('../assets/fonts/bricolage-grotesque.woff2') format('woff2');
+  font-weight: 200 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  /* ── Colours ─────────────────────────────────────────────── */
+  --tiz-lino: #f3ecdf; /* page ground (raw linen). Repeated in BaseLayout theme-color and public/favicon.svg */
+  --tiz-gesso: #e9dfcd; /* secondary surfaces, bands, hover */
+  --tiz-filo: #cdbfa9; /* dashed dividers, light borders */
+  --tiz-terra: #2a1c15; /* text, dark buttons — never pure black */
+  --tiz-terra-2: #6b5546; /* captions, measurements, secondary text (≈ 6:1 on lino) */
+  --tiz-terra-3: #4a3a30; /* long secondary paragraphs */
+  --tiz-rosso: #c3262b; /* TIZ signature, "cuore", primary action. Repeated in public/favicon.svg */
+  --tiz-ocra: #d6982b; /* brushstrokes, marker underline */
+  --tiz-terracotta: #b5532f; /* handwritten notes, warm strokes */
+  --tiz-ottanio: #1d7377; /* cold counterpoint (Contatti) */
+  --tiz-blu: #2c55a0; /* cold counterpoint */
+
+  /* site: roles */
+  --tiz-error: var(--tiz-rosso); /* inline form errors */
+  --tiz-viewer-bg: var(--tiz-lino); /* full-screen image viewer */
+
+  /* ── Fonts ───────────────────────────────────────────────── */
+  --tiz-font-mano: 'TIZ Mano', 'Bricolage Grotesque', system-ui, sans-serif; /* her hand: titles, motto, signature, notes. Never < 28px, never paragraphs */
+  --tiz-font-voce: 'Bricolage Grotesque', system-ui, sans-serif; /* everything else */
+
+  /* ── Type scale (desktop → phone via clamp) ──────────────── */
+  --tiz-mano-xl: clamp(92px, 11vw, 150px); /* line-height .82 — home motto */
+  --tiz-mano-l: clamp(64px, 7vw, 92px); /* line-height .88 — opera title */
+  --tiz-mano-m: clamp(40px, 5vw, 76px); /* quotes */
+  --tiz-mano-s: clamp(28px, 2.4vw, 34px); /* captions, notes */
+  --tiz-display: clamp(64px, 11vw, 150px); /* weight 800, ls -0.05em, lh .8 */
+  --tiz-h1-name: clamp(52px, 7vw, 88px); /* weight 800, ls -0.04em */
+  --tiz-lead: clamp(19px, 1.6vw, 22px); /* lh 1.5 */
+  --tiz-body: 17px; /* lh 1.55; 18–20px on Chi sono */
+  --tiz-small: 14px; /* lh 1.4 */
+  /* site */
+  --tiz-mano-caption: 30px; /* work titles under paintings in lists: 30 phone, 32 from 640 */
+  --tiz-signature: 42px; /* "TIZ" in the header: 42 phone, 48 from 640 */
+  --tiz-line-body: 1.55;
+  --tiz-line-small: 1.4;
+
+  /* ── Spacing ─────────────────────────────────────────────── */
+  --tiz-s1: 4px;
+  --tiz-s2: 8px;
+  --tiz-s3: 12px;
+  --tiz-s4: 20px;
+  --tiz-s5: 32px;
+  --tiz-s6: 48px;
+  --tiz-s7: 80px;
+  --tiz-s8: 120px;
+  --tiz-gutter: 20px; /* 32px ≥640, 48px ≥1024 */
+
+  /* site: layout */
+  --tiz-page-max: 1440px; /* .container, gutters included */
+  --tiz-measure: 620px; /* comfortable reading column */
+  --tiz-hit: 44px; /* minimum touch target */
+  --tiz-header-pad: 18px; /* header padding top/bottom: 18 phone, 22 tablet, 26 desktop */
+  --tiz-header-h: 80px; /* = 2 × pad + max(signature, hit): 80 phone, 92 tablet, 100 desktop */
+  --tiz-bar-h: 88px; /* fixed bottom bar on the phone Opera page (+ env(safe-area-inset-bottom)) */
+  --tiz-divider: 1.5px dashed var(--tiz-filo);
+  --tiz-z-header: 20;
+
+  /* ── Shapes & shadows ────────────────────────────────────── */
+  --tiz-radius-btn: 2px 14px 3px 12px; /* hand-cut, uneven corners */
+  --tiz-radius-btn-s: 2px 12px 3px 10px; /* site: smaller buttons (phone "Menu") */
+  --tiz-radius-stroke: 42% 58% 46% 54% / 56% 44% 56% 44%;
+  --tiz-radius-stroke-2: 52% 48% 40% 60% / 46% 54% 46% 54%; /* site: the second stroke shape of the design */
+  --tiz-shadow-tela: 0 1px 2px rgba(42, 28, 21, 0.25), 0 24px 40px -18px rgba(42, 28, 21, 0.45);
+  --tiz-bristle: repeating-linear-gradient(178deg, rgba(255, 255, 255, 0.12) 0 2px, transparent 2px 9px);
+  --tiz-linen:
+    repeating-linear-gradient(0deg, rgba(42, 28, 21, 0.03) 0 1px, transparent 1px 3px),
+    repeating-linear-gradient(90deg, rgba(42, 28, 21, 0.03) 0 1px, transparent 1px 3px);
+  --tiz-marker: linear-gradient(transparent 62%, var(--tiz-ocra) 62% 92%, transparent 92%);
+  --tiz-marker-nav: linear-gradient(transparent 58%, var(--tiz-ocra) 58% 92%, transparent 92%); /* site: active nav item */
+
+  /* site: focus (2px rosso, 3px offset) */
+  --tiz-focus: 2px solid var(--tiz-rosso);
+  --tiz-focus-offset: 3px;
+
+  /* ── Motion ──────────────────────────────────────────────── */
+  --tiz-ease-brush: cubic-bezier(0.6, 0, 0.2, 1);
+  --tiz-ease-settle: cubic-bezier(0.2, 0.7, 0.1, 1);
+  --tiz-dur-fast: 200ms; /* hover, focus, button tilt */
+  --tiz-dur-stroke: 1100ms; /* brushstroke wipe */
+  --tiz-dur-write: 1200ms; /* handwriting reveal */
+  --tiz-dur-settle: 800ms; /* painting settles; stagger 90ms */
+  --tiz-dur-fade: 700ms; /* opera crossfade, view transitions */
+  /* site */
+  --tiz-dur-lift: 300ms; /* hover lift of works in lists */
+  --tiz-dur-beat: 1600ms; /* the dot after "cuore" */
+  --tiz-stagger: 90ms; /* between paintings that settle together */
+  --tiz-lift: -6px;
+
+  /* Real-scale factor: canvas width px = cm × k */
+  --tiz-k: 2.2; /* phone; 2.0 tablet; 2.3 desktop */
+}
+
+@media (min-width: 640px) {
   :root {
-    --header-height: 4.75rem;
-    --grid-row: 15rem;
+    --tiz-gutter: 32px;
+    --tiz-k: 2;
+    --tiz-mano-caption: 32px;
+    --tiz-signature: 48px;
+    --tiz-header-pad: 22px;
+    --tiz-header-h: 92px;
   }
 }
 
-@media (min-width: 80rem) {
+@media (min-width: 1024px) {
   :root {
-    --grid-row: 19rem;
+    --tiz-gutter: 48px;
+    --tiz-k: 2.3;
+    --tiz-header-pad: 26px;
+    --tiz-header-h: 100px;
+  }
+}
+
+@keyframes tiz-stroke {
+  from {
+    clip-path: inset(-10% 100% -10% -10%);
+  }
+  to {
+    clip-path: inset(-10% -10% -10% -10%);
+  }
+}
+
+@keyframes tiz-write {
+  from {
+    clip-path: inset(-30% 100% -30% -5%);
+  }
+  to {
+    clip-path: inset(-30% -5% -30% -5%);
+  }
+}
+
+@keyframes tiz-settle {
+  from {
+    opacity: 0;
+    transform: translateY(22px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes tiz-beat {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  12% {
+    transform: scale(1.3);
+  }
+  24% {
+    transform: scale(1);
+  }
+  36% {
+    transform: scale(1.15);
+  }
+  48% {
+    transform: scale(1);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  :root {
-    --duration-fast: 0ms;
-    --duration: 0ms;
-    --duration-slow: 0ms;
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
   }
 }
