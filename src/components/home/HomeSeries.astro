@@ -39,7 +39,7 @@ const note = series.name ? SERIE_NOTE[series.name] : undefined;
           {note && <p class="home-series__note">{note}</p>}
         </header>
         <div class="home-series__works">
-          <HungWorks opere={series.works.map((work) => work.opera)} headingLevel={3} />
+          <HungWorks opere={series.works.map((work) => work.opera)} headingLevel={3} showSize={false} />
         </div>
         <p class="home-series__more">
           <a class="tiz-marker" href={routes.opere}>
@@ -88,17 +88,13 @@ const note = series.name ? SERIE_NOTE[series.name] : undefined;
     line-height: 1.5;
   }
 
+  /* Home captions show the title only (showSize={false}, frames 1b / 1c); the works hang a little
+     closer than on Opere. */
   .home-series__works {
+    --tiz-hung-gap: 48px;
+    --tiz-hung-gap-row: 40px;
+    --tiz-hung-gap-col: 48px;
     padding-block: 36px 24px;
-  }
-
-  /* Home captions show the title only (frames 1b / 1c); the sizes are on Opere and the work page. */
-  .home-series__works :global(.tiz-hung__size) {
-    display: none;
-  }
-
-  .home-series__works :global(.tiz-hung__list) {
-    gap: 48px;
   }
 
   .home-series__more {
@@ -138,10 +134,6 @@ const note = series.name ? SERIE_NOTE[series.name] : undefined;
 
     .home-series__works {
       padding-block: 40px;
-    }
-
-    .home-series__works :global(.tiz-hung__list) {
-      gap: 40px 48px;
     }
 
     .home-series__more {

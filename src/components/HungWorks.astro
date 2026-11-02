@@ -17,6 +17,10 @@
  * - Items settle in when scrolled into view ([data-reveal], staggered 90 ms) and lift on hover.
  * - The painting box carries `view-transition-name: opera-<slug>` for the morph to the Opera page;
  *   names must be unique on a page, so pass `transitionNames={false}` to a second list of the same works.
+ * - Captions: the title, then "{w} × {h} cm" unless `showSize={false}` (the Home series, frames 1b / 1c).
+ * - Spacing between the works: set these custom properties on a parent (never restyle the inside):
+ *   `--tiz-hung-gap` (phone column, default 52px), `--tiz-hung-gap-row` / `--tiz-hung-gap-col`
+ *   (wrapped rows from 640 px, default 48px / 56px).
  */
 import ResponsivePicture from './ResponsivePicture.astro';
 import Stroke from './Stroke.astro';
@@ -37,9 +41,11 @@ interface Props {
   transitionNames?: boolean;
   /** aria-label of the list. */
   label?: string;
+  /** The "{w} × {h} cm" line under each title (default true). */
+  showSize?: boolean;
 }
 
-const { opere, offset = 0, headingLevel = 3, priorityCount = 0, transitionNames = true, label } = Astro.props;
+const { opere, offset = 0, headingLevel = 3, priorityCount = 0, transitionNames = true, label, showSize = true } = Astro.props;
 const Heading = `h${headingLevel}` as 'h2' | 'h3' | 'h4';
 const published = await getPublishedOpere();
 
@@ -50,7 +56,7 @@ const items = opere.map((opera, i) => {
     opera,
     place,
     cm: data.larghezza ?? DEFAULT_CM,
-    size: formatDimensions(data),
+    size: showSize ? formatDimensions(data) : null,
     paint: operaPaintVar(opera, published),
     sizes: realScaleSizes(data.larghezza),
     priority: i < priorityCount,
@@ -94,7 +100,7 @@ const items = opere.map((opera, i) => {
   .tiz-hung__list {
     display: flex;
     flex-direction: column;
-    gap: 52px;
+    gap: var(--tiz-hung-gap, 52px);
   }
 
   .tiz-hung__item {
@@ -156,7 +162,7 @@ const items = opere.map((opera, i) => {
       flex-wrap: wrap;
       justify-content: space-around;
       align-items: flex-start;
-      gap: 48px 56px;
+      gap: var(--tiz-hung-gap-row, 48px) var(--tiz-hung-gap-col, 56px);
     }
 
     .tiz-hung__item {
