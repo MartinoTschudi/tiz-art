@@ -11,13 +11,24 @@
  *   gutter and are clipped at its outer edge, so they never cause horizontal scrolling.
  * - Each painting is cm × k px wide (k = --tiz-k: 2.3 ≥ 1024, 2.0 at 640–1023, 2.2 below), never
  *   wider than the list; 100 cm when `larghezza` is missing (then no size line). Height = the photo.
+ *   The caption is at least 120 px wide (the narrowest real work, 60 cm at k 2.0), so a small canvas
+ *   keeps its real scale while its title still reads in whole words; the painting then sits at the
+ *   left of its item.
  * - ≥ 640: wrapped rows with the MT margin-top cycle; < 640: one column with the AL align cycle.
  * - Even indexes get a stroke in the work's paint (lib/opere.ts → operaPaint). `offset` shifts all
- *   the cycles (e.g. to continue a list).
+ *   the cycles (e.g. to continue a list). As in the frames, the stroke is 80 % × 70 % of the painting
+ *   plus its caption and may run under the caption; it is laid out on the painting plus a fixed
+ *   60 px caption allowance, so a long caption never stretches it. A caption on paint keeps a soft
+ *   lino halo around its letters (invisible on the linen), so dark script stays readable on blu,
+ *   rosso, terracotta or ottanio.
  * - Items settle in when scrolled into view ([data-reveal], staggered 90 ms) and lift on hover.
  * - The painting box carries `view-transition-name: opera-<slug>` for the morph to the Opera page;
  *   names must be unique on a page, so pass `transitionNames={false}` to a second list of the same works.
  * - Captions: the title, then "{w} × {h} cm" unless `showSize={false}` (the Home series, frames 1b / 1c).
+ *   The link is named by its caption (aria-labelledby: "Confidenze, 140 × 100 cm"), so a screen reader
+ *   does not read the title twice; the image keeps its alt text for image browsing. Ids:
+ *   `hung-<slug>-title` / `-size` (`hung2-…` in a list with `transitionNames={false}`).
+ * - `data-opera="<slug>"` on each item is a hook for test scripts (no site code reads it).
  * - Spacing between the works: set these custom properties on a parent (never restyle the inside):
  *   `--hung-gap` (phone column, default 52px), `--hung-gap-row` / `--hung-gap-col`
  *   (wrapped rows from 640 px, default 48px / 56px).
@@ -49,14 +60,18 @@ const { opere, offset = 0, headingLevel = 3, priorityCount = 0, transitionNames 
 const Heading = `h${headingLevel}` as 'h2' | 'h3' | 'h4';
 const published = await getPublishedOpere();
 
+const idPrefix = transitionNames ? 'hung' : 'hung2';
 const items = opere.map((opera, i) => {
   const { data } = opera;
   const place = hungAt(offset + i);
+  const id = `${idPrefix}-${opera.id}`;
+  const size = showSize ? formatDimensions(data) : null;
   return {
     opera,
     place,
     cm: data.larghezza ?? DEFAULT_CM,
-    size: showSize ? formatDimensions(data) : null,
+    size,
+    ids: { title: `${id}-title`, size: `${id}-size`, label: size ? `${id}-title ${id}-size` : `${id}-title` },
     paint: operaPaintVar(opera, published),
     sizes: realScaleSizes(data.larghezza),
     priority: i < priorityCount,
@@ -68,18 +83,22 @@ const items = opere.map((opera, i) => {
   items.length > 0 && (
     <div class="tiz-hung">
       <ul class="tiz-hung__list" role="list" aria-label={label}>
-        {items.map(({ opera, place, cm, size, paint, sizes, priority }) => (
+        {items.map(({ opera, place, cm, size, ids, paint, sizes, priority }) => (
           <li class="tiz-hung__item" data-reveal data-opera={opera.id} style={`--cm: ${cm}; --mt: ${place.mt}px; --al: ${place.align}`}>
-            <a class="tiz-hung__link" href={routes.opera(opera.id)}>
-              {place.stroke && (
-                <Stroke color={paint} left={place.stroke.left} top={place.stroke.top} width="80%" height="70%" rotate={place.stroke.rotate} />
-              )}
-              <div class="tiz-hung__media" style={transitionNames ? `view-transition-name: opera-${opera.id}` : undefined}>
-                <ResponsivePicture image={opera.data.immagini[0]} alt={altText(opera.data)} preset="card" sizes={sizes} priority={priority} />
+            <a class="tiz-hung__link" href={routes.opera(opera.id)} aria-labelledby={ids.label}>
+              <div class="tiz-hung__art">
+                {place.stroke && (
+                  <span class="tiz-hung__stroke-box" aria-hidden="true">
+                    <Stroke color={paint} left={place.stroke.left} top={place.stroke.top} width="80%" height="70%" rotate={place.stroke.rotate} />
+                  </span>
+                )}
+                <div class="tiz-hung__media" style={transitionNames ? `view-transition-name: opera-${opera.id}` : undefined}>
+                  <ResponsivePicture image={opera.data.immagini[0]} alt={altText(opera.data)} preset="card" sizes={sizes} priority={priority} />
+                </div>
               </div>
               <div class="tiz-hung__caption">
-                <Heading class="tiz-hung__title">{opera.data.titolo}</Heading>
-                {size && <p class="tiz-hung__size">{size}</p>}
+                <Heading class="tiz-hung__title" id={ids.title}>{opera.data.titolo}</Heading>
+                {size && <p class="tiz-hung__size" id={ids.size}>{size}</p>}
               </div>
             </a>
           </li>
@@ -103,15 +122,16 @@ const items = opere.map((opera, i) => {
     gap: var(--hung-gap, 52px);
   }
 
+  /* The item: the painting's real-scale width, at least 120 px for the caption, never wider than
+     the list. */
   .tiz-hung__item {
+    --real: calc(var(--cm, 100) * var(--tiz-k) * 1px);
     align-self: var(--al, flex-start);
-    width: min(calc(var(--cm, 100) * var(--tiz-k) * 1px), 100%);
+    width: min(max(var(--real), 120px), 100%);
     min-width: 0;
   }
 
   .tiz-hung__link {
-    position: relative;
-    isolation: isolate;
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -126,6 +146,22 @@ const items = opere.map((opera, i) => {
     color: var(--tiz-rosso);
   }
 
+  /* The painting at real scale, with its stroke behind it. */
+  .tiz-hung__art {
+    position: relative;
+    isolation: isolate;
+    width: min(var(--real), 100%);
+  }
+
+  /* What the stroke's % refer to: the painting and a 60 px caption allowance under it (the frames
+     size the stroke on the whole item, caption included; a fixed allowance keeps a long caption from
+     stretching it). No z-index: the stroke stays behind the painting. */
+  .tiz-hung__stroke-box {
+    position: absolute;
+    inset: 0 0 -60px;
+    pointer-events: none;
+  }
+
   .tiz-hung__media {
     box-shadow: var(--tiz-shadow-tela);
   }
@@ -136,18 +172,27 @@ const items = opere.map((opera, i) => {
     height: auto;
   }
 
+  /* A soft lino halo: invisible on the linen, it keeps the letters readable where the stroke runs
+     under them (terra on blu would be 2.3:1). Positioned, so it paints after the (positioned) painting
+     box and therefore above the stroke that reaches under it. */
   .tiz-hung__caption {
+    position: relative;
     display: flex;
     flex-direction: column;
     gap: 2px;
+    text-shadow:
+      0 0 3px var(--tiz-lino),
+      0 0 6px var(--tiz-lino),
+      0 0 10px var(--tiz-lino);
   }
 
   .tiz-hung__title {
     font: 400 var(--tiz-mano-caption) / 1 var(--tiz-font-mano);
     letter-spacing: 0;
     text-wrap: pretty;
-    /* A narrow canvas (60 cm ≈ 130 px) must break a long word instead of overflowing. */
-    overflow-wrap: anywhere;
+    /* Only a word longer than the caption breaks (instead of overflowing); ordinary words never
+       split (no hyphens: Chrome would hyphenate words that fit on the next line). */
+    overflow-wrap: break-word;
   }
 
   .tiz-hung__size {
