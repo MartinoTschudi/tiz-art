@@ -4,22 +4,9 @@
  * Pure functions on plain data: no `astro:*` imports and only erasable TypeScript, so
  * `scripts/test/home.test.mjs` imports this file directly through Node's type stripping.
  */
-import type { PaintName } from './composition';
 
 /** The hero paragraph under the motto (site copy of the design, not admin data). */
 export const HOME_INTRO = 'Volti e corpi di donna, in acrilico e olio, a strati spessi. Quadri che nascono di getto — dal cuore, poi dalla testa.';
-
-/**
- * Stroke colour of each hero slot. The hero is one composition, so the colours belong to the slots
- * (frame 1b: rosso behind the large work, ottanio behind the narrow one, ocra behind the small one),
- * not to the works: three featured works with the same `colore` would otherwise give three strokes
- * of one colour.
- */
-export const HERO_PAINTS: Readonly<Record<'large' | 'narrow' | 'small', PaintName>> = {
-  large: 'rosso',
-  narrow: 'ottanio',
-  small: 'ocra',
-};
 
 /**
  * `sizes` of the hero paintings. ≥ 1024 the works hang on a "wall" of min(622px, 52.53%) of the

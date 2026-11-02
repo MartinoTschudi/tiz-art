@@ -3,7 +3,6 @@
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  HERO_PAINTS,
   HERO_SIZES,
   HOME_INTRO,
   QUOTE_SIZES,
@@ -14,14 +13,8 @@ import {
   opereCountNote,
   quoteAttribution,
 } from '../../src/components/lib/home.ts';
-import { PAINTS } from '../../src/components/lib/composition.ts';
 
 describe('hero', () => {
-  test('the slot colours of frame 1b, all valid paints', () => {
-    assert.deepEqual(HERO_PAINTS, { large: 'rosso', narrow: 'ottanio', small: 'ocra' });
-    for (const paint of Object.values(HERO_PAINTS)) assert.ok(PAINTS.includes(paint));
-  });
-
   test('note: "{titolo}, {anno}", the title alone without a year', () => {
     assert.equal(heroNote('Guardami!', 2023), 'Guardami!, 2023');
     assert.equal(heroNote('…e fuori piove', null), '…e fuori piove');

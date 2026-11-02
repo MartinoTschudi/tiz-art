@@ -12,14 +12,15 @@
  * - Motto lines wipe in at 0 / .5 / 1 s, the beating dot follows the last word in place of the
  *   trailing "." or "!" (none after "?" or "…"; once per page). An empty motto shows the artist's
  *   name instead (no dot).
- * - Strokes use the slot colours of the reference (HERO_PAINTS), not the works' own paint.
+ * - Each stroke is in the work's own paint (`colore`, chosen in the admin; lib/opere.ts → operaPaintVar),
+ *   as everywhere on the site.
  */
 import ResponsivePicture from '../ResponsivePicture.astro';
 import Stroke from '../Stroke.astro';
 import { SITE, routes } from '../lib/site';
-import { altText, type ComposableOpera } from '../lib/opere';
-import { mottoParts, paintVar, type HeroSlots } from '../lib/composition';
-import { HERO_PAINTS, HERO_SIZES, HOME_INTRO, heroNote, longestLine } from '../lib/home';
+import { altText, getPublishedOpere, operaPaintVar, type ComposableOpera } from '../lib/opere';
+import { mottoParts, type HeroSlots } from '../lib/composition';
+import { HERO_SIZES, HOME_INTRO, heroNote, longestLine } from '../lib/home';
 
 interface Props {
   hero: HeroSlots<ComposableOpera>;
@@ -27,6 +28,7 @@ interface Props {
 }
 
 const { hero, motto } = Astro.props;
+const published = await getPublishedOpere();
 
 const fromMotto = mottoParts(motto);
 const parts = fromMotto.lines.length > 0 ? fromMotto : mottoParts(SITE.nome);
@@ -42,7 +44,7 @@ const slots = (['large', 'narrow', 'small'] as const)
   .map(({ slot, work }) => ({
     slot,
     opera: work.opera,
-    paint: paintVar(HERO_PAINTS[slot]),
+    paint: operaPaintVar(work.opera, published),
     sizes: HERO_SIZES[slot],
   }));
 

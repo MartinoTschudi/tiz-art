@@ -1,16 +1,16 @@
 ---
 /**
- * Home quote band (frames 1b / 1c): on gesso, one painting with a terracotta stroke beside the
- * first sentence of her own text about it, in her hand, the last word in rosso; the attribution
- * links to the work. `quote` comes from lib/composition.ts → pickQuote; the page leaves the band
- * out when it is null.
+ * Home quote band (frames 1b / 1c): on gesso, one painting with its stroke (in the work's own paint,
+ * as everywhere) beside the first sentence of her own text about it, in her hand, the last word in
+ * rosso; the attribution links to the work. `quote` comes from lib/composition.ts → pickQuote; the
+ * page leaves the band out when it is null.
  * - ≥ 1024: 400px | text, the painting 340px. 640–1023: 240px | text. < 640: the text alone (1c).
  * - The painting and the text settle in when scrolled into view; the stroke waits for them.
  */
 import ResponsivePicture from '../ResponsivePicture.astro';
 import Stroke from '../Stroke.astro';
 import { SITE, routes } from '../lib/site';
-import { altText, formatDimensions, type Opera } from '../lib/opere';
+import { altText, formatDimensions, getPublishedOpere, operaPaintVar, type Opera } from '../lib/opere';
 import type { Quote } from '../lib/composition';
 import { QUOTE_SIZES, firstName, quoteAttribution } from '../lib/home';
 
@@ -21,6 +21,7 @@ interface Props {
 
 const { quote, opera } = Astro.props;
 const href = routes.opera(opera.id);
+const paint = operaPaintVar(opera, await getPublishedOpere());
 const attribution = quoteAttribution(firstName(SITE.nome), opera.data.titolo, formatDimensions(opera.data));
 ---
 
@@ -28,7 +29,7 @@ const attribution = quoteAttribution(firstName(SITE.nome), opera.data.titolo, fo
   <div class="home-quote__inner container">
     <div class="home-quote__work" data-reveal>
       <div class="home-quote__frame">
-        <Stroke class="home-quote__stroke" color="var(--tiz-terracotta)" rotate="-5deg" shape={2} />
+        <Stroke class="home-quote__stroke" color={paint} rotate="-5deg" shape={2} />
         {/* The attribution below is the link for keyboards and screen readers; this one is for the mouse. */}
         <a class="home-quote__media" href={href} tabindex="-1" aria-hidden="true" style={`view-transition-name: opera-${opera.id}`}>
           <ResponsivePicture image={opera.data.immagini[0]} alt={altText(opera.data)} preset="card" sizes={QUOTE_SIZES} />
