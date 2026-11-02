@@ -1,31 +1,49 @@
 ---
 /**
- * One artwork: photos (full-screen viewer), title, facts, text, "Chiedi informazioni" → contact form
- * with this work pre-selected, previous/next work. Only published works get a page.
+ * One artwork (frames 1f desktop, 1g phone). Only published works get a page.
+ *
+ * - ≥ 1024: "← Tutte le opere"; grid `minmax(0,1fr) 400px`, gap 64: the stage (ArtworkGallery) and
+ *   the column "{nn} / {total} · {collezione}", title, Anno / Misure / Tecnica, her text + "— TIZ"
+ *   (no block at all when the text is empty), "Chiedi di quest’opera →"; then previous / next.
+ * - 640–1023: the same, stacked.
+ * - < 640: the header shows "← Opere" + TIZ (BaseLayout headerBack); the painting in a 440 px box,
+ *   "{nn} / {total}", title, "anno · misure" / tecnica, the text; previous / next and the button sit
+ *   in the fixed bottom bar (opera/OperaBar.astro).
+ * - Search engines: VisualArtwork JSON-LD, the cover as Open Graph image, the text as description.
  */
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import ArtworkGallery from '../../components/ArtworkGallery.astro';
 import ArtworkFacts from '../../components/ArtworkFacts.astro';
 import ArtworkPager from '../../components/ArtworkPager.astro';
+import OperaBar from '../../components/opera/OperaBar.astro';
 import PlainText from '../../components/PlainText.astro';
-import { absoluteUrl, routes } from '../../components/lib/site';
-import { altText, getPublishedOpere, neighbours, operaDescription, type Opera } from '../../components/lib/opere';
+import { SITE, absoluteUrl, routes } from '../../components/lib/site';
+import { altText, getPublishedOpere, neighbours, operaDescription, operaPaintVar, type Opera } from '../../components/lib/opere';
 import { fullImageUrl, socialImage } from '../../components/lib/images';
 import { artworkJsonLd } from '../../components/lib/structured-data';
+import { operaCounter } from '../../components/lib/opera';
 
 export async function getStaticPaths() {
   const opere = await getPublishedOpere();
-  return opere.map((opera) => ({ params: { slug: opera.id }, props: { opera, ...neighbours(opere, opera.id) } }));
+  return opere.map((opera) => ({ params: { slug: opera.id }, props: { opera } }));
 }
 
 interface Props {
   opera: Opera;
-  prev?: Opera;
-  next?: Opera;
 }
 
-const { opera, prev, next } = Astro.props;
+const { opera } = Astro.props;
 const { data } = opera;
+const published = await getPublishedOpere();
+const { prev, next } = neighbours(published, opera.id);
+const counter = operaCounter(
+  published.findIndex(({ id }) => id === opera.id),
+  published.length,
+);
+const series = data.collezione.trim();
+const hasText = data.testo.trim() !== '';
+const ask = routes.contattiOpera(opera.id);
+
 const description = operaDescription(data);
 const shareImage = await socialImage(data.immagini[0], altText(data));
 // Search engines get the full-size JPEGs (the viewer already publishes them, so nothing extra is built).
@@ -33,91 +51,212 @@ const fullImages = await Promise.all(data.immagini.map((image) => fullImageUrl(i
 const jsonLd = artworkJsonLd(opera, { images: fullImages.map((url) => absoluteUrl(url)), description });
 ---
 
-<BaseLayout title={data.titolo} description={description} path={`opere/${opera.id}/`} ogImage={shareImage} jsonLd={[jsonLd]}>
-  <article class="artwork container">
-    <p class="artwork__back">
-      <a class="arrow-link" href={routes.opere}><span aria-hidden="true">←</span> Tutte le opere</a>
+<BaseLayout
+  title={data.titolo}
+  description={description}
+  path={`opere/${opera.id}/`}
+  ogImage={shareImage}
+  jsonLd={[jsonLd]}
+  headerBack={{ href: routes.opere, label: 'Opere' }}
+>
+  <article class="opera">
+    <p class="opera__back container">
+      <a class="opera__back-link" href={routes.opere}><span aria-hidden="true">←</span> Tutte le opere</a>
     </p>
 
-    <div class="artwork__layout">
-      <div class="artwork__media">
-        <ArtworkGallery opera={opera} />
+    <div class="opera__layout container">
+      <div class="opera__media">
+        <ArtworkGallery opera={opera} paint={operaPaintVar(opera, published)} />
       </div>
 
-      <div class="artwork__info">
-        <h1 class="artwork__title">{data.titolo}</h1>
+      <div class="opera__info">
+        <p class="opera__count">
+          <span aria-hidden="true">{counter.text}</span><span class="visually-hidden">{counter.spoken}</span>
+          {
+            series && (
+              <span class="opera__series">
+                <span aria-hidden="true"> · </span>
+                <span class="visually-hidden">, serie </span>
+                {series}
+              </span>
+            )
+          }
+        </p>
+        <h1 class="opera__title">{data.titolo}</h1>
         <ArtworkFacts data={data} />
         {
-          data.testo.trim() && (
-            <div class="artwork__text">
+          hasText && (
+            <div class="opera__text">
               <PlainText text={data.testo} />
+              <p class="opera__sign">— {SITE.firma}</p>
             </div>
           )
         }
-        <p class="artwork__cta">
-          <a class="button" href={routes.contattiOpera(opera.id)}>Chiedi informazioni su quest’opera</a>
+        <p class="opera__ask">
+          <a class="tiz-btn" href={ask}><span>Chiedi di quest’opera <span aria-hidden="true">→</span></span></a>
         </p>
       </div>
     </div>
 
-    <div class="artwork__pager">
-      <ArtworkPager prev={prev} next={next} />
-    </div>
+    <ArtworkPager prev={prev} next={next} />
   </article>
+
+  <OperaBar prev={prev} next={next} ask={ask} />
 </BaseLayout>
 
 <style>
-  .artwork__back {
-    padding-block: var(--space-3);
+  /* Strokes may reach past the window edge (phone: −10 %); never a horizontal scroll. */
+  .opera {
+    overflow-x: clip;
   }
 
-  .artwork__back a {
-    font-size: var(--text-sm);
-    font-weight: var(--weight-regular);
-    text-decoration: none;
+  /* Phone: the header has "← Opere". */
+  .opera__back {
+    display: none;
   }
 
-  .artwork__layout {
+  .opera__layout {
     display: grid;
     /* minmax(0, …): an implicit auto column would grow with the longest word of the title */
     grid-template-columns: minmax(0, 1fr);
-    gap: var(--space-7);
-    padding-top: var(--space-3);
+    padding-bottom: 40px;
   }
 
-  .artwork__info {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    gap: var(--space-5);
-    align-content: start;
+  .opera__info {
+    display: flex;
+    flex-direction: column;
+    gap: var(--tiz-s4);
+    min-width: 0;
+    padding-top: 28px;
   }
 
-  .artwork__title {
-    font-size: var(--text-3xl);
-    line-height: var(--leading-tight);
-    letter-spacing: var(--tracking-tight);
+  .opera__count {
+    color: var(--tiz-terra-2);
+    font: 500 13px/1 var(--tiz-font-voce);
   }
 
-  .artwork__text {
-    font-size: var(--text-lg);
-    line-height: var(--leading-body);
+  /* The series is shown from 640 px (frame 1g has only the number). */
+  .opera__series {
+    display: none;
   }
 
-  .artwork__pager {
-    margin-top: var(--section-gap);
+  .opera__title {
+    margin-top: -8px;
+    font: 400 64px/0.9 var(--tiz-font-mano);
+    letter-spacing: 0;
+    text-wrap: balance;
   }
 
-  @media (min-width: 64rem) {
-    .artwork__layout {
-      grid-template-columns: minmax(0, 3fr) minmax(20rem, 2fr);
-      gap: clamp(var(--space-7), 5vw, var(--space-9));
-      align-items: start;
+  .opera__text {
+    font-size: 19px;
+    line-height: 1.55;
+  }
+
+  .opera__sign {
+    margin-top: 10px;
+    color: var(--tiz-rosso);
+    font: 400 var(--tiz-mano-s) / 1 var(--tiz-font-mano);
+  }
+
+  /* Phone: the button is in the fixed bar. */
+  .opera__ask {
+    display: none;
+  }
+
+  @media (min-width: 640px) {
+    .opera__back {
+      display: flex;
+      padding-top: var(--tiz-s2);
     }
 
-    /* The text column stays in view next to tall paintings. */
-    .artwork__info {
+    /* 15 px text on the 19 px line of frame 1f, 44 px to tap: the extra height overlaps the spacing
+       around it. */
+    .opera__back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-height: var(--tiz-hit);
+      margin-block: calc((19px - var(--tiz-hit)) / 2);
+      color: var(--tiz-terra-2);
+      font: 500 15px/1 var(--tiz-font-voce);
+      text-decoration: none;
+    }
+
+    .opera__back-link:hover {
+      color: var(--tiz-rosso);
+    }
+
+    .opera__layout {
+      gap: var(--tiz-s6);
+      padding-block: var(--tiz-s5) 64px;
+    }
+
+    .opera__info {
+      gap: 28px;
+      max-width: var(--tiz-measure);
+      padding-top: 0;
+    }
+
+    .opera__count {
+      font-size: var(--tiz-small);
+    }
+
+    .opera__series {
+      display: inline;
+    }
+
+    .opera__title {
+      margin-top: -12px;
+      font-size: var(--tiz-mano-l);
+      line-height: 0.88;
+    }
+
+    .opera__text {
+      font-size: var(--tiz-lead);
+      line-height: 1.5;
+    }
+
+    .opera__ask {
+      display: block;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .opera__layout {
+      grid-template-columns: minmax(0, 1fr) 400px;
+      gap: 64px;
+      align-items: center;
+      padding-top: 24px;
+    }
+
+    /* A long text makes the column taller than the stage: the painting then stays at the top. */
+    .opera__media {
+      align-self: start;
+    }
+
+    .opera__info {
+      max-width: none;
+    }
+
+    .opera__title {
+      font-size: 92px;
+    }
+
+    .opera__text {
+      font-size: 22px;
+    }
+
+    .opera__sign {
+      font-size: 34px;
+    }
+  }
+
+  /* …and in view while the text is read, when the screen is tall enough for the whole stage and its
+     thumbnails (the stage is at most 100svh − 180px high, at least 560px: see ArtworkGallery). */
+  @media (min-width: 1024px) and (min-height: 740px) {
+    .opera__media {
       position: sticky;
-      top: var(--space-6);
+      top: var(--tiz-s5);
     }
   }
 </style>
