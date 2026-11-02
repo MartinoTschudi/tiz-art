@@ -22,11 +22,11 @@ import type { ImageMetadata } from 'astro';
 import { absoluteUrl } from './site';
 
 export const WIDTHS = {
-  /** Cards in the justified grids (home, /opere/). */
+  /** Paintings in lists and compositions: HungWorks (Opere, home series), home hero and quote, Chi sono. */
   card: [360, 540, 720, 960, 1280],
-  /** Main image of an artwork page. */
+  /** The stage of an artwork page. */
   artwork: [540, 720, 960, 1280, 1600],
-  /** Small thumbnails (extra photos on an artwork page). */
+  /** Small thumbnails on an artwork page: the extra photos under the stage, the previous / next pager. */
   thumb: [360, 540, 720],
   /** Full-screen viewer, below the original. */
   viewer: [1280, 1920],
