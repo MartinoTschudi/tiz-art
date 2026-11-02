@@ -7,6 +7,9 @@
  *   (≥ 640 px: 88 % × 92 % of a stage 600 / 720 px high, lower on short screens; phone: a 440 px box it
  *   fills). The numbers are also in lib/opera.ts (`sizes`); keep them in step.
  * - The stroke (inset 16% 14% 10% 4%, phone 20% 20% 6% −10%, rotate −5deg) wipes in on every load.
+ *   Its insets are the design's for a tall work (frame 1f); for a square or wide one they are clamped
+ *   to the cover, so it shows at least 64 px left and 24 px right of it (from 640 px), and reaches at
+ *   most 40 px above (phone 24) and 24 px below it: a wide painting never sits on a blob twice its height.
  * - The cover's frame carries `view-transition-name: opera-<slug>`, the same name as in HungWorks, so
  *   the painting moves from the list to this page. Never put the stage inside a [data-reveal] element.
  * - Clicking the painting opens the full-screen viewer (ImageViewer) at the photo on the stage.
@@ -90,9 +93,16 @@ const many = photos.length > 1;
 </div>
 
 <script>
-  // Thumbnails swap the photo on the stage (700 ms crossfade; at once with reduced motion). The
-  // stage link of the photo shown is the one that opens the viewer, at that photo.
-  const FADE_MS = 700;
+  // Thumbnails swap the photo on the stage with the slides' CSS crossfade (var(--tiz-dur-fade); none
+  // with reduced motion). The stage link of the photo shown is the one that opens the viewer, at that
+  // photo.
+
+  /** The slide's transition time in ms, read from the CSS (so it follows the token). */
+  const fadeMs = (slide: HTMLElement) => {
+    const first = getComputedStyle(slide).transitionDuration.split(',')[0].trim();
+    const value = Number.parseFloat(first) || 0;
+    return first.endsWith('ms') ? value : value * 1000;
+  };
 
   document.querySelectorAll<HTMLElement>('[data-gallery]').forEach((gallery) => {
     const slides = [...gallery.querySelectorAll<HTMLElement>('[data-gallery-slide]')];
@@ -100,7 +110,6 @@ const many = photos.length > 1;
     const status = gallery.querySelector<HTMLElement>('[data-gallery-status]');
     if (slides.length < 2) return;
 
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
     let current = 0;
     let cleanup: number | undefined;
 
@@ -124,11 +133,9 @@ const many = photos.length > 1;
         slide.classList.toggle('is-current', i === index);
         slide.inert = i !== index;
       });
+      // The old photo is hidden (display: none) once the crossfade has run.
       window.clearTimeout(cleanup);
-      cleanup = window.setTimeout(
-        () => slides.forEach((slide, i) => (slide.hidden = i !== current)),
-        reduced.matches ? 0 : FADE_MS,
-      );
+      cleanup = window.setTimeout(() => slides.forEach((slide, i) => (slide.hidden = i !== current)), fadeMs(next));
     };
 
     thumbs.forEach((thumb) => {
@@ -159,6 +166,21 @@ const many = photos.length > 1;
 
   .gallery__stage :global(.gallery__stroke) {
     inset: 20% 20% 6% -10%;
+  }
+
+  /* The cover's height, from the stage width (100cqi) and the fit rules of .gallery__frame, and the
+     linen left above and below it: the stroke reaches at most 24 px past the cover (phone). */
+  @supports (width: 1cqi) {
+    .gallery {
+      container-type: inline-size;
+    }
+
+    .gallery__stage :global(.gallery__stroke) {
+      --frame-h: calc(min(var(--fit-w) * 100cqi, var(--stage-h) * var(--fit-h) * var(--ratio)) / var(--ratio));
+      --spare: calc((var(--stage-h) - var(--frame-h)) / 2);
+      top: max(20%, calc(var(--spare) - 24px));
+      bottom: max(6%, calc(var(--spare) - 24px));
+    }
   }
 
   .gallery__slide {
@@ -258,12 +280,21 @@ const many = photos.length > 1;
 
     /* The design's inset, relative to the stage; but the stroke always shows at least 64 px left and
        24 px right of the cover (as in frame 1f), also for square and wide works the inset alone would
-       hide behind the painting. --frame = the cover's width (see .gallery__frame). */
+       hide behind the painting, and it stops 32 px inside the page edge (a wide work at 1024 px).
+       --frame = the cover's width (see .gallery__frame). */
     .gallery__stage :global(.gallery__stroke) {
       --frame: min(calc(var(--fit-w) * 100%), calc(var(--stage-h) * var(--fit-h) * var(--ratio)));
       inset: 16% 14% 10% 4%;
-      left: min(4%, calc((100% - var(--frame)) / 2 - 64px));
+      left: max(calc(32px - var(--tiz-gutter)), min(4%, calc((100% - var(--frame)) / 2 - 64px)));
       right: min(14%, calc((100% - var(--frame)) / 2 - 24px));
+    }
+
+    /* …and vertically at most 40 px above and 24 px below the cover. */
+    @supports (width: 1cqi) {
+      .gallery__stage :global(.gallery__stroke) {
+        top: max(16%, calc(var(--spare) - 40px));
+        bottom: max(10%, calc(var(--spare) - 24px));
+      }
     }
   }
 
