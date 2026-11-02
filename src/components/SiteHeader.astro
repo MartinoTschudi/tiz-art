@@ -7,7 +7,8 @@
  * - < 640 px with JS: a "Menu" button opens a full-screen lino overlay (ocra stroke, big links, the
  *   motto). Esc, the button ("Chiudi") or a link closes it; focus stays inside while it is open, the
  *   rest of the page is inert and does not scroll, focus returns to the button.
- * - < 640 px without JS: no button; the three links form a compact row under "TIZ".
+ * - < 640 px without JS (or when this script fails, see BaseLayout): no button; the three links form
+ *   a compact row under "TIZ".
  * - `back` (phone only, e.g. the Opera page, frame 1g): a "← …" link on the left and "TIZ" on the
  *   right instead of the Menu button. Ignored from 640 px (the page shows its own back link there).
  *
@@ -154,6 +155,8 @@ const motto = splitLastWord((await getProfilo()).motto);
     });
     window.addEventListener('pagehide', () => setOpen(false, false));
   }
+  // Read by BaseLayout's head script: without this flag the page falls back to the row of links.
+  document.documentElement.dataset.menu = 'ready';
 </script>
 
 <style>

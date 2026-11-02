@@ -66,16 +66,15 @@ const image =
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <script is:inline>
-      // Before the first paint: CSS may now hide [data-reveal] elements until they are revealed. If
-      // the reveal script never runs (failed download), show everything after 3 s.
+      // Before the first paint: CSS may now hide [data-reveal] elements until they are revealed and
+      // shows the phone Menu button instead of the row of links. The module scripts below run before
+      // DOMContentLoaded; if the reveal or the menu script did not run to the end (old browser, an
+      // error), go back to the no-JS page: everything visible, the links as a row.
       document.documentElement.classList.add('js');
-      setTimeout(function () {
-        if (document.documentElement.dataset.reveal !== 'ready') {
-          document.querySelectorAll('[data-reveal]').forEach(function (el) {
-            el.classList.add('is-in');
-          });
-        }
-      }, 3000);
+      document.addEventListener('DOMContentLoaded', function () {
+        var ready = document.documentElement.dataset;
+        if (ready.reveal !== 'ready' || ready.menu !== 'ready') document.documentElement.classList.remove('js');
+      });
     </script>
     <link rel="preload" href={voceFont} as="font" type="font/woff2" crossorigin />
     <link rel="preload" href={manoFont} as="font" type="font/woff2" crossorigin />
