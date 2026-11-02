@@ -1,21 +1,43 @@
 /**
  * "Profilo": portrait (add / replace / remove), motto and biography. Saving = one commit.
+ * Unsaved changes are kept in IndexedDB (app.persistEdit) and offered again when she comes back.
  */
-import { h, icon, topbar, stickyBar, confirmSheet, toast, progress } from '../ui.js';
+import { h, icon, topbar, stickyBar, confirmSheet, toast, progress, siteButton } from '../ui.js';
 import { LIMITS, cleanLine, cleanText } from '../model.js';
-import { existingPhoto, newPhoto, releasePhoto, toSavePhoto, photosReady } from '../photos.js';
+import { PROFILE } from '../drafts.js';
+import { existingPhoto, readyPhoto, newPhoto, releasePhoto, toSavePhoto, photosReady } from '../photos.js';
 import { pickerButtons, photoMedia } from './photo-ui.js';
+import { saveProgress } from './form.js';
+
+/** Portrait of a stored profile draft: null (none) | { ref } (already online) | prepared photo. */
+function storedPortrait(p) {
+  if (!p) return null;
+  if (p.ref) return existingPhoto(p.ref);
+  return p.blob && p.preview ? readyPhoto(p) : null;
+}
 
 /**
- * @param {object} app  app API: state, store, back, onSaved, handleError
+ * @param {object} app  app API: state, store, back, onSaved, handleError, persistEdit, discardEdit, sitePage
+ * @param {{stored?: object|null}} [opts]  unsaved changes kept in IndexedDB for this profile version
  */
-export function renderProfile(app) {
+export function renderProfile(app, { stored = null } = {}) {
   const saved = app.state.data.profilo || { motto: '', bio: '', ritratto: null };
-  const draft = {
-    motto: saved.motto || '',
-    bio: saved.bio || '',
-    ritratto: saved.ritratto ? existingPhoto(saved.ritratto) : null,
-  };
+  const base = saved.aggiornatoIl || null; // the version this screen started from
+  const draft = stored
+    ? { motto: stored.fields.motto || '', bio: stored.fields.bio || '', ritratto: storedPortrait(stored.ritratto) }
+    : { motto: saved.motto || '', bio: saved.bio || '', ritratto: saved.ritratto ? existingPhoto(saved.ritratto) : null };
+  let closed = false; // saved or thrown away: nothing left to keep
+
+  /** What IndexedDB keeps of the unsaved changes (a portrait still being prepared counts as unchanged). */
+  function toStored() {
+    const p = draft.ritratto;
+    let ritratto = null;
+    if (p && p.kind === 'existing') ritratto = { ref: p.ref };
+    else if (p && p.status === 'ready') ritratto = p.result;
+    else if (p) ritratto = saved.ritratto ? { ref: saved.ritratto } : null;
+    return { base, fields: { motto: draft.motto, bio: draft.bio }, ritratto };
+  }
+  const changed = () => app.persistEdit(PROFILE, () => (!closed && isDirty() ? toStored() : null));
 
   /* ---------- portrait ---------- */
 
@@ -24,7 +46,10 @@ export function renderProfile(app) {
   const picker = pickerButtons({
     onFiles: ([file]) => {
       if (draft.ritratto) releasePhoto(draft.ritratto);
-      draft.ritratto = newPhoto(file, renderPortrait);
+      draft.ritratto = newPhoto(file, () => {
+        renderPortrait();
+        changed();
+      });
       portraitError.hidden = true;
       renderPortrait();
     },
@@ -34,6 +59,7 @@ export function renderProfile(app) {
     if (draft.ritratto) releasePhoto(draft.ritratto);
     draft.ritratto = null;
     renderPortrait();
+    changed();
   }
 
   function renderPortrait() {
@@ -55,6 +81,13 @@ export function renderProfile(app) {
   const motto = h('input', { id: 'in-motto', class: 'input', maxlength: String(LIMITS.motto), value: draft.motto, autocapitalize: 'sentences' });
   motto.addEventListener('input', () => {
     draft.motto = motto.value;
+    changed();
+  });
+  motto.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.isComposing) {
+      e.preventDefault();
+      bio.focus();
+    }
   });
   const bio = h('textarea', { id: 'in-bio', class: 'input', rows: '12', maxlength: String(LIMITS.bio), value: draft.bio });
   const bioCount = h('p', { class: 'char-count', 'aria-live': 'polite' });
@@ -64,6 +97,7 @@ export function renderProfile(app) {
   bio.addEventListener('input', () => {
     draft.bio = bio.value;
     updateCount();
+    changed();
   });
   updateCount();
 
@@ -77,11 +111,6 @@ export function renderProfile(app) {
     return v.motto !== (saved.motto || '') || v.bio !== (saved.bio || '') || portraitChanged;
   }
 
-  function onProgress(ev) {
-    if (ev.phase === 'upload' && ev.total) progress.show('Carico la foto…', ev.done / ev.total);
-    else if (ev.phase === 'commit') progress.show('Pubblico…');
-  }
-
   async function runSave() {
     try {
       const photos = draft.ritratto ? [draft.ritratto] : [];
@@ -93,10 +122,11 @@ export function renderProfile(app) {
         return;
       }
       const result = await app.store.saveProfilo(
-        { ...values(), ritratto: draft.ritratto ? toSavePhoto(draft.ritratto) : null },
-        onProgress,
+        { ...values(), ritratto: draft.ritratto ? toSavePhoto(draft.ritratto) : null, base },
+        saveProgress,
       );
       progress.hide();
+      closed = true;
       app.onSaved(result);
     } catch (err) {
       progress.hide();
@@ -109,6 +139,7 @@ export function renderProfile(app) {
     await runSave();
   }
 
+  /** The in-app back arrow. (A back swipe skips this: the changes are then kept, see `leaving`.) */
   async function goBack() {
     if (isDirty()) {
       const leave = await confirmSheet({
@@ -118,9 +149,30 @@ export function renderProfile(app) {
         cancelLabel: 'Continua a modificare',
       });
       if (!leave) return;
+      closed = true;
+      app.discardEdit(PROFILE, { reopen: false });
     }
     app.back();
   }
+
+  async function undoChanges() {
+    const ok = await confirmSheet({
+      title: 'Annullare le modifiche?',
+      text: 'Torni alla versione salvata del profilo.',
+      confirmLabel: 'Sì, annulla le modifiche',
+      cancelLabel: 'No, tienile',
+    });
+    if (!ok) return;
+    closed = true;
+    app.discardEdit(PROFILE);
+  }
+
+  const leaving = () => (!closed && isDirty() ? 'Modifiche non salvate conservate: le ritrovi in «Profilo».' : null);
+
+  // "Vedi sul sito" waits until a save of the profile from this phone is online.
+  const siteLink = h('div', { class: 'site-link-box' });
+  const renderSiteLink = () => siteLink.replaceChildren(siteButton(app.sitePage(PROFILE), 'btn btn-ghost btn-small site-link'));
+  renderSiteLink();
 
   const el = h(
     'div',
@@ -129,8 +181,12 @@ export function renderProfile(app) {
     h(
       'main',
       { class: 'content form' },
-      h('a', { class: 'btn btn-ghost btn-small site-link', href: app.env.siteUrl('chi-sono/'), target: '_blank', rel: 'noopener' },
-        icon('external'), 'Vedi sul sito'),
+      stored
+        ? h('div', { class: 'notice notice-row' },
+            h('p', {}, 'Hai modifiche non ancora salvate.'),
+            h('button', { type: 'button', class: 'btn btn-secondary btn-small', onClick: undoChanges }, 'Annulla modifiche'))
+        : null,
+      siteLink,
       h(
         'section',
         { class: 'field' },
@@ -159,5 +215,5 @@ export function renderProfile(app) {
     stickyBar(h('button', { type: 'button', class: 'btn btn-primary btn-block btn-xl', onClick: save }, icon('check'), 'Salva')),
   );
   renderPortrait();
-  return { el, name: 'profile', isDirty };
+  return { el, name: 'profile', isDirty, leaving, onDeploy: renderSiteLink };
 }

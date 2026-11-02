@@ -7,7 +7,7 @@ import { resolveEnv } from '../js/env.js';
 import { normalizeEmail } from '../js/crypto.js';
 import { busy } from '../js/ui.js';
 import { configure } from './configure.js';
-import { isEmail, checkPassword, checkToken } from './rules.js';
+import { isEmail, checkPassword, checkToken, suggestPasswordFor } from './rules.js';
 
 const env = resolveEnv(location);
 const form = document.getElementById('setup-form');
@@ -17,6 +17,21 @@ const submit = document.getElementById('setup-submit');
 const value = (name) => form.elements[name].value;
 
 document.getElementById('admin-link').href = `../index.html${env.query}`;
+document.getElementById('back-link').href = `../index.html${env.query}`;
+
+/* A generated passphrase, like the terminal setup offers: the strongest choice that is still easy to type. */
+const suggested = document.getElementById('pw-suggested');
+function newSuggestion() {
+  suggested.textContent = suggestPasswordFor(value('email'));
+}
+document.getElementById('pw-new').addEventListener('click', newSuggestion);
+document.getElementById('pw-use').addEventListener('click', () => {
+  form.elements.password.value = suggested.textContent;
+  form.elements.password2.value = suggested.textContent;
+  status.textContent = 'Password proposta inserita due volte: annotala per Tiziana.';
+});
+newSuggestion();
+document.getElementById('pw-suggest').hidden = false;
 
 function fail(message, field) {
   error.textContent = message;

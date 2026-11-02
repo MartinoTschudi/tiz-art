@@ -423,8 +423,9 @@ describe('check-content: command line', () => {
 
 // ── This repository ──────────────────────────────────────────────────────────────────────────────
 
+// Same check as `npm run check:content` in Deploy. No assertion on the number of works: deleting
+// every work in the admin must not stop the site from being published.
 test('check-content: the content of this repository is valid', () => {
-  const { errors, works } = checkContent(REPO);
+  const { errors } = checkContent(REPO);
   assert.deepEqual(lines(errors), [], `content errors (same as npm run check:content):\n${lines(errors).join('\n')}`);
-  assert.ok(works > 0, 'no artworks found');
 });

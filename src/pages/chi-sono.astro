@@ -59,7 +59,7 @@ const imageSizes = '(min-width: 64rem) 34vw, 92vw';
         work && (
           <figure class="about__figure">
             <a href={routes.opera(work.id)}>
-              <ResponsivePicture image={work.data.immagini[0]} alt={altText(work.data)} preset="card" sizes={imageSizes} />
+              <ResponsivePicture image={work.data.immagini[0]} alt={altText(work.data)} preset="card" sizes={imageSizes} priority />
             </a>
             <figcaption class="about__caption">
               «{work.data.titolo}»{work.data.anno && `, ${work.data.anno}`}
@@ -130,6 +130,8 @@ const imageSizes = '(min-width: 64rem) 34vw, 92vw';
 
     .about__figure {
       justify-self: end;
+      /* full width of its column (max 28rem) before the image loads: no jump, no 0×0 figure */
+      width: 100%;
     }
   }
 </style>

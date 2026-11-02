@@ -21,8 +21,9 @@ Ogni volta che salvi, il sito si aggiorna da solo **in circa 2 minuti**.
 
 **iPhone (Safari)**
 1. Apri l’indirizzo dell’admin in **Safari**.
-2. Tocca **Condividi** (il quadrato con la freccia verso l’alto).
-3. Scorri e tocca **Aggiungi alla schermata Home**, poi **Aggiungi**.
+2. Tocca **Condividi** (il quadrato con la freccia verso l’alto). Se non lo vedi, tocca prima **···** in basso.
+3. Scorri e tocca **Aggiungi alla schermata Home**. Se vedi l’interruttore **Apri come app web**, lascialo
+   acceso. Poi tocca **Aggiungi**.
 4. Ora hai l’icona **TIZ Admin** (rossa, con le lettere TIZ). Da adesso apri l’admin da lì.
 
 **Android (Chrome)**
@@ -47,13 +48,13 @@ Se leggi **«E-mail o password non corretti»**: controlla le maiuscole e gli sp
 
 - **la riga dello stato**:
   - **Online ✓**: il sito è aggiornato.
-  - **Pubblicazione in corso… (1–3 minuti)**: il sito si sta aggiornando (vedi § 12).
-  - **Problema nell’ultima pubblicazione**: vedi § 13.
+  - **Pubblicazione in corso… (1–3 minuti)**: il sito si sta aggiornando (vedi § 13).
+  - **Problema nell’ultima pubblicazione**: vedi § 14.
 - quante opere hai (e quante sono nascoste);
 - i pulsanti **Profilo** e **Cambia l’ordine**;
 - le tue opere, nell’ordine del sito. Ogni opera mostra la foto, il titolo, l’anno e le misure.
   - **★ In evidenza**: appare nella pagina iniziale del sito.
-  - **Nascosta**: è salvata qui, ma non si vede sul sito.
+  - **Nascosta**: non compare nelle pagine del sito. Non è però segreta: non caricare mai foto o testi privati.
 - in basso il grande pulsante **+ Nuova opera**;
 - in alto **↻** (ricarica la lista) ed **Esci**.
 
@@ -64,11 +65,13 @@ Tocca un’opera per aprirla e modificarla.
 1. Tocca **+ Nuova opera**.
 2. **Foto** (da 1 a 8):
    - **Scatta foto** apre la fotocamera;
-   - **Dalla galleria** sceglie foto che hai già (anche più di una insieme).
+   - **Dalla galleria** sceglie foto che hai già (anche più di una insieme). Sull’iPhone si apre prima un
+     piccolo menu: tocca **Libreria foto**.
    - Su ogni foto vedi «Preparo…» per qualche secondo. Il telefono la rimpicciolisce e **toglie la posizione GPS**.
-   - La **prima foto è la copertina** (ha la stella ★). Per cambiarla tocca **Copertina** su un’altra foto.
+   - La **prima foto è la copertina** (ha la stella ★ e la scritta «Copertina»). Per cambiarla tocca
+     **Fai copertina** su un’altra foto.
    - Per togliere una foto tocca **×**.
-3. **Titolo**: l’unico campo obbligatorio.
+3. **Titolo** e **almeno una foto** sono obbligatori. Tutto il resto puoi lasciarlo vuoto.
 4. **Anno**: c’è già l’anno di oggi. Cambialo se serve.
 5. **Misure in cm**: **Larghezza** e **Altezza**, per esempio `100` e `140` (anche `100,5`).
    Sul sito appaiono come «100 × 140 cm», solo se ci sono tutte e due.
@@ -79,8 +82,11 @@ Tocca un’opera per aprirla e modificarla.
 10. **Visibile sul sito**: è già acceso. Spegnilo solo se l’opera non deve ancora vedersi.
 11. Tocca **Salva**.
 
-Vedi «Preparo le foto…», «Carico le foto…», «Pubblico…». Poi **Fatto!** «… sarà online tra circa 2 minuti».
-Da qui puoi toccare **Vedi sul sito**, **Torna alle opere** oppure **Aggiungi un’altra opera**.
+Vedi «Preparo le foto…», «Carico la foto 1 di 2…», «Pubblico…». Tieni lo schermo acceso finché non hai finito.
+Poi **Fatto!** «… sarà online tra circa 2 minuti».
+Da qui puoi toccare **Torna alle opere** oppure **Aggiungi un’altra opera**. Il pulsante **Vedi sul sito**
+si accende quando l’opera è davvero online (la riga sopra diventa **Online ✓**): prima la pagina non c’è ancora.
+Il sito si apre fuori dall’admin: per tornare tocca **Fine** in alto, oppure riapri l’icona **TIZ Admin**.
 
 **Non perdi niente.** Se chiudi l’admin prima di salvare (o il telefono si spegne), quando riapri
 **+ Nuova opera** leggi «Stai continuando un’opera non salvata»: foto e testi sono ancora lì.
@@ -106,13 +112,16 @@ Belle foto = un bel sito. Bastano poche attenzioni:
 2. Cambia quello che vuoi: foto, titolo, testo, misure…
 3. Tocca **Salva**.
 
-Se torni indietro senza salvare, l’admin ti chiede «Uscire senza salvare?».
+Se torni indietro con la freccia **←** dell’admin senza salvare, l’admin ti chiede «Uscire senza salvare?».
+Se invece esci in un altro modo (con il gesto indietro, chiudendo l’app, o se la chiave scade), le modifiche
+restano su questo telefono: quando riapri l’opera leggi «Hai modifiche non ancora salvate». Tocca **Salva**
+per tenerle, oppure **Annulla modifiche** per tornare alla versione salvata.
 L’indirizzo della pagina sul sito **non cambia** anche se cambi il titolo.
 
 ## 7. Cambiare la copertina
 
 1. Apri l’opera.
-2. Tocca **Copertina** sulla foto che vuoi davanti. Diventa la prima, con la stella ★.
+2. Tocca **Fai copertina** sulla foto che vuoi davanti. Diventa la prima, con la stella ★.
 3. Tocca **Salva**.
 
 ## 8. Nascondere un’opera (senza cancellarla)
@@ -158,12 +167,15 @@ Se vuoi solo toglierla dal sito per un po’, **nascondila** (§ 8).
 4. **Biografia**: il tuo testo. Per un nuovo paragrafo lascia una riga vuota.
 5. Tocca **Salva**.
 
+Anche qui le modifiche non salvate restano sul telefono finché non salvi o tocchi **Annulla modifiche**.
+
 ## 13. «Pubblicazione in corso»: cosa vuol dire
 
 Quando salvi, le tue modifiche sono **già al sicuro**. Poi il sito si ricostruisce da solo:
 ci vogliono **da 1 a 3 minuti**. Nel frattempo leggi «Pubblicazione in corso…».
 Puoi continuare a lavorare tranquilla. Quando torna **Online ✓**, il sito è aggiornato.
 
+Per questo **Vedi sul sito** si accende solo quando torna «Online ✓».
 Se sul sito non vedi ancora la modifica: aspetta «Online ✓», poi ricarica la pagina del sito.
 
 ## 14. Se qualcosa non va
@@ -173,16 +185,21 @@ Niente panico: quello che hai salvato non si perde. Quasi sempre basta **Riprova
 | Cosa leggi | Cosa fare |
 |---|---|
 | «E-mail o password non corretti» | Controlla con l’occhio maiuscole e spazi. Se non funziona ancora, chiama Martino. |
-| «La chiave di accesso è scaduta o non è valida: chiedi a Martino di rinnovarla.» | Chiama Martino: deve rinnovare la chiave. Ci vogliono pochi minuti. |
+| «La chiave di accesso è scaduta o non è valida: chiedi a Martino di rinnovarla.» | Se Martino ti ha appena detto che ha rinnovato la chiave, rientra con la tua e-mail e la password. Altrimenti chiama Martino: deve rinnovare la chiave. Le modifiche non salvate restano sul telefono. |
 | «L’admin non è ancora configurato» | Chiama Martino. |
-| «Connessione assente o instabile» | Controlla il Wi-Fi o i dati mobili, poi tocca **Riprova**. |
-| «Non è stato possibile salvare» | Tocca **Riprova**. Quello che hai scritto resta nel modulo. |
-| «Qualcun altro sta salvando proprio adesso» | Aspetta qualche secondo e tocca **Riprova**. |
+| «Connessione assente o instabile» oppure «La connessione è troppo lenta o si è interrotta» | Controlla il Wi-Fi o i dati mobili, poi tocca **Riprova**. |
+| «Non è stato possibile salvare» | Tocca **Riprova**. Quello che hai scritto resta nel modulo. Se il salvataggio era già arrivato, non viene fatto due volte. |
+| «Quest’opera è stata cambiata dopo che l’hai aperta…» (o «Il profilo è stato cambiato…») | Qualcuno l’ha salvata nel frattempo (per esempio Martino dal computer). Torna alle opere, tocca **↻**, riapri l’opera e rifai la modifica. |
+| «Qualcun altro sta salvando proprio adesso» o «Il salvataggio non è riuscito» | Aspetta qualche secondo e tocca **Riprova**. |
+| «Non trovo più questo dato» | Torna alle opere e tocca **↻**, poi riprova. |
+| «Il sito non accetta modifiche in questo momento» | Chiama Martino. |
+| «Lista non aggiornata» | Controlla la connessione e tocca **Riprova** in quella riga. |
 | «GitHub ha ricevuto troppe richieste. Riprova tra … minuti» | Aspetta i minuti indicati. |
 | Una foto mostra «Non riesco a leggere questa foto» | Toglila con **×** e scegline un’altra, oppure rifalla con **Scatta foto**. |
 | Le foto restano su «Preparo…» | Aspetta un momento. Se non va avanti, chiudi le altre app e aggiungi meno foto alla volta. |
 | «Problema nell’ultima pubblicazione» | Le tue modifiche sono salvate. Chiama Martino: lui vede il problema con **Dettagli**. |
 | «Pubblicazione in corso…» per più di 15 minuti | Chiama Martino. |
+| L’app resta bianca o dice che non c’è connessione | Chiudi l’app (scorri verso l’alto dal fondo dello schermo e spingila via) e riaprila quando hai di nuovo rete. |
 
 **Per qualsiasi dubbio: chiama Martino.** Telefono perso o password detta a qualcuno? Avvisa subito Martino.
 
@@ -197,29 +214,39 @@ workflow `Deploy`. Il token GitHub sta in `public/admin/auth.json`, **cifrato** 
 (PBKDF2-SHA256 600 000 iterazioni, AES-256-GCM). Il file è pubblico, quindi la sicurezza dipende dalla password:
 usa una frase lunga, usata solo qui.
 
+Il repository è **pubblico**, cronologia compresa: anche le opere «Nascoste» e le foto cancellate restano
+leggibili su GitHub. Se Tiziana carica per errore una foto privata, va tolta anche dalla cronologia
+(riscrittura della storia di `main`, da fare a mano). Su `martinotschudi.github.io` l’accesso dura solo
+finché la scheda è aperta (l’origine è condivisa con gli altri siti Pages dell’account); su tiz-art.ch resta
+fino a «Esci».
+
 ### Prima configurazione (pagina di setup)
 1. Crea un token: github.com → **Settings → Developer settings → Personal access tokens → Fine-grained tokens →
-   Generate new token**.
+   Generate new token** (inizia con `github_pat_`: i token classici `ghp_…` vengono rifiutati).
    - Resource owner: `MartinoTschudi`; Repository access: **Only select repositories** → `tiz-art`.
    - Permissions: **Contents: Read and write**, **Actions: Read-only** (Metadata: Read-only si aggiunge da sola).
    - Expiration: al massimo un anno. **Segna la data di scadenza nel calendario.**
 2. Apri **https://tiz-art.ch/admin/setup/** (o `https://martinotschudi.github.io/tiz-art/admin/setup/`).
-3. Scrivi l’e-mail di Tiziana, la password (almeno 12 caratteri, due volte) e incolla il token.
+3. Scrivi l’e-mail di Tiziana, la password (due volte) e incolla il token. Meglio la password proposta dalla
+   pagina (**Usa questa**): servono almeno tre parole diverse, niente nomi, titoli con l’anno o «password».
    In «Repository» ci sono già `MartinoTschudi` / `tiz-art` / `main`.
 4. Tocca **Configura**. La pagina controlla il token (deve poter scrivere), cifra e fa il commit
    `admin: configura accesso` di `public/admin/auth.json` **con lo stesso token**.
 5. Dopo il deploy (circa 2 minuti) Tiziana può entrare. Dille la password **a voce**.
 
 ### Rinnovare il token (prima della scadenza)
-Crea un token nuovo (come sopra) e rifai la pagina di setup con **la stessa e-mail e la stessa password**:
-per Tiziana non cambia niente. Poi revoca il token vecchio su GitHub.
+Crea un token nuovo (come sopra) e rifai la pagina di setup con **la stessa e-mail e la stessa password**.
+Poi revoca il token vecchio su GitHub. **Avvisa Tiziana prima:** il suo telefono usa ancora il token vecchio,
+quindi alla prossima azione legge una volta «La chiave di accesso è scaduta…» e deve solo rientrare con la
+stessa e-mail e password (le modifiche non salvate restano).
 Quando il token è scaduto Tiziana legge «La chiave di accesso è scaduta…» e viene fatta uscire.
 
 ### Cambiare la password
-Rifai la pagina di setup con la password nuova e comunicala a Tiziana di persona (sul suo telefono va aggiornata
-anche la password salvata). **Importante:** il repository è pubblico e i vecchi `auth.json` restano nella storia
-Git. Se la password vecchia potrebbe essere nota a qualcuno, **crea anche un token nuovo e revoca quello vecchio**:
-solo così la vecchia combinazione non apre più niente.
+La pagina di setup chiede sempre un token (non viene mai salvato in chiaro): cambiare la password vuol dire
+**sempre** creare un token nuovo, rifare la pagina di setup con la password nuova e poi **revocare il token
+vecchio**. È necessario: il repository è pubblico e i vecchi `auth.json` restano per sempre nella storia Git,
+dove la vecchia password può essere provata all’infinito; con il token vecchio revocato non apre più niente.
+Comunica la password nuova a Tiziana di persona (sul suo telefono va aggiornata anche la password salvata).
 
 ### Alternativa da terminale
 `npm run admin:setup` fa le stesse domande (input nascosto), controlla il token e scrive

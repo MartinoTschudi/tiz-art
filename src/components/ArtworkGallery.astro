@@ -19,6 +19,8 @@ const coverRatio = cover.width / cover.height;
 const viewerImages = await Promise.all(
   data.immagini.map(async (image, i) => ({ ...(await viewerSource(image)), alt: altText(data, i) })),
 );
+// Detail thumbnails are ratio × clamp(6rem, 18vw, 9rem) wide (see .gallery__detail): 9rem is the upper bound.
+const detailSizes = (image: { width: number; height: number }) => `${((image.width / image.height) * 9).toFixed(2)}rem`;
 // The cover is as wide as the column, unless the screen height limits it (tall paintings).
 const coverSizes = `(min-width: 64rem) min(56vw, ${Math.round(80 * coverRatio)}vh), min(100vw, ${Math.round(80 * coverRatio)}vh)`;
 ---
@@ -46,7 +48,7 @@ const coverSizes = `(min-width: 64rem) min(56vw, ${Math.round(80 * coverRatio)}v
         {details.map((image, i) => (
           <li class="gallery__detail" style={`--ratio: ${(image.width / image.height).toFixed(4)}`}>
             <a class="gallery__detail-link" href={viewerImages[i + 1].full} data-viewer-open={i + 1}>
-              <ResponsivePicture image={image} alt={altText(data, i + 1)} preset="thumb" sizes="(min-width: 64rem) 14vw, 40vw" />
+              <ResponsivePicture image={image} alt={altText(data, i + 1)} preset="thumb" sizes={detailSizes(image)} />
               <span class="visually-hidden">(apri a schermo intero)</span>
             </a>
           </li>

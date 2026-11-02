@@ -69,5 +69,6 @@ or assets, also the `/tiz-art/` build above. These are the same checks Deploy ru
 | Site address and base path, redirects, sitemap | `astro.config.mjs` (from `SITE_URL` / `BASE_PATH`) |
 | Admin | `public/admin/` (`js/` modules, `setup/` page); local mock: `scripts/dev/admin-dev.mjs` |
 | Content validator | `scripts/check-content.mjs` |
-| Tests | `scripts/test/` (`admin-*.test.mjs`, `content-*.test.mjs`; `index.js` imports every `*.test.mjs` for `npm test`) |
+| Tests | `scripts/test/` (`admin-*.test.mjs`, `content-*.test.mjs`; `npm test` runs every `scripts/test/*.test.mjs` through the glob in `package.json`, there is no index file). The admin tests use the committed fixture `scripts/test/fixtures/repo/`, never the live `src/content` (Deploy runs `npm test` after every save of Tiziana) |
 | Docs | `docs/SETUP.md` (owner), `docs/GUIDA-ADMIN.md` (Tiziana, Italian), `docs/DESIGN-HANDOFF.md` |
+| Site icons | `public/favicon.svg` → `node scripts/dev/site-icons.mjs` renders `favicon-32.png` and `apple-touch-icon.png` |

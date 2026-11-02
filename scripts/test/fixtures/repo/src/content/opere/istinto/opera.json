@@ -1,0 +1,17 @@
+{
+  "titolo": "Istinto",
+  "anno": 2023,
+  "larghezza": 100,
+  "altezza": 120.5,
+  "tecnica": "Acrilico su tela",
+  "collezione": "noi, DONNA.",
+  "testo": "Un testo breve.",
+  "immagini": [
+    "./01.jpg"
+  ],
+  "ordine": 30,
+  "inEvidenza": false,
+  "pubblicata": true,
+  "creataIl": "2023-09-23T12:00:00.000Z",
+  "aggiornataIl": "2023-09-23T12:00:00.000Z"
+}

@@ -68,6 +68,15 @@ function setupForm(form: HTMLFormElement) {
 
   const refreshOpera = select ? setupOperaSelect(form, select) : () => {};
 
+  // After sending, the chosen artwork stays (with its preview): the form keeps its height, so the
+  // button and the "Grazie!" message do not jump, and the visitor still sees what they asked about.
+  const clearForm = () => {
+    const keep = select?.value ?? '';
+    form.reset();
+    if (select) select.value = keep;
+    refreshOpera();
+  };
+
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
     attempted = true;
@@ -84,8 +93,7 @@ function setupForm(form: HTMLFormElement) {
 
     // Honeypot ticked: pretend it worked, send nothing.
     if (data.get('botcheck')) {
-      form.reset();
-      refreshOpera();
+      clearForm();
       return showStatus(TEXT.success, 'success');
     }
 
@@ -110,8 +118,7 @@ function setupForm(form: HTMLFormElement) {
       });
       const result = (await response.json().catch(() => null)) as { success?: boolean } | null;
       if (!response.ok || !result?.success) throw new Error(`Web3Forms: HTTP ${response.status}`);
-      form.reset();
-      refreshOpera();
+      clearForm();
       attempted = false;
       showStatus(TEXT.success, 'success');
     } catch {

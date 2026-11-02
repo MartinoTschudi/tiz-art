@@ -35,6 +35,12 @@ and `git push -u origin main`.
 4. Wait until the run is green (the first run converts all photos and takes a few minutes; later runs
    reuse them and take 1–3 minutes). Click the run: the **deploy** box shows the address.
 5. Open **https://martinotschudi.github.io/tiz-art/** and click through it.
+6. Protect the history (recommended): tab **Settings** → **Rules** → **Rulesets** → **New ruleset** →
+   **New branch ruleset**. Name `protect main`, *Enforcement status* **Active**, *Target branches* → **Add
+   target** → **Include default branch**. Under *Branch rules* tick only **Restrict deletions** and **Block
+   force pushes** → **Create**. The admin only makes normal commits, so it keeps working; a leaked admin
+   token can then no longer wipe the history. Do **not** enable pull requests, status checks, signed commits
+   or linear history: each of them would block the admin.
 
 While no custom domain is set, every page carries `noindex` and `robots.txt` blocks everything: the preview
 never competes with the real site in search engines. This switches off by itself with the domain (step 5).
@@ -66,7 +72,9 @@ thing: read and write the files of `tiz-art`.
    | **Metadata** | **Read-only** | mandatory, added automatically |
 
    Nothing else: no account permissions, no other repository.
-4. **Generate token** → copy it (it is shown only once) and go straight to step 3.
+4. **Generate token** → copy it (it is shown only once; it starts with `github_pat_`) and go straight to
+   step 3. Never use a classic token (`ghp_…`): the setup refuses it, because it would open every
+   repository of the account if `auth.json` were ever cracked.
 5. **Write the expiry date down and set a calendar reminder two weeks before it.** When the token expires,
    the admin says "La chiave di accesso è scaduta o non è valida: chiedi a Martino di rinnovarla" until you
    repeat steps 2 and 3. Expiry date of the current token: `__________`.
@@ -82,11 +90,14 @@ Neither the e-mail nor the password is stored anywhere.
 1. Open **https://martinotschudi.github.io/tiz-art/admin/setup/** (after step 5:
    https://tiz-art.ch/admin/setup/).
 2. Owner / repository / branch: keep `MartinoTschudi` / `tiz-art` / `main`.
-3. E-mail: Tiziana's address. Password: twice, at least 12 characters; best a passphrase of 4–5 words that
-   she uses nowhere else (not her e-mail or GitHub password).
+3. E-mail: Tiziana's address. Password: twice. Best: the passphrase the page suggests (**Usa questa**;
+   **Nuova proposta** for another one), written down for her. `auth.json` is public and every old version stays
+   in the git history, so anyone can try passwords against it offline, forever: the page refuses guessable
+   ones (at least 12 characters, no part of the e-mail, no name or site words, "password", "12345"; at least
+   3 different words, or 16+ mostly random characters). One she uses nowhere else.
 4. GitHub token: paste the token from step 2.
-5. Save. The page checks the token with GitHub (it must have write access to `tiz-art`), encrypts it in the
-   browser and commits `public/admin/auth.json` with that same token (commit "admin: configura accesso").
+5. **Configura**. The page checks the token with GitHub (it must have write access to `tiz-art`), encrypts it
+   in the browser and commits `public/admin/auth.json` with that same token (commit "admin: configura accesso").
 6. Wait for the Deploy run (≈ 2 minutes), then log in at **…/tiz-art/admin/** with her e-mail + password.
 7. On her iPhone: open the admin in **Safari** → **Share** button → **Add to Home Screen** → "TIZ Admin".
    Show her [GUIDA-ADMIN.md](GUIDA-ADMIN.md); give her the password in person.
@@ -101,8 +112,10 @@ git push
 ```
 
 **Renewing the token or changing the password** = the same steps again (a new token from step 2, then the
-setup page). After a renewal, revoke the old token: Developer settings → Fine-grained tokens → the old token
-→ **Delete**. The old login stops working at once; Tiziana logs in again with the (new) password.
+setup page; a password change always needs a new token too). After a renewal, revoke the old token:
+Developer settings → Fine-grained tokens → the old token → **Delete**. Her phone still holds the old token:
+tell her beforehand that she will see "La chiave di accesso è scaduta…" once and only has to log in again
+(same e-mail, and the same or the new password). Unsaved changes on her phone are kept.
 
 ## 4. Contact form (Web3Forms)
 
@@ -139,6 +152,22 @@ warning.
 First check where the domain is paid: log in at https://wordpress.com/domains/manage with the account of
 the old site. If `tiz-art.ch` is listed there with a renewal date, it is registered through WordPress.com
 (the usual case). If it is not, someone owns it directly at GoDaddy (godaddy.com → My Products).
+
+### First, in GitHub: claim the domain (required, before any DNS change)
+
+Until the domain is verified for your account, any GitHub user could attach `tiz-art.ch` to their own Pages
+site in the minutes after the DNS points at GitHub. So, before touching the A/AAAA/CNAME records:
+
+1. Profile picture → **Settings** → **Pages** (left sidebar) → **Add a domain** → `tiz-art.ch` → GitHub shows a
+   TXT record (name `_github-pages-challenge-MartinoTschudi`, value: a code).
+2. Add that TXT record at today's DNS host (WordPress.com → the domain → DNS records). It changes nothing for
+   visitors. With option B, add it again at the new DNS host together with the other records.
+3. Back in GitHub → **Verify**. Keep that TXT record forever.
+
+Also before the switch: if Tiziana (or you, testing) logged in to the admin at
+`https://martinotschudi.github.io/tiz-art/admin/`, tap **Esci** there. After the switch that address redirects
+to tiz-art.ch and its stored login can no longer be cleared (it sits on the `martinotschudi.github.io` origin,
+which every Pages site of the account shares). Step 6 below makes any copy useless anyway.
 
 ### Option A (recommended): keep WordPress.com as DNS host, point the records to GitHub
 
@@ -181,23 +210,25 @@ the old site. If `tiz-art.ch` is listed there with a renewal date, it is registe
 
 ### Then, in GitHub (both options)
 
-1. Recommended, once: **verify the domain** for your account, so no other GitHub user can ever claim it:
-   profile picture → **Settings** → **Pages** (left sidebar) → **Add a domain** → `tiz-art.ch` → GitHub shows a
-   TXT record (name `_github-pages-challenge-MartinoTschudi`, value: a code) → add it in the DNS (same place as
-   above) → back in GitHub → **Verify**. Keep that TXT record forever.
+1. The domain is verified (see "First, in GitHub" above). Right after the DNS change:
 2. Repository → **Settings** → **Pages** → **Custom domain**: `tiz-art.ch` → **Save**. GitHub checks the DNS
    ("DNS check successful"; can take a few minutes after the DNS change). No `CNAME` file is needed in the
    repository: with GitHub Actions deployments the domain lives only in this setting.
 3. **Actions** → **Deploy** → **Run workflow**. Required: the site online was built for `/tiz-art/`; the new
    run builds it for `https://tiz-art.ch/` (base `/`) and removes `noindex`.
-4. When the certificate is ready (usually within an hour; the box becomes clickable), tick **Enforce HTTPS**.
+4. When the certificate is ready (usually within an hour; the box becomes clickable), tick **Enforce HTTPS**,
+   then **Actions** → **Deploy** → **Run workflow** once more (the build forces `https://` in canonical links,
+   the sitemap and JSON-LD anyway, but this run is the one made with the final settings).
 5. Check:
    - https://tiz-art.ch shows the new site; https://www.tiz-art.ch and
      https://martinotschudi.github.io/tiz-art/ redirect to it;
    - an old WordPress link such as https://tiz-art.ch/2023/12/27/gioventu/ lands on the artwork page
      (redirects listed in `src/data/sito.json` → `redirectVecchioSito`);
    - in a terminal: `dig +short tiz-art.ch A` prints the four `185.199.…` addresses.
-6. Tell Tiziana: the admin is now at **https://tiz-art.ch/admin/**. She logs in once more there (the login is
+6. Renew the token once now (steps 2–3, same e-mail and password), then delete the old token. This makes
+   every stale copy of the old login useless: on the github.io address, on her phone and in any browser you
+   tested with.
+7. Tell Tiziana: the admin is now at **https://tiz-art.ch/admin/**. She logs in once more there (the login is
    remembered per address) and replaces the Home Screen icon.
 
 Good to know: the old site told browsers to always use HTTPS for `tiz-art.ch` (HSTS). Between the DNS change
@@ -244,5 +275,5 @@ Checking the content locally (same check as the Deploy run): `npm run check:cont
 
 | When | What |
 |---|---|
-| Two weeks before the token expires | steps 2 and 3 (new token, same login) |
+| Two weeks before the token expires | steps 2 and 3 (new token, same login); tell Tiziana she will log in once more |
 | Before the domain renewal date | make sure `tiz-art.ch` renews (WordPress.com → Domains, or the registrar of option B) |

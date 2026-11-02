@@ -11,7 +11,7 @@ import { Readable, Writable } from 'node:stream';
 import { execFile } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { encryptAuth, suggestPassphrase, verifyToken, runSetup, parseArgs, FALLBACK_REPOSITORY } from '../admin-setup.mjs';
-import { isEmail, checkPassword, checkToken } from '../../public/admin/setup/rules.js';
+import { isEmail, checkPassword, checkToken, suggestPassphrase as sharedPassphrase, suggestPasswordFor } from '../../public/admin/setup/rules.js';
 import { configure, AUTH_PATH, COMMIT_MESSAGE } from '../../public/admin/setup/configure.js';
 import * as browser from '../../public/admin/js/crypto.js';
 import { createMockGitHub } from '../dev/mock-github.mjs';
@@ -48,16 +48,47 @@ describe('shared rules (setup page and terminal)', () => {
     assert.match(checkPassword('password12345'), /facile/);
     assert.match(checkPassword('ciao-tiziana-2026', EMAIL), /e-mail/);
     assert.equal(checkPassword(PASSWORD, EMAIL), null);
+    assert.equal(checkPassword('pennello tela colore luce', EMAIL), null);
+    assert.equal(checkPassword('x7#Kp2!vQ9mZ&rL4', EMAIL), null, 'a long random string is fine too');
     assert.match(checkToken(''), /Incolla/);
     assert.match(checkToken('abc def'), /spazi/);
     assert.equal(checkToken(` ${TOKEN} `), null);
   });
 
-  test('suggestPassphrase: 4 pronounceable words, different every time', () => {
+  test('guessable passwords are refused (auth.json is public and can be attacked offline)', () => {
+    const email = 'tiziana.belloli@example.ch';
+    const refused = {
+      Sorellanza2023: /tre parole/, // artwork title + year
+      'Sorellanza2023Estasi': /tre parole/, // two titles + year
+      belloli123456: /e-mail/, // a part of the e-mail
+      Tschudi12345: /facile/, // her name
+      MiaPassword2024: /facile/, // "password" anywhere, not only at the start
+      'Mia-Password-2024': /facile/,
+      abc123abc123: /ripete/,
+      iloveyou1234: /tre parole/,
+      sorellanza12: /tre parole/,
+      'Tiz2024!Tiz2024': /tre parole/,
+      abcdefghijkl: /tre parole/,
+      Contemporaneamente: /tre parole/, // one long word
+      '0987654321098765': /tre parole/, // long but only digits
+      'la casa di mare': /tre parole/, // two real words of 3+ letters
+    };
+    for (const [pw, problem] of Object.entries(refused)) assert.match(checkPassword(pw, email) || '', problem, pw);
+    assert.match(checkPassword('Tiziàna-tela-luce', 'x@example.ch'), /facile/, 'accents do not hide her name');
+  });
+
+  test('only fine-grained tokens: classic and OAuth tokens are refused', () => {
+    for (const t of ['ghp_abcdef', 'gho_x', 'ghu_x', 'ghs_x', 'ghr_x']) assert.match(checkToken(t), /fine-grained/, t);
+    for (const t of ['github_pat_11AAAAAAA_bbbb', TOKEN, 'dev-sola-lettura']) assert.equal(checkToken(t), null, t);
+  });
+
+  test('suggestPassphrase: 4 pronounceable words, different every time, shared by the page and the terminal', () => {
+    assert.equal(suggestPassphrase, sharedPassphrase, 'one implementation (public/admin/setup/rules.js)');
     const p = suggestPassphrase();
     assert.match(p, /^([a-z]{6}-){3}[a-z]{6}$/);
     assert.notEqual(p, suggestPassphrase());
     assert.equal(checkPassword(p, EMAIL), null);
+    for (let i = 0; i < 200; i++) assert.equal(checkPassword(suggestPasswordFor(EMAIL), EMAIL), null);
   });
 });
 

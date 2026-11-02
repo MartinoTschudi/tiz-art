@@ -93,7 +93,9 @@ it for design reasons; the admin writes exactly that format).
   `.gallery__cover`…), values only from tokens. To style the inside of a child component from a
   parent, wrap it and use `:global()` (example: `.artwork-card__media :global(img)`).
 - `theme-color` in `BaseLayout.astro` and the colours in `public/favicon.svg` repeat
-  `--color-bg` / `--color-highlight` (they cannot read CSS variables): update them together.
+  `--color-bg` / `--color-highlight` (they cannot read CSS variables): update them together. Then
+  regenerate `public/favicon-32.png` and `public/apple-touch-icon.png` (the iPhone home-screen icon)
+  with `node scripts/dev/site-icons.mjs` (background = the fill of the SVG's `<rect>`) and commit them.
 - Fonts: system fonts only, no request to a font service. If the new design needs a web font,
   self-host the `.woff2` files (e.g. `public/fonts/`, referenced with the base path) and preload
   the one used by the h1.

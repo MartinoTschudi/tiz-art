@@ -78,7 +78,9 @@ public/admin/                  the admin (index.html, admin.css, js/, setup/, ma
 scripts/check-content.mjs      content validator (npm run check:content)
 scripts/admin-setup.mjs        creates public/admin/auth.json from the terminal (npm run admin:setup)
 scripts/dev/admin-dev.mjs      local mock of the GitHub API for the admin (npm run admin:dev)
-scripts/test/                  node:test suites (npm test, entry point index.js), no network
+scripts/test/                  node:test suites, no network: npm test runs every scripts/test/*.test.mjs (glob in package.json);
+                               fixtures/repo/ = small copy of src/content for the admin tests (never the live content)
+scripts/dev/site-icons.mjs     renders public/favicon-32.png + apple-touch-icon.png from public/favicon.svg
 docs/                          SETUP (owner), GUIDA-ADMIN (Tiziana), DESIGN-HANDOFF (designer)
 CONTRACTS.md                   the binding spec: data formats, pages, admin behaviour, deploy
 ```

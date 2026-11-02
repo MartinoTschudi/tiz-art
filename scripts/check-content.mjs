@@ -454,7 +454,12 @@ function checkSito(ctx, works) {
   for (const [from, to] of Object.entries(data.redirectVecchioSito)) {
     const slug = /^\/opere\/([^/]+)\/$/.exec(to)?.[1];
     if (!FIXED_PAGES.includes(to) && !(slug && works.get(slug) === true)) {
-      ctx.warn(SITO_FILE, `redirect ${from} → ${to}: the target page does not exist (artwork deleted or hidden?)`);
+      ctx.warn(
+        SITO_FILE,
+        slug
+          ? `redirect ${from} → ${to}: the target page does not exist (artwork deleted or hidden?); the build sends it to /opere/ instead`
+          : `redirect ${from} → ${to}: the target page does not exist`,
+      );
     }
   }
 }

@@ -191,11 +191,29 @@ export function toast(message, { type = 'info', duration = 4000 } = {}) {
 /* ---------- blocking progress overlay ("Carico… 1/3") ---------- */
 
 let progressEl = null;
+let wakeLock = null;
+
+/**
+ * Keeps the screen on while a save runs (Safari ≥ 16.4, Chrome): a phone that locks itself during a
+ * long photo upload suspends the page and the save fails. Best effort, silently skipped elsewhere.
+ */
+async function keepScreenOn() {
+  try {
+    if (navigator.wakeLock && !wakeLock) {
+      const lock = await navigator.wakeLock.request('screen');
+      if (progressEl) wakeLock = lock;
+      else lock.release().catch(() => {}); // the save finished meanwhile
+    }
+  } catch {
+    /* not allowed or not supported */
+  }
+}
 
 export const progress = {
   /** @param {string} text  @param {number|null} [fraction] 0..1, null = indeterminate */
   show(text, fraction = null) {
     if (!progressEl) {
+      keepScreenOn();
       progressEl = h(
         'div',
         { class: 'progress-overlay', role: 'alertdialog', 'aria-modal': 'true', 'aria-live': 'assertive', 'aria-label': 'Salvataggio in corso' },
@@ -205,7 +223,7 @@ export const progress = {
           h('div', { class: 'spinner', 'aria-hidden': 'true' }),
           h('p', { class: 'progress-text' }),
           h('div', { class: 'progress-bar' }, h('span')),
-          h('p', { class: 'progress-hint' }, 'Non chiudere questa pagina.'),
+          h('p', { class: 'progress-hint' }, 'Non chiudere questa pagina e tieni lo schermo acceso.'),
         ),
       );
       document.body.append(progressEl);
@@ -218,6 +236,8 @@ export const progress = {
   hide() {
     if (progressEl) progressEl.remove();
     progressEl = null;
+    if (wakeLock) wakeLock.release().catch(() => {});
+    wakeLock = null;
   },
 };
 
@@ -242,6 +262,16 @@ export function topbar({ title, subtitle, onBack, backLabel = 'Indietro', action
 /** Fixed bottom bar for the main action (reachable with the thumb). */
 export function stickyBar(...children) {
   return h('div', { class: 'sticky-bar' }, h('div', { class: 'sticky-inner' }, children));
+}
+
+/**
+ * "Vedi sul sito" for `page` = app.sitePage(…): a link once the page is online, otherwise a disabled
+ * button saying when (a page just saved is online only after the 1–3 minute publish).
+ */
+export function siteButton(page, className) {
+  return page.ready
+    ? h('a', { class: className, href: page.url, target: '_blank', rel: 'noopener' }, icon('external'), 'Vedi sul sito')
+    : h('button', { type: 'button', class: className, disabled: true }, icon('external'), page.label);
 }
 
 /** Runs `task` while `button` shows a busy label; restores it afterwards. */

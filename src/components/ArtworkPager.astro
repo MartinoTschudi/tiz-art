@@ -39,7 +39,8 @@ const { prev, next } = Astro.props;
 <style>
   .pager {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    /* minmax(0, …): a long title wraps instead of widening its column */
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: var(--space-4);
     padding-top: var(--space-6);
     border-top: var(--border-width) solid var(--color-line);
@@ -70,6 +71,7 @@ const { prev, next } = Astro.props;
     font-family: var(--font-display);
     font-size: var(--text-xl);
     line-height: var(--leading-snug);
+    overflow-wrap: anywhere;
   }
 
   .pager__link:hover .pager__title {

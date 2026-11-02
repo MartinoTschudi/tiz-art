@@ -1,12 +1,14 @@
 // Data rules of the admin (public/admin/js/model.js) against CONTRACTS.md section 4:
-// slugs, parsing, validation, serialisation — and a round trip of every file in src/content.
+// slugs, parsing, validation, serialisation — and a round trip of the files of the test fixture.
+// (The live src/content is NOT read here: the admin changes it every day and Deploy runs these tests;
+// `npm run check:content` validates it, and only warns about formatting.)
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import { readdirSync, readFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import * as m from '../../public/admin/js/model.js';
 
-const ROOT = fileURLToPath(new URL('../../', import.meta.url));
+const FIXTURE = fileURLToPath(new URL('./fixtures/repo/', import.meta.url));
 
 const valid = () => ({
   titolo: 'Sorellanza',
@@ -170,10 +172,10 @@ describe('serialisation', () => {
     assert.deepEqual(Object.keys(JSON.parse(p)), ['motto', 'bio', 'ritratto', 'aggiornatoIl']);
   });
 
-  test('every migrated file in src/content is valid and re-serialises byte for byte', () => {
-    const dir = `${ROOT}src/content/opere`;
+  test('files written in the admin\'s format (test fixture) are valid and re-serialise byte for byte', () => {
+    const dir = `${FIXTURE}src/content/opere`;
     const slugs = readdirSync(dir).filter((s) => existsSync(`${dir}/${s}/opera.json`));
-    assert.ok(slugs.length >= 12);
+    assert.ok(slugs.length > 0);
     for (const slug of slugs) {
       assert.ok(m.isValidSlug(slug), slug);
       const text = readFileSync(`${dir}/${slug}/opera.json`, 'utf8');
@@ -182,7 +184,7 @@ describe('serialisation', () => {
       assert.equal(m.serializeOpera(data), text, `${slug}/opera.json`);
       for (const ref of data.immagini) assert.ok(existsSync(`${dir}/${slug}/${m.imageRefName(ref)}`), `${slug}: ${ref}`);
     }
-    const profilo = readFileSync(`${ROOT}src/content/profilo/profilo.json`, 'utf8');
+    const profilo = readFileSync(`${FIXTURE}src/content/profilo/profilo.json`, 'utf8');
     assert.deepEqual(m.validateProfilo(JSON.parse(profilo)), []);
     assert.equal(m.serializeProfilo(JSON.parse(profilo)), profilo);
   });

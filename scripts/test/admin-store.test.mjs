@@ -1,19 +1,32 @@
 // The admin's data layer (public/admin/js/store.js) against the mock GitHub API
-// (scripts/dev/mock-github.mjs) seeded with this working tree's src/content: every action is ONE
-// commit and leaves files that follow CONTRACTS.md section 4.
+// (scripts/dev/mock-github.mjs): every action is ONE commit and leaves files that follow CONTRACTS.md
+// section 4, and repeating a save (lost answer, «Riprova», reopened draft) never does harm.
+//
+// The mock is seeded from the committed fixture scripts/test/fixtures/repo/, NOT from the live
+// src/content: Tiziana's admin changes that content every day, and Deploy runs these tests before
+// every build. Expected values are derived from the fixture, so editing it keeps the tests valid.
 import { test, describe, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { fileURLToPath } from 'node:url';
 import { createMockGitHub, readFilesFrom } from '../dev/mock-github.mjs';
-import { Store, runState } from '../../public/admin/js/store.js';
+import { Store, runState, withSaved, withOrder, CHANGED_MEANWHILE_OPERA, CHANGED_MEANWHILE_PROFILO } from '../../public/admin/js/store.js';
 import { resolveEnv } from '../../public/admin/js/env.js';
-import { validateOpera, validateProfilo, serializeOpera, IMAGE_FILE_RE, OPERA_KEYS } from '../../public/admin/js/model.js';
+import { validateOpera, validateProfilo, serializeOpera, compareOpere, IMAGE_FILE_RE, OPERA_KEYS } from '../../public/admin/js/model.js';
 
-const ROOT = fileURLToPath(new URL('../../', import.meta.url));
-const SEED = await readFilesFrom(ROOT, ['src/content', 'src/data']);
+const FIXTURE = fileURLToPath(new URL('./fixtures/repo/', import.meta.url));
+const SEED = await readFilesFrom(FIXTURE, ['src/content', 'src/data']);
 const TOKEN = 'test-token';
 const OPERE = 'src/content/opere';
 const NOW = new Date('2026-11-02T10:00:00.000Z');
+
+/** What the fixture contains, for the expected values: [{ slug, data }] sorted like the admin. */
+const decoder = new TextDecoder();
+const SEED_OPERE = Object.entries(SEED)
+  .filter(([p]) => p.startsWith(`${OPERE}/`) && p.endsWith('/opera.json'))
+  .map(([p, bytes]) => ({ slug: p.slice(OPERE.length + 1, -'/opera.json'.length), data: JSON.parse(decoder.decode(bytes)) }))
+  .sort(compareOpere);
+const SEED_PROFILO = JSON.parse(decoder.decode(SEED['src/content/profilo/profilo.json']));
+const seedWork = (slug) => SEED_OPERE.find((o) => o.slug === slug);
 
 const env = resolveEnv({ origin: 'http://localhost:4330', hostname: 'localhost', pathname: '/admin/index.html', search: '?api=http://localhost:8787' });
 
@@ -28,12 +41,12 @@ const fields = (over = {}) => ({
 let mock;
 let store;
 
-function makeStore() {
+function makeStore(fetchImpl = mock.fetch, now = () => NOW) {
   return new Store({ owner: 'MartinoTschudi', repo: 'tiz-art', branch: 'main', token: TOKEN }, env, {
-    fetchImpl: mock.fetch,
+    fetchImpl,
     cache: null,
     fetchIndex: async () => null,
-    now: () => NOW,
+    now,
     retryDelay: 0,
   });
 }
@@ -65,14 +78,20 @@ beforeEach(() => {
 });
 
 describe('Store: reading', () => {
-  test('loads the 12 migrated works sorted by ordine, and the profile', async () => {
+  test('the fixture has the works these tests use', () => {
+    assert.ok(SEED_OPERE.length >= 4);
+    for (const slug of ['sorellanza', 'guardami', 'istinto', 'estasi']) assert.ok(seedWork(slug), slug);
+    assert.ok(SEED[`${OPERE}/sorellanza/02.jpg`], 'sorellanza has two photos');
+  });
+
+  test('loads every work sorted by ordine, and the profile', async () => {
     const data = await store.load();
-    assert.equal(data.opere.length, 12);
+    assert.equal(data.opere.length, SEED_OPERE.length);
     assert.deepEqual(data.problems, []);
     const ordini = data.opere.map((o) => o.data.ordine);
     assert.deepEqual(ordini, [...ordini].sort((a, b) => a - b));
-    assert.equal(data.opere[0].slug, 'il-risveglio-di-madre-natura');
-    assert.equal(data.profilo.motto, 'Dialogo tra testa e cuore.');
+    assert.deepEqual(data.opere.map((o) => o.slug), SEED_OPERE.map((o) => o.slug));
+    assert.equal(data.profilo.motto, SEED_PROFILO.motto);
     assert.equal(data.head.commitSha, mock.head());
   });
 
@@ -80,7 +99,7 @@ describe('Store: reading', () => {
     await store.load();
     await store.load();
     const blobReads = mock.requests().filter((r) => r.includes('/git/blobs/'));
-    assert.equal(blobReads.length, 13, '12 opera.json + profilo.json, only the first time');
+    assert.equal(blobReads.length, SEED_OPERE.length + 1, 'every opera.json + profilo.json, only the first time');
     assert.ok(mock.requests().some((r) => r.includes('/git/trees/') && r.endsWith('?recursive=1')));
   });
 
@@ -102,7 +121,7 @@ describe('Store: reading', () => {
     mock = createMockGitHub({ files: { ...SEED, [`${OPERE}/rotta/opera.json`]: '{ non è json', [`${OPERE}/vuota/01.jpg`]: 'x' } });
     store = makeStore();
     const data = await store.load();
-    assert.equal(data.opere.length, 12);
+    assert.equal(data.opere.length, SEED_OPERE.length);
     assert.equal(data.problems.length, 2);
   });
 
@@ -119,10 +138,11 @@ describe('Store: artworks', () => {
     const result = await store.saveOpera({ slug: null, fields: fields({ titolo: 'Sorellanza' }), photos: [upload(1), upload(2)] });
     assert.equal(result.action, 'create');
     assert.equal(result.slug, 'sorellanza-2');
+    assert.equal(result.commitSha, mock.head());
     assert.equal(mock.log().length, before + 1);
     assert.equal(mock.log()[0].message, 'opera: aggiunta «Sorellanza»');
     const data = assertValidFolder('sorellanza-2');
-    assert.equal(data.ordine, 0, 'min(10…120) − 10');
+    assert.equal(data.ordine, Math.min(...SEED_OPERE.map((o) => o.data.ordine)) - 10, 'min(ordine) − 10');
     assert.equal(data.creataIl, NOW.toISOString());
     assert.equal(data.aggiornataIl, NOW.toISOString());
     assert.equal(data.larghezza, 80.5);
@@ -182,7 +202,7 @@ describe('Store: artworks', () => {
   test('delete: the whole folder disappears in one commit', async () => {
     const before = mock.log().length;
     const result = await store.deleteOpera('estasi');
-    assert.deepEqual(result, { action: 'delete', slug: 'estasi', titolo: 'Estasi' });
+    assert.deepEqual(result, { action: 'delete', slug: 'estasi', titolo: seedWork('estasi').data.titolo });
     assert.equal(mock.log().length, before + 1);
     assert.equal(mock.log()[0].message, 'opera: eliminata «Estasi»');
     assert.equal(folder('estasi').size, 0);
@@ -197,16 +217,18 @@ describe('Store: artworks', () => {
     const wanted = [slugs[1], slugs[0], ...slugs.slice(2)];
     const before = mock.log().length;
     const shasBefore = new Map(mock.files());
-    await store.reorder(wanted);
+    const result = await store.reorder(wanted);
     assert.equal(mock.log().length, before + 1);
     assert.equal(mock.log()[0].message, 'opere: nuovo ordine');
+    assert.deepEqual(result.ordini, Object.fromEntries(wanted.map((s, i) => [s, (i + 1) * 10])), 'the new order, for the screen');
     const after = await store.load();
     assert.deepEqual(after.opere.map((o) => o.slug), wanted);
     assert.deepEqual(after.opere.map((o) => o.data.ordine), wanted.map((_, i) => (i + 1) * 10));
     for (const slug of wanted) assertValidFolder(slug);
-    // the migrated works already had 10…120 in this order: only the two swapped files changed
+    // only the works whose ordine really changed are written
+    const expected = wanted.filter((s, i) => seedWork(s).data.ordine !== (i + 1) * 10).map((s) => `${OPERE}/${s}/opera.json`);
     const changed = [...mock.files()].filter(([p, sha]) => shasBefore.get(p) !== sha).map(([p]) => p);
-    assert.deepEqual(changed.sort(), wanted.slice(0, 2).map((s) => `${OPERE}/${s}/opera.json`).sort());
+    assert.deepEqual(changed.sort(), expected.sort());
     // same order again → nothing to commit
     await store.reorder(wanted);
     assert.equal(mock.log().length, before + 1);
@@ -230,6 +252,168 @@ describe('Store: artworks', () => {
     assert.equal(mine.slug, 'doppione-2');
     assertValidFolder('doppione');
     assertValidFolder('doppione-2');
+  });
+});
+
+/**
+ * fetch that lets GitHub apply the next `patches` branch updates but loses their answer (like a
+ * dropped mobile connection), and then fails `refReads` reads of the branch as well.
+ */
+function losingAnswers({ patches = 1, refReads = 0 } = {}) {
+  return async (input, init) => {
+    const req = new Request(input, init);
+    const isRefRead = req.method === 'GET' && /\/git\/ref\/heads\//.test(req.url);
+    if (isRefRead && refReads > 0 && patches === 0) {
+      refReads -= 1;
+      throw new TypeError('Load failed');
+    }
+    const res = await mock.handle(req);
+    if (req.method === 'PATCH' && patches > 0) {
+      patches -= 1;
+      throw new TypeError('Load failed'); // the branch moved, the phone never hears it
+    }
+    return res;
+  };
+}
+
+const folders = () => [...new Set([...mock.files().keys()].filter((p) => p.startsWith(`${OPERE}/`)).map((p) => p.split('/')[3]))];
+const blobPosts = () => mock.requests().filter((r) => r === 'POST /repos/MartinoTschudi/tiz-art/git/blobs').length;
+
+describe('Store: saving twice never does harm', () => {
+  test('withSaved / withOrder: the loaded data shows a save at once, as the next load will', async () => {
+    const loaded = await store.load();
+    const opened = loaded.opere.find((o) => o.slug === 'sorellanza').data;
+    const edit = await store.saveOpera({ slug: 'sorellanza', fields: fields({ titolo: 'Sorellanza (prima modifica)' }), photos: [{ file: '01.jpg' }], base: opened.aggiornataIl });
+    const created = await store.saveOpera({ slug: null, fields: fields({ titolo: 'Nuova' }), photos: [upload(1)] });
+    const deleted = await store.deleteOpera('estasi');
+    const profilo = await store.saveProfilo({ motto: 'Motto nuovo', bio: '', ritratto: null, base: SEED_PROFILO.aggiornatoIl });
+    let data = loaded;
+    for (const result of [edit, created, deleted, profilo]) data = withSaved(data, result);
+    const fresh = await store.load();
+    const view = (d) => ({ opere: d.opere.map((o) => [o.slug, o.data, [...o.files].sort()]), profilo: d.profilo });
+    assert.deepEqual(view(data), view(fresh));
+    assert.equal(loaded.opere.length, SEED_OPERE.length, 'the old object is not changed');
+    // the form opened again right away carries the base of the version just saved: no false conflict
+    const reopened = data.opere.find((o) => o.slug === 'sorellanza').data;
+    await store.saveOpera({ slug: 'sorellanza', fields: fields({ titolo: reopened.titolo, anno: 2019 }), photos: [{ file: '01.jpg' }], base: reopened.aggiornataIl });
+    assert.equal(assertValidFolder('sorellanza').titolo, 'Sorellanza (prima modifica)', 'the first edit is not undone');
+
+    const order = await store.reorder(fresh.opere.map((o) => o.slug).reverse());
+    assert.deepEqual(view(withOrder(await store.load(), order.ordini)), view(await store.load()));
+    assert.deepEqual(withOrder(fresh, order.ordini).opere.map((o) => o.slug), fresh.opere.map((o) => o.slug).reverse());
+  });
+
+  test('an edit opened before another save of the same work stops instead of undoing it', async () => {
+    const opened = seedWork('sorellanza').data;
+    const photos = opened.immagini.map((r) => ({ file: r.slice(2) }));
+    // first save of the work (another device, or this phone while the list was not reloaded yet)
+    const first = await makeStore().saveOpera({ slug: 'sorellanza', fields: fields({ titolo: 'Sorellanza (prima modifica)' }), photos, base: opened.aggiornataIl });
+    const before = mock.log().length;
+    await assert.rejects(
+      () => store.saveOpera({ slug: 'sorellanza', fields: fields({ titolo: opened.titolo, anno: 2022 }), photos, base: opened.aggiornataIl }),
+      (err) => err.kind === 'store' && err.message === CHANGED_MEANWHILE_OPERA,
+    );
+    assert.equal(mock.log().length, before, 'nothing written');
+    assert.equal(JSON.parse(mock.read(`${OPERE}/sorellanza/opera.json`)).titolo, 'Sorellanza (prima modifica)', 'the first save is kept');
+    // the admin opens the form again with the version just saved (applySaved): then it saves
+    await store.saveOpera({ slug: 'sorellanza', fields: fields({ titolo: 'Sorellanza (prima modifica)', anno: 2022 }), photos, base: first.opera.aggiornataIl });
+    assert.equal(assertValidFolder('sorellanza').anno, 2022);
+  });
+
+  test('a new order saved meanwhile is not a conflict (it keeps aggiornataIl)', async () => {
+    const opened = seedWork('istinto').data;
+    await makeStore().reorder(SEED_OPERE.map((o) => o.slug).reverse());
+    const result = await store.saveOpera({ slug: 'istinto', fields: fields({ titolo: 'Istinto' }), photos: [{ file: '01.jpg' }], base: opened.aggiornataIl });
+    assert.equal(result.action, 'update');
+    assert.equal(assertValidFolder('istinto').ordine, (SEED_OPERE.length - SEED_OPERE.findIndex((o) => o.slug === 'istinto')) * 10, 'the new order is kept');
+  });
+
+  test('the answer of the branch update is lost but it was applied → success, one work, one commit', async () => {
+    store = makeStore(losingAnswers({ patches: 1 }));
+    const before = mock.log().length;
+    const result = await store.saveOpera({ slug: null, fields: fields({ titolo: 'Mare d’inverno' }), photos: [upload(1)] });
+    assert.equal(result.slug, 'mare-d-inverno');
+    assert.equal(result.commitSha, mock.head());
+    assert.equal(mock.log().length, before + 1);
+    assert.deepEqual(folders().filter((f) => f.startsWith('mare')), ['mare-d-inverno']);
+  });
+
+  test('«Riprova» after a lost answer that could not be checked → no copy of the new work', async () => {
+    store = makeStore(losingAnswers({ patches: 1, refReads: 2 }));
+    const photos = [upload(1), upload(2)];
+    const before = mock.log().length;
+    await assert.rejects(() => store.saveOpera({ slug: null, fields: fields({ titolo: 'Mare d’inverno' }), photos }), (err) => err.kind === 'network');
+    assert.equal(mock.log().length, before + 1, 'the first attempt did reach GitHub');
+    const again = await store.saveOpera({ slug: null, fields: fields({ titolo: 'Mare d’inverno' }), photos });
+    assert.equal(again.action, 'create');
+    assert.equal(again.slug, 'mare-d-inverno');
+    assert.equal(mock.log().length, before + 1, 'nothing written twice');
+    assert.deepEqual(folders().filter((f) => f.startsWith('mare')), ['mare-d-inverno']);
+    assertValidFolder('mare-d-inverno');
+  });
+
+  test('«Riprova» of an edit whose save already landed → recognised as done, nothing written twice', async () => {
+    const opened = seedWork('guardami').data;
+    const later = new Date(NOW.getTime() + 60000);
+    store = makeStore(losingAnswers({ patches: 1, refReads: 2 }), () => later);
+    const change = { slug: 'guardami', fields: fields({ titolo: opened.titolo, testo: 'Nuovo testo.' }), photos: [{ file: '01.jpg' }], base: opened.aggiornataIl };
+    await assert.rejects(() => store.saveOpera(change), (err) => err.kind === 'network');
+    const before = mock.log().length;
+    const again = await store.saveOpera(change);
+    assert.equal(again.action, 'update');
+    assert.equal(mock.log().length, before, 'nothing written twice');
+    assert.equal(assertValidFolder('guardami').testo, 'Nuovo testo.');
+  });
+
+  test('the page was closed after the save reached GitHub: the restored draft saves into the same folder', async () => {
+    const photos = [upload(1), upload(2)];
+    const first = await store.saveOpera({ slug: null, fields: fields({ titolo: 'Tramonto' }), photos });
+    // next day: the draft comes back from IndexedDB (same photo ids, new Blob objects), a fresh session
+    const restored = () => photos.map((p) => ({ upload: { ...p.upload, blob: new Blob([p.upload.blob]) } }));
+    const before = mock.log().length;
+    const same = await makeStore().saveOpera({ slug: null, fields: fields({ titolo: 'Tramonto' }), photos: restored() });
+    assert.equal(same.slug, 'tramonto');
+    assert.equal(mock.log().length, before, 'identical: nothing to write');
+    // she also changed the title and put the second photo first before saving again
+    const [a, b] = restored();
+    const changed = await makeStore().saveOpera({ slug: null, fields: fields({ titolo: 'Tramonto rosso' }), photos: [b, a] });
+    assert.equal(changed.slug, 'tramonto', 'same folder, no "tramonto-2"');
+    assert.equal(mock.log()[0].message, 'opera: modificata «Tramonto rosso»');
+    const data = assertValidFolder('tramonto');
+    assert.deepEqual(data.immagini, [first.opera.immagini[1], first.opera.immagini[0]], 'the photos keep their names');
+    assert.equal(data.creataIl, first.opera.creataIl);
+    assert.deepEqual(folders().filter((f) => f.startsWith('tramonto')), ['tramonto']);
+  });
+
+  test('«Riprova» after a failure in the commit step does not upload the photos again', async () => {
+    const photos = [upload(1), upload(2), upload(3)];
+    mock.failNext({ match: '/git/refs/heads/', method: 'PATCH', status: 502 });
+    const posts = blobPosts();
+    await assert.rejects(() => store.saveOpera({ slug: null, fields: fields({ titolo: 'Tre foto' }), photos }), (err) => err.kind === 'server');
+    assert.equal(blobPosts() - posts, 4, '3 photos + opera.json');
+    const result = await store.saveOpera({ slug: null, fields: fields({ titolo: 'Tre foto' }), photos });
+    assert.equal(blobPosts() - posts, 5, 'only opera.json again');
+    assert.equal(result.slug, 'tre-foto');
+    assertValidFolder('tre-foto');
+  });
+
+  test('profile: stale screen → stop; lost answer + «Riprova» with a new portrait → saved once', async () => {
+    const opened = SEED_PROFILO.aggiornatoIl;
+    await makeStore().saveProfilo({ motto: 'Da un altro telefono', bio: SEED_PROFILO.bio, ritratto: null, base: opened });
+    await assert.rejects(() => store.saveProfilo({ motto: 'Vecchio', bio: '', ritratto: null, base: opened }), (err) => err.message === CHANGED_MEANWHILE_PROFILO);
+    assert.equal(JSON.parse(mock.read('src/content/profilo/profilo.json')).motto, 'Da un altro telefono');
+
+    const later = new Date(NOW.getTime() + 60000); // a minute later: every save has its own time
+    store = makeStore(losingAnswers({ patches: 1, refReads: 2 }), () => later);
+    const portrait = upload(9);
+    const base = NOW.toISOString(); // what the screen showed: the save above
+    await assert.rejects(() => store.saveProfilo({ motto: 'Nuovo', bio: 'Bio.', ritratto: portrait, base }), (err) => err.kind === 'network');
+    const before = mock.log().length;
+    const again = await store.saveProfilo({ motto: 'Nuovo', bio: 'Bio.', ritratto: portrait, base });
+    assert.equal(mock.log().length, before, 'already saved: nothing written twice');
+    assert.match(again.profilo.ritratto, /^\.\/ritratto-[a-z0-9]{6}\.jpg$/);
+    assert.deepEqual([...mock.files().keys()].filter((p) => p.startsWith('src/content/profilo/')).sort(),
+      ['src/content/profilo/profilo.json', `src/content/profilo/${again.profilo.ritratto.slice(2)}`].sort());
   });
 });
 

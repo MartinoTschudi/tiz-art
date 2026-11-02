@@ -10,7 +10,8 @@ import { personJsonLd } from '../components/lib/structured-data';
 
 const [featured, all, profilo] = await Promise.all([getFeaturedOpere(), getPublishedOpere(), getProfilo()]);
 const bioTeaser = paragraphs(profilo.bio)[0]?.join(' ') ?? '';
-const description = excerpt([profilo.motto, profilo.bio].filter(Boolean).join(' '));
+// Motto and bio may both be empty (the admin allows it): never an empty meta description.
+const description = excerpt([profilo.motto, profilo.bio].filter(Boolean).join(' ') || `${SITE.nome} (${SITE.firma}), pittrice: opere su tela.`);
 ---
 
 <BaseLayout description={description} path="" jsonLd={[personJsonLd({ description: profilo.motto || undefined })]}>

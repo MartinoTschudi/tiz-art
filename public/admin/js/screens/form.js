@@ -4,14 +4,25 @@
  * plus, when editing, "Vedi sul sito" and "Elimina opera".
  *
  * The form state is a "draft" object. For a new work the app keeps it in memory and in IndexedDB
- * (drafts.js), so it survives going back, a reload or the phone closing the page.
+ * (drafts.js), so it survives going back, a reload or the phone closing the page. Unsaved changes
+ * to an existing work are kept in IndexedDB too (app.persistEdit) and offered again when the work is
+ * reopened: a back swipe, a reload or an expired key never throws them away.
  */
-import { h, icon, topbar, stickyBar, confirmSheet, toast, progress } from '../ui.js';
+import { h, icon, topbar, stickyBar, confirmSheet, toast, progress, siteButton } from '../ui.js';
 import { MAX_IMMAGINI, LIMITS, parseOperaForm, formatNumber } from '../model.js';
+import { workKey } from '../drafts.js';
 import { existingPhoto, readyPhoto, newPhoto, releasePhoto, toSavePhoto, photosReady } from '../photos.js';
 import { pickerButtons, photoMedia } from './photo-ui.js';
 
 const FIELD_ORDER = ['foto', 'titolo', 'anno', 'larghezza', 'altezza', 'tecnica', 'collezione', 'testo'];
+
+/** "Carico la foto 2 di 3…" while uploading, "Pubblico…" while committing (shared with profile.js). */
+export function saveProgress(ev) {
+  if (ev.phase === 'upload' && ev.total) {
+    const text = ev.total === 1 ? 'Carico la foto…' : `Carico la foto ${Math.min(ev.done + 1, ev.total)} di ${ev.total}…`;
+    progress.show(text, ev.done / ev.total);
+  } else if (ev.phase === 'commit') progress.show('Pubblico…');
+}
 
 /** Form model for an existing work ({ slug, data }) or a new one (null). */
 export function createDraft(opera) {
@@ -50,6 +61,30 @@ export function draftToStored(draft) {
   };
 }
 
+/**
+ * Unsaved changes to an existing work, for IndexedDB: the fields, the photos in order (existing ones
+ * as { ref }, new ones once prepared) and `base`, the version they started from.
+ */
+export function editToStored(draft, base) {
+  return {
+    base,
+    fields: { ...draft.fields },
+    photos: draft.photos
+      .filter((p) => p.kind === 'existing' || p.status === 'ready')
+      .map((p) => (p.kind === 'existing' ? { ref: p.ref } : p.result)),
+  };
+}
+
+/** Draft of an existing work with the changes kept in IndexedDB (see editToStored). */
+export function editFromStored(opera, stored) {
+  const draft = createDraft(opera);
+  Object.assign(draft.fields, stored.fields);
+  draft.photos = (stored.photos || [])
+    .map((p) => (p && p.ref ? existingPhoto(p.ref) : p && p.blob && p.preview ? readyPhoto(p) : null))
+    .filter(Boolean);
+  return draft;
+}
+
 /** True when a new-work draft contains something worth keeping. */
 export function draftHasContent(draft) {
   if (!draft) return false;
@@ -74,19 +109,24 @@ function suggestions(opere, key) {
 }
 
 /**
- * @param {object} app   app API: state, store, back, onSaved, handleError, persistDraft, discardDraft, rerender
+ * @param {object} app   app API: state, store, back, onSaved, handleError, persistDraft, persistEdit,
+ *                       discardDraft, discardEdit, sitePage
  * @param {{opera: {slug: string, data: object}|null, draft: object, restored?: boolean}} opts
+ *   restored: the draft comes from IndexedDB (new work, or unsaved changes to this work)
  */
 export function renderForm(app, { opera, draft, restored = false }) {
   const isNew = !opera;
   const opere = app.state.data.opere;
+  const base = isNew ? null : opera.data.aggiornataIl; // the version this form started from
   const errorEls = {};
   const sections = {};
+  let closed = false; // saved, deleted or thrown away: nothing left to keep
 
   /* ---------- helpers ---------- */
 
   const changed = () => {
     if (isNew) app.persistDraft();
+    else app.persistEdit(workKey(opera.slug), () => (!closed && isDirty() ? editToStored(draft, base) : null));
   };
 
   function showError(name, message) {
@@ -117,13 +157,25 @@ export function renderForm(app, { opera, draft, restored = false }) {
     return sections[name];
   }
 
+  /** The keyboard's "Avanti" / Invio key moves to the next field (the form is not a <form>). */
+  function nextOnEnter(input, name) {
+    input.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter' || e.isComposing) return;
+      e.preventDefault();
+      const next = FIELD_ORDER.slice(FIELD_ORDER.indexOf(name) + 1).map((n) => document.getElementById(`in-${n}`)).find(Boolean);
+      if (next) next.focus();
+      else input.blur();
+    });
+  }
+
   function textInput(name, attrs = {}) {
-    const input = h('input', { id: `in-${name}`, name, class: 'input', value: draft.fields[name], ...attrs });
+    const input = h('input', { id: `in-${name}`, name, class: 'input', value: draft.fields[name], enterkeyhint: 'next', ...attrs });
     input.addEventListener('input', () => {
       draft.fields[name] = input.value;
       showError(name, '');
       changed();
     });
+    nextOnEnter(input, name);
     return input;
   }
 
@@ -165,9 +217,10 @@ export function renderForm(app, { opera, draft, restored = false }) {
       { class: `photo-tile${index === 0 ? ' is-cover' : ''}`, dataset: { key: photo.key } },
       photoMedia(photo, sources, `Foto ${n}`),
       h('button', { type: 'button', class: 'tile-remove', 'aria-label': `Togli la foto ${n}`, onClick: () => removePhoto(photo) }, icon('close')),
+      // The current cover reads "★ Copertina"; on the others the action is a verb, so not every photo says "Copertina".
       index === 0
         ? h('span', { class: 'tile-badge' }, icon('star'), 'Copertina')
-        : h('button', { type: 'button', class: 'tile-cover', 'aria-label': `Usa la foto ${n} come copertina`, onClick: () => makeCover(photo) }, 'Copertina'),
+        : h('button', { type: 'button', class: 'tile-cover', 'aria-label': `Usa la foto ${n} come copertina`, onClick: () => makeCover(photo) }, 'Fai copertina'),
     );
   }
 
@@ -186,7 +239,7 @@ export function renderForm(app, { opera, draft, restored = false }) {
     'section',
     { class: 'field', id: 'field-foto' },
     h('h2', { class: 'label' }, 'Foto ', photoCount),
-    h('p', { class: 'hint' }, 'Da 1 a 8 foto. La prima è la copertina: con «Copertina» scegli un’altra foto.'),
+    h('p', { class: 'hint' }, 'Da 1 a 8 foto. La prima è la copertina (★): con «Fai copertina» scegli un’altra foto.'),
     picker.el,
     photoGrid,
     errorEl('foto'),
@@ -194,10 +247,10 @@ export function renderForm(app, { opera, draft, restored = false }) {
 
   /* ---------- fields ---------- */
 
-  const titolo = textInput('titolo', { maxlength: String(LIMITS.titolo), autocapitalize: 'sentences', enterkeyhint: 'next', required: true });
-  const anno = textInput('anno', { inputmode: 'numeric', pattern: '[0-9]*', maxlength: '4', autocomplete: 'off', enterkeyhint: 'next' });
-  const larghezza = textInput('larghezza', { inputmode: 'decimal', autocomplete: 'off', enterkeyhint: 'next', placeholder: 'es. 100' });
-  const altezza = textInput('altezza', { inputmode: 'decimal', autocomplete: 'off', enterkeyhint: 'next', placeholder: 'es. 140' });
+  const titolo = textInput('titolo', { maxlength: String(LIMITS.titolo), autocapitalize: 'sentences', required: true });
+  const anno = textInput('anno', { inputmode: 'numeric', pattern: '[0-9]*', maxlength: '4', autocomplete: 'off' });
+  const larghezza = textInput('larghezza', { inputmode: 'decimal', autocomplete: 'off', placeholder: 'es. 100' });
+  const altezza = textInput('altezza', { inputmode: 'decimal', autocomplete: 'off', placeholder: 'es. 140' });
   const tecnica = textInput('tecnica', { list: 'list-tecnica', maxlength: String(LIMITS.tecnica), autocapitalize: 'sentences', placeholder: 'es. Acrilico su tela' });
   const collezione = textInput('collezione', { list: 'list-collezione', maxlength: String(LIMITS.collezione), placeholder: 'es. noi, DONNA.' });
   const testo = h('textarea', { id: 'in-testo', name: 'testo', class: 'input', rows: '7', maxlength: String(LIMITS.testo), value: draft.fields.testo });
@@ -271,11 +324,6 @@ export function renderForm(app, { opera, draft, restored = false }) {
 
   /* ---------- save / delete ---------- */
 
-  function onProgress(ev) {
-    if (ev.phase === 'upload' && ev.total) progress.show(`Carico le foto… ${ev.done}/${ev.total}`, ev.done / ev.total);
-    else if (ev.phase === 'commit') progress.show('Pubblico…');
-  }
-
   async function runSave(fields) {
     try {
       const ok = await photosReady(draft.photos, (done, total) => progress.show(`Preparo le foto… ${done}/${total}`, done / total));
@@ -285,8 +333,9 @@ export function renderForm(app, { opera, draft, restored = false }) {
         return;
       }
       progress.show('Carico…');
-      const result = await app.store.saveOpera({ slug: draft.slug, fields, photos: draft.photos.map(toSavePhoto) }, onProgress);
+      const result = await app.store.saveOpera({ slug: draft.slug, fields, photos: draft.photos.map(toSavePhoto), base }, saveProgress);
       progress.hide();
+      closed = true;
       app.onSaved(result);
     } catch (err) {
       progress.hide();
@@ -306,6 +355,7 @@ export function renderForm(app, { opera, draft, restored = false }) {
       progress.show('Elimino…');
       const result = await app.store.deleteOpera(opera.slug, () => {});
       progress.hide();
+      closed = true;
       app.onSaved(result);
     } catch (err) {
       progress.hide();
@@ -316,13 +366,14 @@ export function renderForm(app, { opera, draft, restored = false }) {
   async function remove() {
     const ok = await confirmSheet({
       title: `Eliminare «${opera.data.titolo}»?`,
-      text: 'L’opera e le sue foto spariranno dal sito e non si potranno recuperare. Se vuoi solo nasconderla per un po’, togli invece «Visibile sul sito».',
+      text: 'L’opera e le sue foto spariranno dal sito. Se vuoi solo nasconderla per un po’, togli invece «Visibile sul sito». Se hai caricato per errore una foto privata, avvisa subito Martino.',
       confirmLabel: 'Elimina per sempre',
       danger: true,
     });
     if (ok) await runDelete();
   }
 
+  /** The in-app back arrow. (A back swipe skips this: the changes are then kept, see `leaving`.) */
   async function goBack() {
     if (isDirty()) {
       const leave = await confirmSheet({
@@ -333,8 +384,8 @@ export function renderForm(app, { opera, draft, restored = false }) {
         danger: false,
       });
       if (!leave) return;
-    } else if (isNew && draftHasContent(draft)) {
-      toast('Bozza conservata: la ritrovi in «Nuova opera».');
+      closed = true;
+      app.discardEdit(workKey(opera.slug), { reopen: false });
     }
     app.back();
   }
@@ -345,16 +396,49 @@ export function renderForm(app, { opera, draft, restored = false }) {
       text: 'Le foto e i testi dell’opera non salvata verranno cancellati.',
       confirmLabel: 'Sì, ricomincia',
     });
-    if (ok) app.discardDraft();
+    if (!ok) return;
+    closed = true;
+    app.discardDraft();
+  }
+
+  async function undoChanges() {
+    const ok = await confirmSheet({
+      title: 'Annullare le modifiche?',
+      text: 'Torni alla versione salvata di quest’opera.',
+      confirmLabel: 'Sì, annulla le modifiche',
+      cancelLabel: 'No, tienile',
+    });
+    if (!ok) return;
+    closed = true;
+    app.discardEdit(workKey(opera.slug));
+  }
+
+  /** Shown by the app when this screen is left without saving (also by a back swipe). */
+  function leaving() {
+    if (closed) return null;
+    if (isNew) return draftHasContent(draft) ? 'Bozza conservata: la ritrovi in «Nuova opera».' : null;
+    return isDirty() ? 'Modifiche non salvate conservate: le ritrovi riaprendo l’opera.' : null;
   }
 
   /* ---------- layout ---------- */
 
-  const siteLink =
-    !isNew && opera.data.pubblicata
-      ? h('a', { class: 'btn btn-ghost btn-small site-link', href: app.env.siteUrl(`opere/${opera.slug}/`), target: '_blank', rel: 'noopener' },
-          icon('external'), 'Vedi sul sito')
-      : null;
+  // "Vedi sul sito" waits until a save of this work from this phone is online.
+  const siteLink = !isNew && opera.data.pubblicata ? h('div', { class: 'site-link-box' }) : null;
+  function renderSiteLink() {
+    if (siteLink) siteLink.replaceChildren(siteButton(app.sitePage(opera.slug), 'btn btn-ghost btn-small site-link'));
+  }
+  renderSiteLink();
+
+  let notice = null;
+  if (restored && isNew && draftHasContent(draft)) {
+    notice = h('div', { class: 'notice notice-row' },
+      h('p', {}, 'Stai continuando un’opera non salvata.'),
+      h('button', { type: 'button', class: 'btn btn-secondary btn-small', onClick: restart }, 'Ricomincia'));
+  } else if (restored && !isNew) {
+    notice = h('div', { class: 'notice notice-row' },
+      h('p', {}, 'Hai modifiche non ancora salvate.'),
+      h('button', { type: 'button', class: 'btn btn-secondary btn-small', onClick: undoChanges }, 'Annulla modifiche'));
+  }
 
   const el = h(
     'div',
@@ -368,11 +452,7 @@ export function renderForm(app, { opera, draft, restored = false }) {
     h(
       'main',
       { class: 'content form' },
-      restored && draftHasContent(draft)
-        ? h('div', { class: 'notice notice-row' },
-            h('p', {}, 'Stai continuando un’opera non salvata.'),
-            h('button', { type: 'button', class: 'btn btn-secondary btn-small', onClick: restart }, 'Ricomincia'))
-        : null,
+      notice,
       siteLink,
       sections.foto,
       field('titolo', h('span', {}, 'Titolo ', h('span', { class: 'required', 'aria-hidden': 'true' }, '*')), titolo),
@@ -387,7 +467,7 @@ export function renderForm(app, { opera, draft, restored = false }) {
         'section',
         { class: 'field toggles' },
         toggle('inEvidenza', 'In evidenza in home', 'Appare nella selezione della pagina iniziale.'),
-        toggle('pubblicata', 'Visibile sul sito', 'Se lo togli, l’opera resta salvata qui ma non si vede sul sito.'),
+        toggle('pubblicata', 'Visibile sul sito', 'Se lo togli, l’opera non compare nelle pagine del sito. Non è però segreta: non caricare foto o testi privati.'),
       ),
       isNew
         ? null
@@ -398,5 +478,5 @@ export function renderForm(app, { opera, draft, restored = false }) {
   );
   renderPhotos();
 
-  return { el, name: 'form', isDirty };
+  return { el, name: 'form', isDirty, leaving, onDeploy: renderSiteLink };
 }

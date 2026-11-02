@@ -55,7 +55,7 @@ export async function configure({ owner, repo, branch, token, email, password, a
   try {
     await gh.latestRun('deploy.yml');
   } catch (err) {
-    if (err.kind === 'forbidden') notes.push('Il token non può leggere GitHub Actions: l’admin non mostrerà lo stato della pubblicazione (aggiungi «Actions: Read»).');
+    if (err.kind === 'forbidden') notes.push('Il token non può leggere GitHub Actions: l’admin non mostrerà lo stato della pubblicazione (aggiungi «Actions: Read-only»).');
     else if (err.kind === 'notfound') notes.push('Il flusso deploy.yml non esiste ancora: lo stato della pubblicazione apparirà quando ci sarà.');
     else throw err;
   }

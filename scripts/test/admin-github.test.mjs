@@ -3,7 +3,7 @@
 // PATCH force:false), the retry when the branch moved, error mapping and the blob cache.
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
-import { GitHubClient, GitHubError, isKeyError, KEY_INVALID_MESSAGE } from '../../public/admin/js/github.js';
+import { GitHubClient, GitHubError, isKeyError, KEY_INVALID_MESSAGE, TIMEOUT_MESSAGE } from '../../public/admin/js/github.js';
 
 const API = 'https://api.github.com';
 const REPO = '/repos/MartinoTschudi/tiz-art';
@@ -82,7 +82,7 @@ describe('GitHubClient: requests', () => {
 
   test('a truncated tree is an error, not a silently partial list', async () => {
     const { fetchImpl } = fakeFetch({ [`GET ${REPO}/git/trees/t1?recursive=1`]: [200, { tree: [], truncated: true }] });
-    await assert.rejects(() => client(fetchImpl).listFiles('t1'), /troppo grande/);
+    await assert.rejects(() => client(fetchImpl).listFiles('t1'), /Non riesco a leggere tutte le opere/);
   });
 
   test('readText: raw blob, cached by SHA in memory and in `persist`', async () => {
@@ -203,8 +203,58 @@ describe('GitHubClient: one commit per action', () => {
       [`POST ${REPO}/git/commits`]: [201, { sha: 'c' }],
       [`PATCH ${REPO}/git/refs/heads/main`]: () => (patches++, [422, { message: 'Protected branch update failed' }]),
     });
-    await assert.rejects(() => client(fetchImpl).commit({ prepare: () => ({ message: 'm', files: [{ path: 'a', text: 'x' }] }) }), /protetto/);
+    await assert.rejects(() => client(fetchImpl).commit({ prepare: () => ({ message: 'm', files: [{ path: 'a', text: 'x' }] }) }), /non accetta modifiche/);
     assert.equal(patches, 1);
+  });
+
+  /** Routes of a commit whose PATCH answer is lost; `refAfter` = what the branch says afterwards. */
+  function lostPatch({ patch = () => { throw new TypeError('Load failed'); }, refAfter = 'c-new' } = {}) {
+    let patched = false;
+    const routes = {
+      [`GET ${REPO}/git/ref/heads/main`]: () => [200, { object: { sha: patched ? (typeof refAfter === 'function' ? refAfter() : refAfter) : 'c1' } }],
+      [`GET ${REPO}/git/commits/c1`]: [200, { sha: 'c1', tree: { sha: 't1' } }],
+      [`POST ${REPO}/git/blobs`]: [201, { sha: 'b' }],
+      [`POST ${REPO}/git/trees`]: [201, { sha: 't-new' }],
+      [`POST ${REPO}/git/commits`]: [201, { sha: 'c-new' }],
+    };
+    const { fetchImpl, calls } = fakeFetch(routes);
+    const wrapped = async (url, init) => {
+      if (init.method === 'PATCH') {
+        calls.push({ key: `PATCH ${url.slice(API.length)}`, init });
+        patched = true; // GitHub applied it…
+        return patch(); // …but the answer is lost (or an error)
+      }
+      return fetchImpl(url, init);
+    };
+    return { fetchImpl: wrapped, calls };
+  }
+  const plan = () => ({ message: 'm', files: [{ path: 'a', text: 'x' }] });
+
+  test('the PATCH answer is lost but the branch now points at our commit → success, no retry', async () => {
+    const { fetchImpl, calls } = lostPatch();
+    let attempts = 0;
+    const result = await client(fetchImpl).commit({ prepare: () => (attempts++, plan()) });
+    assert.deepEqual(result, { commitSha: 'c-new', treeSha: 't-new' });
+    assert.equal(attempts, 1);
+    assert.equal(calls.filter((c) => c.key.startsWith('PATCH')).length, 1);
+  });
+
+  test('a 502 on the PATCH that was applied anyway → success; one that was not → the 502 error', async () => {
+    const applied = lostPatch({ patch: () => new Response('{}', { status: 502 }) });
+    assert.equal((await client(applied.fetchImpl).commit({ prepare: plan })).commitSha, 'c-new');
+    const notApplied = lostPatch({ patch: () => new Response('{}', { status: 502 }), refAfter: 'c1' });
+    await assert.rejects(() => client(notApplied.fetchImpl).commit({ prepare: plan }), (err) => err.kind === 'server');
+  });
+
+  test('the answer is lost and the branch cannot be read either → the original network error', async () => {
+    let reads = 0;
+    const { fetchImpl } = lostPatch({ refAfter: () => { throw new TypeError('Load failed'); } });
+    const counting = async (url, init) => {
+      if (init.method === 'GET' && url.includes('/git/ref/')) reads++;
+      return fetchImpl(url, init);
+    };
+    await assert.rejects(() => client(counting).commit({ prepare: plan }), (err) => err.kind === 'network' && /Connessione assente/.test(err.message));
+    assert.equal(reads, 1 + 2, 'head, then two checks');
   });
 
   test('an error of prepare (e.g. validation) stops before any write', async () => {
@@ -239,6 +289,33 @@ describe('GitHubClient: errors in plain Italian', () => {
       (err) => err.kind === 'network' && /Connessione assente/.test(err.message));
     await assert.rejects(() => client(failing(404)).getRepo(), (err) => err.kind === 'notfound');
     await assert.rejects(() => client(failing(502)).getRepo(), (err) => err.kind === 'server' && /non risponde/.test(err.message));
+  });
+
+  test('a request that never answers ends with a plain timeout error (not an endless «Pubblico…»)', async () => {
+    const stalled = (url, init) => new Promise((_resolve, reject) => init.signal.addEventListener('abort', () => reject(init.signal.reason)));
+    const keepAlive = setTimeout(() => {}, 5000); // Node's AbortSignal.timeout does not keep the process alive
+    const started = Date.now();
+    await assert.rejects(() => client(stalled, { timeout: 30 }).getRepo(), (err) => err.kind === 'network' && err.message === TIMEOUT_MESSAGE);
+    clearTimeout(keepAlive);
+    assert.ok(Date.now() - started < 2000);
+  });
+
+  test('uploads get more time: the limit grows with the size of the body', async () => {
+    let signal;
+    const { fetchImpl } = fakeFetch({ [`POST ${REPO}/git/blobs`]: [201, { sha: 'b' }] });
+    const spy = (url, init) => {
+      signal = init.signal;
+      return fetchImpl(url, init);
+    };
+    await client(spy, { timeout: 30 }).createBlob(new Uint8Array(30000));
+    assert.ok(signal instanceof AbortSignal);
+    await new Promise((r) => setTimeout(r, 60));
+    assert.equal(signal.aborted, false, '40 kB of base64 at 20 kB/s: about 2 s more than the base limit');
+  });
+
+  test('an answer cut off in the middle is a network error', async () => {
+    const cut = async () => new Response(new ReadableStream({ start(c) { c.error(new TypeError('network')); } }), { status: 200 });
+    await assert.rejects(() => client(cut).getRepo(), (err) => err.kind === 'network');
   });
 
   test('latestRun reads the deploy.yml runs of the branch', async () => {

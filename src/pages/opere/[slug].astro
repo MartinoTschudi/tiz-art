@@ -79,12 +79,15 @@ const jsonLd = artworkJsonLd(opera, { images: fullImages.map((url) => absoluteUr
 
   .artwork__layout {
     display: grid;
+    /* minmax(0, …): an implicit auto column would grow with the longest word of the title */
+    grid-template-columns: minmax(0, 1fr);
     gap: var(--space-7);
     padding-top: var(--space-3);
   }
 
   .artwork__info {
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
     gap: var(--space-5);
     align-content: start;
   }

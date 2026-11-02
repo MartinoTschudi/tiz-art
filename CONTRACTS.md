@@ -30,7 +30,8 @@ redesign the public site later, so the structure must be clean, semantic and eas
   links or asset URLs — use `import.meta.env.BASE_URL` (site) or a base computed from `location` (admin).
 - Build env (set by the workflow from `actions/configure-pages`): `SITE_URL` (origin, e.g.
   `https://martinotschudi.github.io`) and `BASE_PATH` (e.g. `/tiz-art/`, always ends with `/`). Locally both
-  default to `https://tiz-art.ch` and `/`.
+  default to `https://tiz-art.ch` and `/`. An `http://` `SITE_URL` is upgraded to `https://` (except on
+  localhost): configure-pages reports `http://` while "Enforce HTTPS" is still off.
 - When `SITE_URL` contains `github.io`, the site is a preview: every page gets
   `<meta name="robots" content="noindex">` and `robots.txt` disallows everything.
 
@@ -55,6 +56,8 @@ scripts/admin-setup.mjs          admin agent (CLI alternative to the setup page)
 scripts/dev/admin-dev.mjs        admin agent (`npm run admin:dev`: local mock GitHub API, section 7.6)
 scripts/check-content.mjs        infra agent (`npm run check:content`, validates section 4)
 scripts/test/admin-*.test.mjs    admin agent       scripts/test/content-*.test.mjs   infra agent
+scripts/test/fixtures/repo/      admin agent (small committed copy of src/content for the tests, section 8)
+scripts/dev/site-icons.mjs       site agent (renders favicon-32.png / apple-touch-icon.png from favicon.svg)
 .github/workflows/deploy.yml     infra agent
 docs/DESIGN-HANDOFF.md           site agent
 docs/GUIDA-ADMIN.md              admin agent (Italian, for Tiziana)
@@ -142,7 +145,7 @@ package.json, CONTRACTS.md       fixed — do not edit (report needed changes in
 | `/chi-sono/` | portrait (if any), motto, bio |
 | `/contatti/` | contact form (5.4) |
 | `/404.html` | Italian 404 with link home |
-| old WordPress paths | static redirect pages from `sito.json` `redirectVecchioSito` (meta refresh + canonical, noindex) |
+| old WordPress paths | static redirect pages from `sito.json` `redirectVecchioSito` (meta refresh + canonical, noindex); a target artwork that is hidden or deleted redirects to `/opere/` instead |
 | `/admin/anteprime.json` | section 6 |
 | `/sitemap-index.xml`, `/robots.txt` | sitemap of public pages only; robots allows all except `/admin/` (preview: disallow all) |
 
@@ -157,8 +160,8 @@ Tschudi Belloli, anno` (+ "dettaglio N" for extra images).
 
 ### 5.3 SEO
 Per page `<title>` ("Titolo — Tiziana Tschudi Belloli"; home: "Tiziana Tschudi Belloli — TIZ"),
-meta description (from text, ≤ 155 chars), canonical, Open Graph + Twitter card (cover image 1200 px
-wide), `lang="it"`, JSON-LD (`Person` on home/chi-sono, `VisualArtwork` on artwork pages with
+meta description (from text, ≤ 155 chars), canonical, Open Graph + Twitter card (cover image
+inside a 1200 × 1200 box, JPEG quality 75, never cropped), `lang="it"`, JSON-LD (`Person` on home/chi-sono, `VisualArtwork` on artwork pages with
 `artMedium`, `width`/`height` in cm, `dateCreated`, `image`, `creator`).
 
 ### 5.4 Contact form
@@ -215,7 +218,11 @@ setup page. If GitHub answers 401/403 with a valid login, show "La chiave di acc
 valida: chiedi a Martino di rinnovarla" (no technical jargon) and log out.
 
 Setup page `<base>/admin/setup/` (for the owner, not for Tiziana): fields e-mail, password (twice,
-min 12 chars), GitHub token (password-type input). It checks the token against
+min 12 chars), GitHub token (password-type input). Because `auth.json` and its git history are public
+(offline guessing, no rate limit), the shared rules (`public/admin/setup/rules.js`) also refuse guessable
+passwords: no part of the e-mail, no name/site words or "password"/"12345", and either 3 different words
+or 16+ mostly random characters; the page offers a generated passphrase ("Usa questa"). Only
+fine-grained tokens: classic/OAuth prefixes (`ghp_`, `gho_`, `ghu_`, `ghs_`, `ghr_`) are refused. It checks the token against
 `GET /repos/{owner}/{repo}` (`permissions.push` must be true), encrypts in the browser, and commits
 `public/admin/auth.json` to `main` **using that same token** (commit message
 `admin: configura accesso`). Owner/repo/branch defaults: `MartinoTschudi` / `tiz-art` / `main`
@@ -240,6 +247,18 @@ and retry up to 3 times (rebuild the tree on the new head). Commit messages (Ita
 `opere: nuovo ordine`, `profilo: aggiornato`. Validate everything against section 4 BEFORE committing
 (a bad file would break the build).
 
+Saving twice must never do harm:
+- Every request has a time limit (30 s, plus time for the body of a photo upload); a limit or a dropped
+  connection is a "connessione" error. When the answer to the final `PATCH` is lost (network error,
+  time limit, 5xx), the branch is read again: if it points at the new commit, the save succeeded.
+- A new photo's file name `NN-xxxxxx.jpg` takes its random part from an id chosen once per photo and
+  kept in the draft. Creating a work whose folder already holds one of those photos (an earlier
+  attempt that reached GitHub unnoticed) saves into that folder instead of creating `<slug>-2`.
+- An edit (work or profile) carries the `aggiornataIl` / `aggiornatoIl` the form was opened with; if
+  the file changed since, the save stops with "… è stata cambiata dopo che l’hai aperta…" instead of
+  overwriting it — unless the file already holds exactly this edit (then nothing is written).
+- «Riprova» reuses the photo blobs already uploaded in this session.
+
 ### 7.5 Screens
 1. **Accedi** — e-mail, password (eye toggle), "Entra" (shows "Verifico…", PBKDF2 takes ~1 s).
 2. **Le mie opere** — publish status line from `GET /repos/{o}/{r}/actions/workflows/deploy.yml/runs?branch={branch}&per_page=1`
@@ -249,17 +268,26 @@ and retry up to 3 times (rebuild the tree on the new head). Commit messages (Ita
    Links "Profilo" and "Esci", reload button.
 3. **Nuova / Modifica opera** — Foto (1–8): "Scatta foto" (`capture="environment"`) and "Dalla galleria"
    (multiple); each photo is resized in the browser (≤ 2400 px, JPEG 0.88, orientation applied, EXIF/GPS
-   dropped by re-encoding); "Copertina" button to make one the first; "×" to remove. Fields: Titolo*,
+   dropped by re-encoding); "Fai copertina" button to make one the first (the first shows "★ Copertina");
+   "×" to remove. Fields: Titolo*,
    Anno (default current year), Larghezza cm, Altezza cm, Tecnica (datalist from existing values),
    Collezione (datalist from existing values), Testo (textarea), "In evidenza in home" toggle,
-   "Visibile sul sito" toggle (default on). "Salva" → progress ("Preparo le foto…", "Carico…",
+   "Visibile sul sito" toggle (default on). "Salva" → progress ("Preparo le foto…", "Carico la foto 1 di 3…",
    "Pubblico…") → "Fatto! Sarà online tra circa 2 minuti" with "Vedi sul sito", "Torna alle opere",
    "Aggiungi un'altra opera". Existing work: "Elimina opera" at the bottom with confirmation dialog.
    New works get `ordine = min(existing) - 10` (shown first). Unsaved new work is kept as a draft
    (IndexedDB, including photos) and offered again ("Stai continuando un'opera non salvata · Ricomincia").
-4. **Profilo** — motto, bio (textarea), portrait photo (add/replace/remove). Save = one commit.
+   Unsaved changes to an existing work are kept the same way (also after a back swipe, a reload or an
+   expired key) and shown again when it is reopened ("Hai modifiche non ancora salvate · Annulla
+   modifiche"); the in-app back arrow still asks "Uscire senza salvare?".
+4. **Profilo** — motto, bio (textarea), portrait photo (add/replace/remove). Save = one commit. Unsaved
+   changes are kept like those of a work.
 
-"Vedi sul sito" = `<site base>/opere/<slug>/` where site base = the admin URL without `admin/…`.
+"Vedi sul sito" = `<site base>/opere/<slug>/` where site base = the admin URL without `admin/…`. After a
+save from this device the button stays disabled ("Vedi sul sito (tra circa 2 minuti)") until the publish
+status is "Online ✓" (about 3 minutes when Actions cannot be read), and the URL gets `?v=<commit>` so the
+browser does not show its cached copy. Right after a save the admin shows the saved data at once (it
+does not wait for the reload from GitHub).
 
 ### 7.6 Local testing
 `npm run admin:dev` starts a mock GitHub API on `http://localhost:8787` (in memory, seeded from the
@@ -277,6 +305,8 @@ other host. `astro dev` has no folder index for `public/`, so locally open
 
 `.github/workflows/deploy.yml`, name `Deploy`, file name exactly `deploy.yml` (the admin reads its runs).
 Triggers: push to `main`, `workflow_dispatch`. Concurrency group `pages`, `cancel-in-progress: false`.
+`npm test` must never depend on the live `src/content` (Tiziana changes it every day; a test that counted
+her works would block every deploy): the admin tests use the fixture `scripts/test/fixtures/repo/`.
 Steps: checkout → Node (from `.nvmrc`) + npm cache → `npm ci` → `npm test` → `npm run check:content` →
 `actions/configure-pages` (gives `origin` + `base_path`) → restore Astro image cache
 (`node_modules/.astro/assets`, keyed on package-lock + astro.config) → `npm run build` with `SITE_URL`

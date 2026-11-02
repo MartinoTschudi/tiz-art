@@ -22,14 +22,17 @@
  *
  * Only Node.js built-ins (plus the shared password rules of the setup page).
  */
-import { pbkdf2Sync, randomBytes, randomInt, createCipheriv, createDecipheriv } from 'node:crypto';
+import { pbkdf2Sync, randomBytes, createCipheriv, createDecipheriv } from 'node:crypto';
 import { readFile, writeFile, mkdir, access } from 'node:fs/promises';
 import { realpathSync } from 'node:fs';
 import path from 'node:path';
 import readline from 'node:readline';
 import { StringDecoder } from 'node:string_decoder';
 import { fileURLToPath } from 'node:url';
-import { isEmail, checkPassword, checkToken, MIN_PASSWORD_LENGTH } from '../public/admin/setup/rules.js';
+import { isEmail, checkPassword, checkToken, suggestPassphrase, suggestPasswordFor, MIN_PASSWORD_LENGTH } from '../public/admin/setup/rules.js';
+
+// The passphrase generator lives with the shared rules (the setup page offers one too).
+export { suggestPassphrase };
 
 export const AUTH_VERSION = 2;
 export const KDF = 'PBKDF2-SHA256';
@@ -94,17 +97,6 @@ export function decryptAuth(auth, email, password) {
   }
 }
 
-/**
- * Suggests a passphrase of 4 pronounceable made-up words, e.g. "toravi-memuso-bilena-carepo"
- * (each word ≈ 18 bits, ≈ 73 bits in all): strong and easy to type on a phone.
- */
-export function suggestPassphrase(words = 4) {
-  const consonants = 'bcdfglmnprstvz';
-  const vowels = 'aeiou';
-  const syllable = () => consonants[randomInt(consonants.length)] + vowels[randomInt(vowels.length)];
-  return Array.from({ length: words }, () => syllable() + syllable() + syllable()).join('-');
-}
-
 // ─── GitHub check ────────────────────────────────────────────────────────────
 
 /**
@@ -143,7 +135,7 @@ export async function verifyToken({ owner, repo, branch, token, api = GITHUB_API
   if (ref.status === 404 || ref.status === 409) problems.push(`il ramo «${branch}» non esiste (il repository è vuoto?)`);
 
   const runs = await gh(`${base}/actions/workflows/deploy.yml/runs?per_page=1`);
-  if (runs.status === 403) notes.push('il token non può leggere GitHub Actions: l’admin non mostrerà lo stato della pubblicazione (aggiungi «Actions: Read»)');
+  if (runs.status === 403) notes.push('il token non può leggere GitHub Actions: l’admin non mostrerà lo stato della pubblicazione (aggiungi «Actions: Read-only»)');
   else if (runs.status === 404) notes.push('il flusso deploy.yml non esiste ancora (va bene se il codice non è ancora pubblicato)');
   return { ok: problems.length === 0, problems, notes };
 }
@@ -331,7 +323,8 @@ export async function runSetup({
     email = normalizeEmail(email);
 
     say(`\nOra la password dell’admin (almeno ${MIN_PASSWORD_LENGTH} caratteri), usata solo qui.`);
-    say(`Consiglio: 4 parole sono sicure e facili da scrivere sul telefono, per esempio  ${suggestPassphrase()}`);
+    say('Servono almeno tre parole diverse (niente nomi, titoli + anno, «password»…): il file cifrato è pubblico.');
+    say(`Consiglio: 4 parole sono sicure e facili da scrivere sul telefono, per esempio  ${suggestPasswordFor(email)}`);
     let password = fromEnv('ADMIN_PASSWORD');
     if (password != null) {
       const problem = checkPassword(password, email);
@@ -356,7 +349,7 @@ export async function runSetup({
     }
 
     say('\nToken «fine-grained»: github.com → Settings → Developer settings → Fine-grained tokens,');
-    say(`solo il repository ${owner}/${repo}, permessi «Contents: Read and write» e «Actions: Read».`);
+    say(`solo il repository ${owner}/${repo} (Repository access: Only select repositories), permessi «Contents: Read and write» e «Actions: Read-only».`);
     let token = fromEnv('ADMIN_TOKEN')?.trim() ?? null;
     for (let attempt = 1; ; attempt++) {
       if (token == null) token = (await prompt.askHidden('Incolla il token (nascosto, poi Invio)')).trim();

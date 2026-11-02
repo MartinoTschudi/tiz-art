@@ -118,6 +118,11 @@ const options = await Promise.all(
     <button class="button contact-form__submit" type="submit" data-submit>Invia messaggio</button>
     <p class="contact-form__status" role="status" data-status></p>
   </div>
+
+  <p class="contact-form__privacy">
+    Nome, e-mail e messaggio servono solo per risponderti: li ricevo per e-mail tramite il servizio
+    Web3Forms, che può trattarli all’estero. Non li uso per nient’altro.
+  </p>
 </form>
 
 <script>
@@ -249,5 +254,11 @@ const options = await Promise.all(
 
   .contact-form__status[data-tone='error'] {
     color: var(--color-error);
+  }
+
+  .contact-form__privacy {
+    max-width: 40rem;
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
   }
 </style>

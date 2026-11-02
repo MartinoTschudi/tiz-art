@@ -74,19 +74,24 @@ export function renderList(app) {
     );
   }
 
+  const rowOf = (slug) => main.querySelector(`[data-slug="${CSS.escape(slug)}"]`);
+
   function move(index, delta) {
     const target = index + delta;
     if (target < 0 || target >= ordering.length) return;
+    movedSlug = ordering[index];
+    const before = rowOf(movedSlug);
+    const oldTop = before ? before.getBoundingClientRect().top : null;
     [ordering[index], ordering[target]] = [ordering[target], ordering[index]];
-    movedSlug = ordering[target];
     renderMain();
-    // keep the moved work under the finger and the focus on the same button
-    const moved = main.querySelector(`[data-slug="${CSS.escape(movedSlug)}"]`);
-    if (moved) {
-      moved.scrollIntoView({ block: 'nearest' });
-      const again = moved.querySelector(delta < 0 ? '.move-up' : '.move-down');
-      (again && !again.disabled ? again : moved.querySelector('.move-btn:not(:disabled)'))?.focus({ preventScroll: true });
-    }
+    // Keep the moved work (and its arrows) under the finger: the page scrolls by the row it moved,
+    // so tapping ↑ again moves it on instead of moving the neighbour back.
+    const moved = rowOf(movedSlug);
+    if (!moved) return;
+    if (oldTop !== null) window.scrollBy(0, moved.getBoundingClientRect().top - oldTop);
+    else moved.scrollIntoView({ block: 'nearest' });
+    const again = moved.querySelector(delta < 0 ? '.move-up' : '.move-down');
+    (again && !again.disabled ? again : moved.querySelector('.move-btn:not(:disabled)'))?.focus({ preventScroll: true });
   }
 
   function orderRow(o, index, total) {
@@ -134,6 +139,14 @@ export function renderList(app) {
     const opere = data.opere;
     const bySlug = new Map(opere.map((o) => [o.slug, o]));
     const children = [statusBox];
+    if (state.loadError && !state.loading) {
+      // The reload failed: what is shown may not be the latest (a toast alone is easy to miss).
+      children.push(
+        h('div', { class: 'notice notice-warn notice-row', role: 'alert' },
+          h('p', {}, 'Lista non aggiornata: controlla la connessione.'),
+          h('button', { type: 'button', class: 'btn btn-secondary btn-small', onClick: () => app.reload({ manual: true }) }, icon('refresh'), 'Riprova')),
+      );
+    }
     if (data.problems.length) {
       children.push(
         h('div', { class: 'notice notice-warn', role: 'alert' },
@@ -207,7 +220,7 @@ export function renderList(app) {
   async function logout() {
     const ok = await confirmSheet({
       title: 'Vuoi uscire?',
-      text: 'Per rientrare ti serviranno e-mail e password. Un’opera nuova non ancora salvata viene cancellata da questo telefono.',
+      text: 'Per rientrare ti serviranno e-mail e password. Le modifiche non ancora salvate vengono cancellate da questo telefono.',
       confirmLabel: 'Esci',
     });
     if (ok) app.logout();

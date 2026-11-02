@@ -4,9 +4,14 @@
  *
  * A photo is { key, kind: 'existing', ref, file }  (already in the repository)
  *          or { key, kind: 'new', status: 'processing'|'ready'|'error', file?, result?, previewUrl?, error? }.
+ *
+ * `result` = { blob, preview, width, height, id }: `id` is the random part of the photo's future file
+ * name ("03-<id>.jpg"), chosen once and kept with the draft, so a save repeated after a lost answer
+ * is recognised (store.js) instead of creating the work twice.
  */
 import { preparePhoto } from './images.js';
 import { imageRefName } from './model.js';
+import { randomId } from './util.js';
 
 let keySeq = 0;
 const newKey = () => `foto-${++keySeq}`;
@@ -20,6 +25,7 @@ export function existingPhoto(ref) {
 
 /** A photo prepared earlier (restored from the draft). */
 export function readyPhoto(result) {
+  if (!result.id) result.id = randomId(6); // drafts saved before ids existed
   return { key: newKey(), kind: 'new', status: 'ready', result, previewUrl: URL.createObjectURL(result.preview) };
 }
 
@@ -32,7 +38,7 @@ export function newPhoto(file, onDone) {
   photo.ready = queue.then(async () => {
     if (photo.removed) return;
     try {
-      photo.result = await preparePhoto(photo.file);
+      photo.result = { ...(await preparePhoto(photo.file)), id: randomId(6) };
       if (!photo.removed) photo.previewUrl = URL.createObjectURL(photo.result.preview);
       photo.status = 'ready';
     } catch (err) {

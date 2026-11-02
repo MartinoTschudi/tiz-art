@@ -7,7 +7,15 @@
  * Reading always goes to the GitHub API (the deployed site can be minutes behind).
  * Every save is ONE commit; the push starts .github/workflows/deploy.yml, which rebuilds and
  * publishes the site. Photos are uploaded as blobs once, before the commit, so a retry on a moved
- * branch only rebuilds the small JSON part.
+ * branch only rebuilds the small JSON part; «Riprova» reuses the photos already uploaded too.
+ *
+ * Saving twice must never do harm:
+ *  - a new photo keeps the same random part in its file name (`upload.id`, kept in the draft), so a
+ *    new work whose first save reached GitHub without the phone knowing (answer lost, page closed)
+ *    is recognised by its photos and saved into the same folder instead of creating a copy;
+ *  - an edit carries `base`, the `aggiornataIl` / `aggiornatoIl` of the version the form was opened
+ *    with: if the file changed since, the save stops instead of silently undoing that change
+ *    (unless the file already holds exactly this edit: then an earlier attempt worked).
  */
 import { GitHubClient, GitHubError, KEY_INVALID_MESSAGE } from './github.js';
 import {
@@ -15,7 +23,7 @@ import {
   slugify, uniqueSlug, validateOpera, validateProfilo, serializeOpera, serializeProfilo,
   compareOpere, nextOrdine, imageFileName, portraitFileName, commitMessage, imageRefName,
 } from './model.js';
-import { mapLimit } from './util.js';
+import { mapLimit, randomId } from './util.js';
 
 export const WORKFLOW_FILE = 'deploy.yml';
 const CACHE_PREFIX = 'tiz-admin:blob:';
@@ -70,6 +78,32 @@ export function runState(run) {
   return null;
 }
 
+/**
+ * The loaded data (Store.load) with a save of this phone already in it: the reload that follows
+ * takes a moment (longer on a slow connection, and it can fail), and a screen opened meanwhile must
+ * show what was saved, or saving it again would silently undo the first save.
+ * @param {{opere: Array<{slug: string, data: object}>, profilo: object|null}} data
+ * @param {{action: string, slug?: string, opera?: object, profilo?: object}} result  of saveOpera / deleteOpera / saveProfilo
+ */
+export function withSaved(data, result) {
+  if (result.action === 'profilo') return { ...data, profilo: result.profilo };
+  const opere = data.opere.filter((o) => o.slug !== result.slug);
+  if (result.action === 'create' || result.action === 'update') {
+    const files = new Set([OPERA_FILE, ...result.opera.immagini.map(imageRefName)]);
+    opere.push({ slug: result.slug, sha: null, files, data: result.opera });
+    opere.sort(compareOpere);
+  }
+  return { ...data, opere };
+}
+
+/** The loaded data with the new order of reorder() (`ordini`: slug → ordine). */
+export function withOrder(data, ordini) {
+  const opere = data.opere
+    .map((o) => (ordini[o.slug] === undefined ? o : { ...o, data: { ...o.data, ordine: ordini[o.slug] } }))
+    .sort(compareOpere);
+  return { ...data, opere };
+}
+
 function assertValid(problems, what) {
   if (problems.length) {
     throw new StoreError(`Non posso salvare ${what}: ${problems[0]}. Controlla i campi e riprova.`);
@@ -86,6 +120,16 @@ async function fetchThumbnailIndex(env) {
 
 /** Only same-origin absolute paths from the index are used as image URLs. */
 const isSitePath = (v) => typeof v === 'string' && v.startsWith('/') && !v.startsWith('//');
+
+/** The file of a folder that holds the new photo with this random id ("03-k2x9qa.jpg"), or null. */
+const fileWithId = (files, id) => [...files].find((f) => f.endsWith(`-${id}.jpg`)) || null;
+
+/** Same artwork apart from the time of the save? */
+const sameOpera = (a, b) => serializeOpera({ ...a, aggiornataIl: '' }) === serializeOpera({ ...b, aggiornataIl: '' });
+const sameProfilo = (a, b) => serializeProfilo({ ...a, aggiornatoIl: '' }) === serializeProfilo({ ...b, aggiornatoIl: '' });
+
+export const CHANGED_MEANWHILE_OPERA = 'Quest’opera è stata cambiata dopo che l’hai aperta. Torna alle opere, tocca ↻ e riaprila.';
+export const CHANGED_MEANWHILE_PROFILO = 'Il profilo è stato cambiato dopo che l’hai aperto. Torna alle opere, tocca ↻ e riaprilo.';
 
 export class Store {
   /**
@@ -106,6 +150,7 @@ export class Store {
     this.head = null; // branch tip seen by the last load
     this.index = null; // anteprime.json
     this.previews = new Map(); // repo path → object URL of a photo uploaded from this device
+    this.uploaded = new WeakMap(); // photo Blob → blob SHA already on GitHub (a retry skips the upload)
   }
 
   /** Throws a GitHubError when the key cannot read (or cannot write to) the repository. */
@@ -226,15 +271,24 @@ export class Store {
     this.previews.clear();
   }
 
-  /** Uploads the new photos (blobs do not depend on the branch: done once, before the commit). */
+  /**
+   * Uploads the new photos (blobs do not depend on the branch: done once, before the commit).
+   * A photo uploaded by an earlier attempt of this session is not sent again (blobs are content
+   * addressed, so its SHA stays valid). `onProgress` gets `done` = photos finished so far.
+   */
   async uploadPhotos(uploads, onProgress) {
     const shas = [];
-    onProgress({ phase: 'upload', done: 0, total: uploads.length });
     // One at a time: phones on mobile data cope better, and each photo is 1–3 MB of base64.
     for (const upload of uploads) {
-      shas.push(await this.gh.createBlob(upload.blob));
       onProgress({ phase: 'upload', done: shas.length, total: uploads.length });
+      let sha = this.uploaded.get(upload.blob);
+      if (!sha) {
+        sha = await this.gh.createBlob(upload.blob);
+        this.uploaded.set(upload.blob, sha);
+      }
+      shas.push(sha);
     }
+    onProgress({ phase: 'upload', done: shas.length, total: uploads.length });
     return shas;
   }
 
@@ -242,28 +296,37 @@ export class Store {
 
   /**
    * Creates (slug = null) or updates an artwork. One commit.
-   * @param {{slug: string|null, fields: object, photos: Array<{file: string} | {upload: {blob: Blob, preview?: Blob}}>}} change
-   *   fields = parseOperaForm(...).fields; photos in display order (the first is the cover)
+   * @param {{slug: string|null, fields: object, photos: Array<{file: string} | {upload: {blob: Blob, preview?: Blob, id?: string}}>,
+   *          base?: string|null}} change
+   *   fields = parseOperaForm(...).fields; photos in display order (the first is the cover);
+   *   base = `aggiornataIl` of the version the form was opened with (edits only)
    * @param {(p: {phase: 'upload'|'commit', done?: number, total?: number}) => void} [onProgress]
-   * @returns {Promise<{action: 'create'|'update', slug: string, opera: object}>}
+   * @returns {Promise<{action: 'create'|'update', slug: string, opera: object, commitSha: string}>}
    */
-  async saveOpera({ slug, fields, photos }, onProgress = () => {}) {
+  async saveOpera({ slug, fields, photos, base = null }, onProgress = () => {}) {
     const isNew = !slug;
-    const names = photos.map((p, i) => (p.upload ? imageFileName(i + 1) : p.file));
+    // The random part of a new photo's name is chosen once per photo (normally when it is prepared,
+    // see photos.js), so every attempt of this save uses the same file names.
+    for (const p of photos) if (p.upload && !p.upload.id) p.upload.id = randomId(6);
+    const names = photos.map((p, i) => (p.upload ? imageFileName(i + 1, p.upload.id) : p.file));
     if (new Set(names).size !== names.length) throw new StoreError('La stessa foto compare due volte: togline una.');
     const uploadIdx = photos.map((p, i) => (p.upload ? i : -1)).filter((i) => i >= 0);
     const shas = await this.uploadPhotos(uploadIdx.map((i) => photos[i].upload), onProgress);
 
     onProgress({ phase: 'commit' });
     let result = null;
-    await this.gh.commit({
+    let saved = names; // file names as committed
+    const done = await this.gh.commit({
       prepare: async (head) => {
         const files = await this.gh.listFiles(head.treeSha);
         const { folders, opere } = await this.readOpere(files);
         let target = slug;
         let previous = null;
         if (isNew) {
-          target = uniqueSlug(slugify(fields.titolo), new Set(folders.keys()));
+          // A folder that already holds one of these new photos was created by an earlier attempt of
+          // this same save (the phone never got the answer): save into it, never a second copy.
+          previous = opere.find((o) => uploadIdx.some((i) => fileWithId(o.files, photos[i].upload.id))) || null;
+          target = previous ? previous.slug : uniqueSlug(slugify(fields.titolo), new Set(folders.keys()));
         } else {
           previous = opere.find((o) => o.slug === slug);
           if (!previous) throw new StoreError('Quest’opera non esiste più: forse è stata eliminata da un altro dispositivo.');
@@ -274,24 +337,37 @@ export class Store {
             throw new StoreError(`La foto ${i + 1} non esiste più: toglila con × e aggiungila di nuovo.`);
           }
         }
+        // A new photo already in the folder keeps its name (the earlier attempt may have numbered it differently).
+        const fileNames = names.map((n, i) => (photos[i].upload && previous && fileWithId(previous.files, photos[i].upload.id)) || n);
         const now = this.now().toISOString();
         const opera = {
           ...fields,
-          immagini: names.map((n) => `./${n}`),
-          ordine: isNew ? nextOrdine(opere.map((o) => o.data.ordine)) : previous.data.ordine,
-          creataIl: isNew ? now : previous.data.creataIl,
+          immagini: fileNames.map((n) => `./${n}`),
+          ordine: previous ? previous.data.ordine : nextOrdine(opere.map((o) => o.data.ordine)),
+          creataIl: previous ? previous.data.creataIl : now,
           aggiornataIl: now,
         };
         assertValid(validateOpera(opera), 'l’opera');
-
-        const keep = new Set([OPERA_FILE, ...names]);
-        const deletes = [...files.keys()].filter((p) => p.startsWith(dir) && !keep.has(p.slice(dir.length)));
         result = { action: isNew ? 'create' : 'update', slug: target, opera };
+        saved = fileNames;
+
+        const changedMeanwhile = !isNew && base && previous.data.aggiornataIl !== base;
+        if ((isNew && previous) || changedMeanwhile) {
+          if (sameOpera(previous.data, opera)) {
+            result.opera = previous.data; // exactly this was saved already: nothing to write
+            return null;
+          }
+          // Someone saved this work after the form was opened: writing the whole form would undo it.
+          if (changedMeanwhile) throw new StoreError(CHANGED_MEANWHILE_OPERA);
+        }
+
+        const keep = new Set([OPERA_FILE, ...fileNames]);
+        const deletes = [...files.keys()].filter((p) => p.startsWith(dir) && !keep.has(p.slice(dir.length)));
         return {
-          message: commitMessage(result.action, opera.titolo),
+          message: commitMessage(previous ? 'update' : 'create', opera.titolo),
           files: [
             { path: dir + OPERA_FILE, text: serializeOpera(opera) },
-            ...uploadIdx.map((i, k) => ({ path: dir + names[i], sha: shas[k] })),
+            ...uploadIdx.map((i, k) => ({ path: dir + fileNames[i], sha: shas[k] })),
           ],
           deletes,
         };
@@ -299,9 +375,9 @@ export class Store {
     });
     for (const i of uploadIdx) {
       const preview = photos[i].upload.preview;
-      if (preview) this.previews.set(`${OPERE_DIR}/${result.slug}/${names[i]}`, URL.createObjectURL(preview));
+      if (preview) this.previews.set(`${OPERE_DIR}/${result.slug}/${saved[i]}`, URL.createObjectURL(preview));
     }
-    return result;
+    return { ...result, commitSha: done.commitSha };
   }
 
   /** Deletes the artwork's whole folder. One commit. */
@@ -334,6 +410,7 @@ export class Store {
    */
   async reorder(slugs, onProgress = () => {}) {
     onProgress({ phase: 'commit' });
+    let ordini = {};
     const res = await this.gh.commit({
       prepare: async (head) => {
         const files = await this.gh.listFiles(head.treeSha);
@@ -342,9 +419,11 @@ export class Store {
         const wanted = slugs.filter((s) => bySlug.has(s));
         const others = opere.filter((o) => !wanted.includes(o.slug)).map((o) => o.slug); // already sorted
         const writes = [];
+        ordini = {};
         [...others, ...wanted].forEach((s, i) => {
           const { data } = bySlug.get(s);
           const ordine = (i + 1) * 10;
+          ordini[s] = ordine;
           if (data.ordine === ordine) return;
           const opera = { ...data, ordine };
           assertValid(validateOpera(opera), `«${data.titolo || s}»`);
@@ -353,21 +432,24 @@ export class Store {
         return writes.length ? { message: commitMessage('reorder'), files: writes } : null;
       },
     });
-    return { action: 'reorder', skipped: Boolean(res.skipped) };
+    // ordini: slug → its new `ordine`, for every work (the admin shows the new order at once)
+    return { action: 'reorder', skipped: Boolean(res.skipped), ordini };
   }
 
   /**
    * Saves the profile. `ritratto`: null (no portrait) | { file } (keep) | { upload } (new photo).
+   * `base`: `aggiornatoIl` of the version the screen was opened with.
    * The previous portrait file is deleted when it is replaced or removed. One commit.
    */
-  async saveProfilo({ motto, bio, ritratto }, onProgress = () => {}) {
+  async saveProfilo({ motto, bio, ritratto, base = null }, onProgress = () => {}) {
     const upload = ritratto && ritratto.upload;
-    const uploadName = upload ? portraitFileName() : null;
+    if (upload && !upload.id) upload.id = randomId(6);
+    const uploadName = upload ? portraitFileName(upload.id) : null; // same name on every attempt
     const [uploadSha] = upload ? await this.uploadPhotos([upload], onProgress) : [];
 
     onProgress({ phase: 'commit' });
     let saved = null;
-    await this.gh.commit({
+    const done = await this.gh.commit({
       prepare: async (head) => {
         const files = await this.gh.listFiles(head.treeSha);
         const previous = await this.readProfilo(files);
@@ -377,16 +459,23 @@ export class Store {
         }
         const profilo = { motto, bio, ritratto: name ? `./${name}` : null, aggiornatoIl: this.now().toISOString() };
         assertValid(validateProfilo(profilo), 'il profilo');
+        saved = profilo;
+        if (base && previous && previous.data.aggiornatoIl !== base) {
+          if (sameProfilo(previous.data, profilo)) {
+            saved = previous.data; // an earlier attempt saved exactly this
+            return null;
+          }
+          throw new StoreError(CHANGED_MEANWHILE_PROFILO);
+        }
         const writes = [{ path: `${PROFILO_DIR}/${PROFILO_FILE}`, text: serializeProfilo(profilo) }];
         if (uploadSha) writes.push({ path: `${PROFILO_DIR}/${uploadName}`, sha: uploadSha });
         const old = previous && imageRefName(previous.data.ritratto);
         const deletes = old && old !== name && files.has(`${PROFILO_DIR}/${old}`) ? [`${PROFILO_DIR}/${old}`] : [];
-        saved = profilo;
         return { message: commitMessage('profilo'), files: writes, deletes };
       },
     });
     if (upload && upload.preview) this.previews.set(`${PROFILO_DIR}/${uploadName}`, URL.createObjectURL(upload.preview));
-    return { action: 'profilo', profilo: saved };
+    return { action: 'profilo', profilo: saved, commitSha: done.commitSha };
   }
 
   /* ---------- publishing ---------- */

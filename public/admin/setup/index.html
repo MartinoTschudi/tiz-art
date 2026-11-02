@@ -14,6 +14,7 @@
   </head>
   <body>
     <main class="screen screen-login setup">
+      <p class="setup-back"><a id="back-link" href="../index.html">← Torna all’admin</a></p>
       <div class="login-brand">
         <img class="login-logo" src="../icons/icon-192.png" alt="" width="96" height="96" />
         <p class="login-wordmark">Configurazione</p>
@@ -24,9 +25,10 @@
         <h1 class="card-title">Accesso per Tiziana</h1>
         <p>Questa pagina è per Martino. Crea (o rinnova) l’accesso dell’admin:</p>
         <ol class="steps">
-          <li>scegli l’e-mail e la password con cui Tiziana entrerà;</li>
-          <li>incolla un token GitHub «fine-grained» solo per il repository del sito, con i permessi
-            <strong>Contents: Read and write</strong> e <strong>Actions: Read</strong>;</li>
+          <li>scegli l’e-mail e la password con cui Tiziana entrerà (meglio la password proposta);</li>
+          <li>incolla un token GitHub «fine-grained» (inizia con <code>github_pat_</code>) solo per il repository
+            del sito: <strong>Repository access: Only select repositories → tiz-art</strong>, permessi
+            <strong>Contents: Read and write</strong> e <strong>Actions: Read-only</strong>;</li>
           <li>tocca «Configura»: la chiave viene cifrata qui nel browser e salvata nel repository
             (<code>public/admin/auth.json</code>) con lo stesso token.</li>
         </ol>
@@ -39,8 +41,17 @@
         </div>
         <div class="field-row">
           <label class="label" for="password">Password (almeno 12 caratteri)</label>
-          <input id="password" name="password" type="password" class="input" autocomplete="new-password" autocapitalize="off" autocorrect="off" spellcheck="false" required />
-          <p class="hint">Meglio una frase di 4 parole, facile da scrivere sul telefono e usata solo qui.</p>
+          <input id="password" name="password" type="password" class="input" autocomplete="new-password" autocapitalize="off" autocorrect="off" spellcheck="false" required aria-describedby="pw-hint" />
+          <p id="pw-hint" class="hint">Almeno tre parole diverse, usate solo qui: niente nomi, titoli con l’anno o «password».
+            Il file cifrato è pubblico, quindi una password facile si può indovinare.</p>
+          <div id="pw-suggest" class="pw-suggest" hidden>
+            <p class="hint">Proposta (parole inventate, facili da scrivere sul telefono):</p>
+            <p class="pw-suggested"><code id="pw-suggested"></code></p>
+            <div class="pw-suggest-actions">
+              <button id="pw-use" type="button" class="btn btn-secondary btn-small">Usa questa</button>
+              <button id="pw-new" type="button" class="btn btn-ghost btn-small">Nuova proposta</button>
+            </div>
+          </div>
         </div>
         <div class="field-row">
           <label class="label" for="password2">Ripeti la password</label>

@@ -5,7 +5,8 @@
  *   Widths larger than the original are dropped by Astro (it never upscales).
  * - Full-screen viewer: WebP up to 1920 px, then a full-size JPEG (quality 90, same pixels as the
  *   photo, ≤ 2400 px) as the largest size. Also used for the no-JS links and the JSON-LD `image`.
- * - Open Graph: JPEG 1200 px wide. Admin thumbnails (anteprime.json): WebP 480 px wide.
+ * - Open Graph: JPEG inside a 1200 × 1200 box, quality 75 (≈ 150–400 KB: WhatsApp and others drop
+ *   link previews of heavier images). Admin thumbnails (anteprime.json): WebP 480 px wide.
  *
  * The original file itself is never linked. Astro decides whether to keep an original in dist/ by
  * tracking reads of `image.src`, keyed by the emitted file name; two identical photos (same bytes,
@@ -34,7 +35,8 @@ export const WIDTHS = {
 /** Width of the fallback <img src> (browsers without srcset support), capped to the original. */
 export const FALLBACK_WIDTH = 960;
 
-export const OG_WIDTH = 1200;
+export const OG_BOX = 1200;
+export const OG_QUALITY = 75;
 export const ADMIN_THUMB_WIDTH = 480;
 /** Thumbnail shown next to the contact form when an artwork is chosen. */
 export const CONTACT_THUMB_WIDTH = 240;
@@ -60,8 +62,9 @@ export interface SocialImage {
 
 /** Open Graph / Twitter image: JPEG, 1200 px wide, absolute URL. */
 export async function socialImage(src: ImageMetadata, alt: string): Promise<SocialImage> {
-  const size = fit(src, OG_WIDTH);
-  const image = await getImage({ src, ...size, format: 'jpg' });
+  // Never cropped: portrait paintings get a smaller width so the height stays within the box too.
+  const size = fit(src, Math.round(Math.min(OG_BOX, (OG_BOX * src.width) / src.height)));
+  const image = await getImage({ src, ...size, format: 'jpg', quality: OG_QUALITY });
   return { url: absoluteUrl(image.src), ...size, alt };
 }
 

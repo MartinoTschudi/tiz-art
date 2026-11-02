@@ -54,6 +54,13 @@ export function renderLogin(app, { message = '', email = '' } = {}) {
     error.hidden = false;
     if (field) field.focus();
   };
+  // "Avanti" on the e-mail goes on to the password; it does not submit an empty password (no red error).
+  emailInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.isComposing && !pwInput.value) {
+      e.preventDefault();
+      pwInput.focus();
+    }
+  });
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     error.hidden = true;
@@ -77,7 +84,10 @@ export function renderLogin(app, { message = '', email = '' } = {}) {
   return { el, name: 'login' };
 }
 
-/** auth.json is missing: the owner has to run the setup page once. */
+/**
+ * auth.json is missing: the owner has to run the setup page once. The link to it is for Martino:
+ * small, and in a new tab (inside the Home-Screen app the setup page would have no way back).
+ */
 export function renderNotConfigured(app, { setupUrl, problem = '' }) {
   const el = h(
     'main',
@@ -87,10 +97,11 @@ export function renderNotConfigured(app, { setupUrl, problem = '' }) {
       'div',
       { class: 'card' },
       h('h1', { class: 'card-title' }, 'L’admin non è ancora configurato'),
-      h('p', {}, problem || 'Manca l’accesso a GitHub. Chiedi a Martino di completare la configurazione: ci vogliono due minuti.'),
-      h('a', { class: 'btn btn-secondary btn-block', href: setupUrl }, 'Apri la pagina di configurazione'),
+      h('p', {}, problem || 'L’accesso non è ancora pronto. Chiedi a Martino di completare la configurazione.'),
     ),
     h('button', { type: 'button', class: 'btn btn-primary btn-block', onClick: () => location.reload() }, icon('refresh'), 'Riprova'),
+    h('p', { class: 'setup-link' },
+      h('a', { href: setupUrl, target: '_blank', rel: 'noopener' }, 'Pagina di configurazione (per Martino)')),
   );
   return { el, name: 'not-configured' };
 }

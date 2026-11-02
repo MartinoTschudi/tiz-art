@@ -42,6 +42,9 @@
 html {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
+  /* scrollIntoView / focus never park content under the sticky top bar (64 px) or the bottom bar */
+  scroll-padding-top: 76px;
+  scroll-padding-bottom: 110px;
 }
 
 body {
@@ -1085,7 +1088,7 @@ a.opera-row:active {
   cursor: pointer;
 }
 
-/* the tap area of "Copertina" is bigger than the pill */
+/* the tap area of "Fai copertina" is bigger than the pill */
 .tile-cover::after {
   content: '';
   position: absolute;
@@ -1136,6 +1139,14 @@ a.opera-row:active {
   max-width: 420px;
   font-size: 18px;
   text-wrap: balance;
+}
+
+.done-status .deploy {
+  justify-content: center;
+}
+
+.done-link + .btn-block {
+  margin-top: 10px;
 }
 
 /* ---------- bottom sheet ---------- */
@@ -1314,6 +1325,51 @@ a.opera-row:active {
 .setup .result-ok {
   color: var(--ok);
   font-weight: 650;
+}
+
+.setup-back {
+  margin: 0;
+}
+
+.setup-back a,
+.setup-link a {
+  display: inline-block;
+  padding: 11px 2px;
+  color: var(--muted);
+  font-size: 15.5px;
+}
+
+.setup-link {
+  margin: 14px 0 0;
+  text-align: center;
+}
+
+.pw-suggest {
+  margin-top: 10px;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--paper-2);
+}
+
+.pw-suggest .hint {
+  margin: 0;
+}
+
+.pw-suggested {
+  margin: 6px 0 10px;
+  font-size: 18px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.pw-suggest-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.login-form .pw-suggest-actions .btn {
+  margin-top: 0;
 }
 
 /* ---------- bigger screens ---------- */

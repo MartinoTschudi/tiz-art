@@ -21,7 +21,12 @@ const ratio = cover.width / cover.height;
 const Heading = `h${headingLevel}` as 'h2' | 'h3';
 const meta = metaParts(data);
 // Rendered width depends on the row; wide paintings get more room than tall ones.
-const sizes = ratio >= 1 ? '(min-width: 80rem) 32vw, (min-width: 48rem) 42vw, 92vw' : '(min-width: 80rem) 20vw, (min-width: 48rem) 28vw, 56vw';
+// On phones a card is about ratio × row height wide (rows stretch to fill the line): 9.5rem is
+// --grid-row of tokens.css below 48rem, keep them in step. 1.4 covers the usual stretch; the rare
+// wider card still gets about 2× density on a 3× screen.
+const phone = `min(92vw, ${(ratio * 9.5 * 1.4).toFixed(2)}rem)`;
+const sizes =
+  ratio >= 1 ? `(min-width: 80rem) 32vw, (min-width: 48rem) 42vw, ${phone}` : `(min-width: 80rem) 20vw, (min-width: 48rem) 28vw, ${phone}`;
 ---
 
 <li class="artwork-card" style={`--ratio: ${ratio.toFixed(4)}`}>
@@ -78,6 +83,8 @@ const sizes = ratio >= 1 ? '(min-width: 80rem) 32vw, (min-width: 48rem) 42vw, 92
     font-family: var(--font-display);
     font-size: var(--text-lg);
     line-height: var(--leading-snug);
+    /* cards of tall paintings are ~100 px wide on phones: "Consapevolezza" must break, not overflow */
+    overflow-wrap: anywhere;
   }
 
   .artwork-card__link:hover .artwork-card__title {
