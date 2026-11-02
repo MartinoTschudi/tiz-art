@@ -9,8 +9,7 @@ do not silently diverge: write the problem in your final report.
 Portfolio website of the painter **Tiziana Tschudi Belloli** (signature "TIZ"), domain **tiz-art.ch**.
 Italian only. Pure portfolio: no prices, no shop, no availability. Visitors contact her only through a
 **contact form** (no e-mail address, phone or street address is ever shown on the site). Every artwork
-page has a "Chiedi informazioni su quest'opera" action that opens the contact form pre-filled with that
-artwork.
+page has a "Chiedi di quest’opera" action that opens the contact form pre-filled with that artwork.
 
 Her mother-tongue admin (`/admin/`) runs on a phone: log in, take/choose photos, fill a few fields,
 save. Saving commits to GitHub; GitHub Actions rebuilds and publishes the site (≈1–3 minutes).
@@ -77,6 +76,7 @@ package.json, CONTRACTS.md       fixed — do not edit (report needed changes in
   "altezza": 150,
   "tecnica": "Acrilico su tela",
   "collezione": "noi, DONNA.",
+  "colore": "terracotta",
   "testo": "Primo paragrafo.\n\nSecondo paragrafo.",
   "immagini": ["./01.jpg", "./02.jpg"],
   "ordine": 120,
@@ -94,13 +94,24 @@ package.json, CONTRACTS.md       fixed — do not edit (report needed changes in
 | `larghezza`, `altezza` | number \| null | centimetres, > 0, ≤ 1000, max 1 decimal. Displayed "100 × 140 cm" / "100,5 × 80 cm" (width × height, Italian decimal comma). Shown only when both are set |
 | `tecnica` | string | may be `""`, ≤ 120 chars (e.g. "Acrilico su tela", "Acrilico e olio su tela") |
 | `collezione` | string | series name, may be `""`, ≤ 120 chars |
+| `colore` | string \| null | colour of the brushstroke painted behind the work on the site: `"ocra"`, `"rosso"`, `"terracotta"`, `"ottanio"` or `"blu"`; `null` = automatic (see below). The admin always writes the key; a file without it is still valid and reads as `null` |
 | `testo` | string | may be `""`, ≤ 5000 chars. Plain text: paragraphs separated by a blank line (`\n\n`), single `\n` = line break. Never HTML/Markdown — render as text |
 | `immagini` | string[] | 1–8 entries, each `./<file>` in the same folder, file name `^[a-z0-9][a-z0-9._-]*\.(jpg\|jpeg\|png\|webp)$`. The FIRST image is the cover. No duplicate entries |
 | `ordine` | integer | ascending = shown first. Ties broken by `creataIl` descending |
-| `inEvidenza` | boolean | shown in the home-page selection |
+| `inEvidenza` | boolean | featured: the first 3 published `inEvidenza` works in display order make the composition at the top of the home page (§5.1); any further ones have no effect there |
 | `pubblicata` | boolean | `false` = hidden everywhere on the public site (draft), no page generated |
 | `creataIl`, `aggiornataIl` | string | ISO 8601 UTC |
 
+- **Brushstroke colour.** The site paints the stroke with `var(--tiz-<colore>)` (design tokens: ocra
+  `#d6982b`, rosso `#c3262b`, terracotta `#b5532f`, ottanio `#1d7377`, blu `#2c55a0`). When `colore` is
+  `null` (or the key is missing), the colour is automatic:
+  `PAINT_CYCLE = ['ocra', 'rosso', 'ottanio', 'terracotta', 'blu']`, indexed by the work's position in the full
+  published list in display order (`getPublishedOpere()`, index mod 5). So a work keeps the same colour on every
+  page; it changes only when the published order changes.
+- **A missing `colore` key** (a file saved by an admin older than this field) is accepted everywhere and
+  treated as `null`: the zod schema defaults it, the admin normalises it when reading (and rewrites the file
+  in the current format on the next «Salva», even without a change), and `npm run check:content` only
+  **warns**. Every other key stays required.
 - Unknown extra keys are not allowed (the schema is strict) — this catches typos.
 - **Slug** = folder name, `^[a-z0-9]+(?:-[a-z0-9]+)*$`, ≤ 60 chars, derived once from the title at
   creation (lowercase, accents stripped: "Gioventù" → `gioventu`, "…e fuori piove" → `e-fuori-piove`),
@@ -139,17 +150,21 @@ package.json, CONTRACTS.md       fixed — do not edit (report needed changes in
 
 | path | content |
 |---|---|
-| `/` | name + motto, a selection of `inEvidenza` works (fallback: first 6 by order), link to all works, short bio teaser, contact call-to-action |
-| `/opere/` | all published works sorted by `ordine`; grouped or filterable by `collezione` when there is more than one |
-| `/opere/<slug>/` | images (cover large, others below/gallery, tap = full-screen viewer with zoom, keyboard + swipe), title, year, size, technique, collection, text, "Chiedi informazioni su quest'opera" → `/contatti/?opera=<slug>`, previous/next work |
-| `/chi-sono/` | portrait (if any), motto, bio |
+| `/` | **Hero composition**: the motto (last word in rosso; the artist's name when the motto is empty) and up to 3 works = the first 3 published `inEvidenza` works in display order, filled up with the first published works not already picked when fewer than 3. Slots by aspect ratio: the most square → large (ties: larger canvas, then display order), the tallest of the rest → narrow, the other → small; the handwritten note "{titolo}, {anno}" under the large one. Below 1024 px: motto → the large work → paragraph. Then the **series section**: the `collezione` of the first hero work (else the most common non-empty one) with the highest `anno` of its works and up to 5 of its published works that are not in the hero or the quote ("Le ultime opere" and the first 5 such works when no work has a series), and the link "Tutte le {n} opere →". Then the **quote band**: the first sentence (20–140 chars) of a published work's text outside the hero, searched from the last work in display order backwards, with that painting; hidden when there is none; the attribution links to the work. Then the large home footer. No bio teaser, no contact call-to-action |
+| `/opere/` | ONE list of all published works in display order (`ordine`), hung at real relative scale ("{n} tele, appese come nello studio"; "1 tela"). No grouping or filtering by `collezione` |
+| `/opere/<slug>/` | the cover on a stage with the work's brushstroke behind it (whole painting); the other photos as thumbnails under it (tap = swap the stage image; without JS a link to the full-size JPEG); tap on the stage = full-screen viewer with zoom, keyboard + swipe; "{nn} / {total} · {collezione}" (series part omitted when empty), title, `<dl>` Anno / Misure / Tecnica (empty ones skipped), her text + "— TIZ" (the block is omitted when the text is empty), "Chiedi di quest’opera →" → `/contatti/?opera=<slug>`, previous/next work (wrapping around). Phone: a fixed bottom bar with ← · the button · → |
+| `/chi-sono/` | `profilo.ritratto` (4:5 crop allowed here only: it is a photo, not a painting) with an ocra brushstroke and the note "nello studio"; without a portrait the first hero painting, uncropped, captioned «titolo», anno. Name, motto (last word in rosso), bio (`profilo.bio`, plain text), links to the works and to the contact page |
 | `/contatti/` | contact form (5.4) |
+| `/contatti/grazie/` | the form's success page for visitors without JS (5.4); `noindex`, not in the sitemap |
 | `/404.html` | Italian 404 with link home |
 | old WordPress paths | static redirect pages from `sito.json` `redirectVecchioSito` (meta refresh + canonical, noindex); a target artwork that is hidden or deleted redirects to `/opere/` instead |
 | `/admin/anteprime.json` | section 6 |
-| `/sitemap-index.xml`, `/robots.txt` | sitemap of public pages only; robots allows all except `/admin/` (preview: disallow all) |
+| `/sitemap-index.xml`, `/robots.txt` | sitemap of public pages only (not `/contatti/grazie/`); robots allows all except `/admin/` (preview: disallow all) |
 
-Header: "TIZ" / name → home; nav Opere · Chi sono · Contatti. Footer: name, ©year, link "Contatti".
+Header: "TIZ" + name → home; nav Opere · Chi sono · Contatti, the active section marked (`aria-current`, also on
+`/opere/<slug>/`). On phones a "Menu" button opens a full-screen menu; without JS the three links show as a row.
+Footer: "TIZ" and "© {year} Tiziana Tschudi Belloli"; the home page has a larger footer with the motto and the
+nav Opere · Chi sono · Scrivimi (= Contatti).
 **No address, phone, e-mail or social links anywhere.**
 
 ### 5.2 Images
@@ -165,18 +180,36 @@ inside a 1200 × 1200 box, JPEG quality 75, never cropped), `lang="it"`, JSON-LD
 `artMedium`, `width`/`height` in cm, `dateCreated`, `image`, `creator`).
 
 ### 5.4 Contact form
-Fields: nome (required), email (required, type email), messaggio (required, ≥ 10 chars), optional
-artwork select (pre-selected from `?opera=<slug>`; shows the title), hidden honeypot `botcheck` (checked in the page: a filled honeypot fakes success and sends nothing; it is not sent to Web3Forms).
-Submits with `fetch` POST JSON to `https://api.web3forms.com/submit` with `access_key`
+Fields: nome (`name`, required), email (`email`, required, type email), messaggio (`message`, required,
+≥ 10 chars), hidden honeypot `botcheck`.
+
+**The work** (no `<select>`): the page's script reads `?opera=<slug>` and matches it against the published
+works embedded in the page as data (slug, title, URL, thumbnail). On a match it shows a chip (thumbnail,
+"Mi interessa", the title) and sets the hidden input `opera`; the chip's × button (≥ 44 × 44 px) removes the
+chip and clears the input. An unknown or hidden slug is ignored.
+
+**Sending (with JS)**: `fetch` POST JSON to `https://api.web3forms.com/submit` with `access_key`
 (`sito.json`), `subject` ("Nuovo messaggio da tiz-art.ch" or "Richiesta su «Titolo» — tiz-art.ch"),
-`from_name` "tiz-art.ch", `name`, `email`, `message`, `opera` (title + URL when chosen). Italian
-success / error messages, button disabled while sending, works without layout shift.
+`from_name` "tiz-art.ch", `name`, `email`, `message`, `opera` (title + URL when chosen). A filled honeypot
+fakes success and sends nothing (it is not sent to Web3Forms). Italian validation: the error shows inline
+under its field (`aria-describedby`) and the input is kept; the button is disabled while sending; error and
+status lines reserve their height (no layout shift).
+
+**Success**: "Grazie!" replaces the form (focus moved to it, announced through `aria-live`), with "Scrivi
+ancora" to bring back an empty form.
+
+**Without JS**: the form is a normal `POST` to the same endpoint with hidden `access_key`, `subject`
+("Nuovo messaggio da tiz-art.ch"), `from_name` and `redirect` = the absolute URL of `/contatti/grazie/`
+(base path included); Web3Forms then sends the visitor to that page, which shows the success design.
+The honeypot is part of that POST (Web3Forms rejects a submission with `botcheck` filled).
+
 If `web3formsAccessKey` is empty the page still renders the form, but submit shows "Il modulo non è
 ancora attivo" and the build prints a warning.
 
 ### 5.5 Quality bar
 Semantic HTML, keyboard accessible, visible focus, `prefers-reduced-motion` respected, works without
-JS (except the form submit and the viewer), Lighthouse-friendly (no layout shift, lazy images below the
+JS (only the viewer, the phone menu overlay, the photo swap and the animations need it; the contact form
+falls back to a normal POST, §5.4), Lighthouse-friendly (no layout shift, lazy images below the
 fold), mobile-first. All design values in `src/styles/tokens.css` as CSS custom properties.
 
 ## 6. Thumbnail index for the admin — `/admin/anteprime.json`
@@ -271,8 +304,11 @@ Saving twice must never do harm:
    dropped by re-encoding); "Fai copertina" button to make one the first (the first shows "★ Copertina");
    "×" to remove. Fields: Titolo*,
    Anno (default current year), Larghezza cm, Altezza cm, Tecnica (datalist from existing values),
-   Collezione (datalist from existing values), Testo (textarea), "In evidenza in home" toggle,
-   "Visibile sul sito" toggle (default on). "Salva" → progress ("Preparo le foto…", "Carico la foto 1 di 3…",
+   Collezione (datalist from existing values), "Colore della pennellata" (radio buttons drawn as large
+   swatches with their names: Automatico (default, `null`) · Ocra · Rosso · Terracotta · Ottanio · Blu),
+   Testo (textarea), "In evidenza in home" toggle (hint: the first 3 make the home composition),
+   "Visibile sul sito" toggle (default on). "Salva" with nothing changed says "Nessuna modifica da salvare",
+   except for a file not in the current format (e.g. without `colore`, §4.1): that one is rewritten. "Salva" → progress ("Preparo le foto…", "Carico la foto 1 di 3…",
    "Pubblico…") → "Fatto! Sarà online tra circa 2 minuti" with "Vedi sul sito", "Torna alle opere",
    "Aggiungi un'altra opera". Existing work: "Elimina opera" at the bottom with confirmation dialog.
    New works get `ordine = min(existing) - 10` (shown first). Unsaved new work is kept as a draft

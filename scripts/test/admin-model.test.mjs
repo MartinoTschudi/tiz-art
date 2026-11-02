@@ -17,6 +17,7 @@ const valid = () => ({
   altezza: 150,
   tecnica: 'Acrilico su tela',
   collezione: 'noi, DONNA.',
+  colore: 'terracotta',
   testo: 'Primo paragrafo.\n\nSecondo paragrafo.',
   immagini: ['./01.jpg', './02-k2x9qa.jpg'],
   ordine: 120,
@@ -103,12 +104,24 @@ describe('what she types', () => {
     });
     assert.deepEqual(ok.fields, {
       titolo: 'Nuova opera', anno: 2025, larghezza: 80.5, altezza: null, tecnica: 'Olio', collezione: '',
-      testo: 'Testo', inEvidenza: true, pubblicata: true,
+      colore: null, testo: 'Testo', inEvidenza: true, pubblicata: true,
     });
     const bad = m.parseOperaForm({ titolo: ' ', anno: '19', larghezza: 'x', altezza: '0', tecnica: '', collezione: '', testo: 'x'.repeat(5001) });
     assert.equal(bad.fields, null);
     assert.deepEqual(Object.keys(bad.errors).sort(), ['altezza', 'anno', 'larghezza', 'testo', 'titolo']);
     assert.match(bad.errors.titolo, /titolo/);
+  });
+
+  test('colore: one of the five names, or "" / missing = automatico (null)', () => {
+    assert.deepEqual(m.COLORI, ['ocra', 'rosso', 'terracotta', 'ottanio', 'blu']);
+    for (const name of m.COLORI) assert.deepEqual(m.parseColore(name), { value: name });
+    for (const auto of ['', null, undefined]) assert.deepEqual(m.parseColore(auto), { value: null });
+    for (const bad of ['verde', 'Ocra', ' ocra', 'auto', 0]) assert.ok(m.parseColore(bad).error, String(bad));
+    const base = { titolo: 'T', anno: '', larghezza: '', altezza: '', tecnica: '', collezione: '', testo: '' };
+    assert.equal(m.parseOperaForm({ ...base, colore: 'ottanio' }).fields.colore, 'ottanio');
+    assert.equal(m.parseOperaForm({ ...base, colore: '' }).fields.colore, null);
+    assert.equal(m.parseOperaForm(base).fields.colore, null, 'a draft kept by an older admin');
+    assert.deepEqual(Object.keys(m.parseOperaForm({ ...base, colore: 'verde' }).errors), ['colore']);
   });
 
   test('formatMisure: "100 × 140 cm", decimal comma, only when both are set', () => {
@@ -121,7 +134,8 @@ describe('what she types', () => {
 describe('validation (section 4.1 / 4.2)', () => {
   test('a valid artwork passes', () => {
     assert.deepEqual(m.validateOpera(valid()), []);
-    assert.deepEqual(m.validateOpera({ ...valid(), anno: null, larghezza: null, altezza: null, tecnica: '', collezione: '', testo: '' }), []);
+    assert.deepEqual(m.validateOpera({ ...valid(), anno: null, larghezza: null, altezza: null, tecnica: '', collezione: '', colore: null, testo: '' }), []);
+    for (const colore of m.COLORI) assert.deepEqual(m.validateOpera({ ...valid(), colore }), [], colore);
   });
 
   test('every rule is enforced', () => {
@@ -131,6 +145,7 @@ describe('validation (section 4.1 / 4.2)', () => {
       larghezza: [0, -1, 1000.5, 12.34, '100', Infinity],
       tecnica: ['x'.repeat(121), null],
       collezione: ['x'.repeat(121)],
+      colore: ['verde', '', 'Ocra', 1, undefined],
       testo: ['x'.repeat(5001)],
       immagini: [[], Array.from({ length: 9 }, (_, i) => `./0${i}.jpg`), ['01.jpg'], ['./sub/01.jpg'], ['./01.gif'], ['./Foto.JPG'], ['./01.jpg', './01.jpg']],
       ordine: [1.5, '10', null],
@@ -147,7 +162,22 @@ describe('validation (section 4.1 / 4.2)', () => {
     assert.match(m.validateOpera({ ...valid(), prezzo: 100 }).join(), /sconosciuto «prezzo»/);
     const { ordine, ...missing } = valid();
     assert.match(m.validateOpera(missing).join(), /manca il campo «ordine»/);
+    const { colore, ...old } = valid();
+    assert.match(m.validateOpera(old).join(), /manca il campo «colore»/, 'the admin always writes colore');
     assert.ok(m.validateOpera(null).length);
+  });
+
+  test('normalizeOpera: a file saved before «colore» existed reads as colore null, nothing else changes', () => {
+    const { colore, ...old } = valid();
+    const read = m.normalizeOpera(old);
+    assert.equal(read.colore, null);
+    assert.deepEqual(m.validateOpera(read), []);
+    assert.deepEqual({ ...read, colore: undefined }, { ...old, colore: undefined });
+    assert.ok(!('colore' in old), 'the object read is not changed');
+    const current = valid();
+    assert.equal(m.normalizeOpera(current), current, 'a current file is returned as it is');
+    assert.equal(m.normalizeOpera({ ...current, colore: 'verde' }).colore, 'verde', 'an invalid value is left for validateOpera');
+    for (const notObject of [null, [], 'x']) assert.equal(m.normalizeOpera(notObject), notObject);
   });
 
   test('profile: motto ≤ 160, bio ≤ 8000, ritratto null or ./file, strict', () => {
@@ -166,7 +196,10 @@ describe('serialisation', () => {
     const text = m.serializeOpera(shuffled);
     assert.ok(text.endsWith('}\n') && !text.endsWith('\n\n'));
     assert.deepEqual(Object.keys(JSON.parse(text)), m.OPERA_KEYS);
+    assert.equal(m.OPERA_KEYS.indexOf('colore'), m.OPERA_KEYS.indexOf('collezione') + 1, 'colore right after collezione');
     assert.match(text, /^\{\n {2}"titolo": "Sorellanza",\n {2}"anno": 2023,/);
+    assert.match(text, /\n {2}"collezione": "noi, DONNA\.",\n {2}"colore": "terracotta",\n {2}"testo": /);
+    assert.match(m.serializeOpera({ ...valid(), colore: null }), /\n {2}"colore": null,\n/, 'automatico is written as null');
     assert.ok(!text.includes('extra'));
     const p = m.serializeProfilo({ aggiornatoIl: '2026-11-02T12:00:00.000Z', ritratto: null, bio: 'b', motto: 'm' });
     assert.deepEqual(Object.keys(JSON.parse(p)), ['motto', 'bio', 'ritratto', 'aggiornatoIl']);
@@ -176,13 +209,22 @@ describe('serialisation', () => {
     const dir = `${FIXTURE}src/content/opere`;
     const slugs = readdirSync(dir).filter((s) => existsSync(`${dir}/${s}/opera.json`));
     assert.ok(slugs.length > 0);
+    const legacy = [];
     for (const slug of slugs) {
       assert.ok(m.isValidSlug(slug), slug);
       const text = readFileSync(`${dir}/${slug}/opera.json`, 'utf8');
       const data = JSON.parse(text);
-      assert.deepEqual(m.validateOpera(data), [], slug);
+      if (!('colore' in data)) legacy.push(slug); // saved by an older admin: valid once read (normalizeOpera)
+      assert.deepEqual(m.validateOpera(m.normalizeOpera(data)), [], slug);
       assert.equal(m.serializeOpera(data), text, `${slug}/opera.json`);
       for (const ref of data.immagini) assert.ok(existsSync(`${dir}/${slug}/${m.imageRefName(ref)}`), `${slug}: ${ref}`);
+    }
+    assert.ok(legacy.length >= 1 && legacy.length < slugs.length, 'the fixture has works with and without colore');
+    for (const slug of legacy) {
+      const text = readFileSync(`${dir}/${slug}/opera.json`, 'utf8');
+      const rewritten = m.serializeOpera(m.normalizeOpera(JSON.parse(text)));
+      assert.equal(rewritten.replace('  "colore": null,\n', ''), text, `${slug}: the next save only adds "colore": null`);
+      assert.match(rewritten, /"collezione": [^\n]*,\n {2}"colore": null,\n {2}"testo"/);
     }
     const profilo = readFileSync(`${FIXTURE}src/content/profilo/profilo.json`, 'utf8');
     assert.deepEqual(m.validateProfilo(JSON.parse(profilo)), []);

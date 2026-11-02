@@ -600,6 +600,132 @@ textarea.input {
   border-top: 1px solid var(--line);
 }
 
+/* ---------- colour of the brushstroke (radio buttons drawn as swatches) ---------- */
+
+.swatch-field {
+  min-width: 0;
+  padding: 0;
+  border: 0;
+}
+
+.swatch-field > .label {
+  padding: 0;
+}
+
+.swatches {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.swatch {
+  position: relative;
+  display: block;
+  cursor: pointer;
+}
+
+/* The real radio button covers the whole card: tap target, keyboard arrows and screen readers. */
+.swatch-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.swatch-face {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  min-height: 96px;
+  padding: 8px 6px 10px;
+  border: 2px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--card);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.swatch-chip {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 48px;
+  border-radius: var(--radius-sm);
+  box-shadow: inset 0 0 0 1px rgba(35, 31, 26, 0.1);
+}
+
+/* The site's paint colours (design tokens --tiz-ocra … --tiz-blu). */
+.swatch-ocra {
+  background: #d6982b;
+}
+
+.swatch-rosso {
+  background: #c3262b;
+}
+
+.swatch-terracotta {
+  background: #b5532f;
+}
+
+.swatch-ottanio {
+  background: #1d7377;
+}
+
+.swatch-blu {
+  background: #2c55a0;
+}
+
+/* Automatico: the five colours side by side, in the order the site uses them. */
+.swatch-auto {
+  background: linear-gradient(90deg, #d6982b 0 20%, #c3262b 20% 40%, #1d7377 40% 60%, #b5532f 60% 80%, #2c55a0 80%);
+}
+
+.swatch-name {
+  font-size: 15.5px;
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.swatch-check {
+  width: 30px;
+  height: 30px;
+  padding: 5px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.94);
+  color: var(--ink);
+  stroke-width: 2.6;
+  opacity: 0;
+  transform: scale(0.6);
+  transition: opacity 0.15s, transform 0.15s;
+}
+
+.swatch-input:checked + .swatch-face {
+  border-color: var(--ink);
+  box-shadow: 0 0 0 1px var(--ink);
+}
+
+.swatch-input:checked + .swatch-face .swatch-check {
+  opacity: 1;
+  transform: none;
+}
+
+.swatch-input:checked + .swatch-face .swatch-name {
+  font-weight: 750;
+}
+
+.swatch-input:focus-visible + .swatch-face {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.field.has-error .swatch-input:not(:checked) + .swatch-face {
+  border-color: var(--error);
+}
+
 /* ---------- login ---------- */
 
 .screen-login {
@@ -1390,6 +1516,9 @@ a.opera-row:active {
   }
   .two-cols {
     grid-template-columns: 1fr;
+  }
+  .swatches {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
