@@ -53,10 +53,13 @@ Se leggi **«E-mail o password non corretti»**: controlla le maiuscole e gli sp
 - quante opere hai (e quante sono nascoste);
 - i pulsanti **Profilo** e **Cambia l’ordine**;
 - le tue opere, nell’ordine del sito. Ogni opera mostra la foto, il titolo, l’anno e le misure.
-  - **★ In evidenza**: le prime 3 sono i quadri grandi in cima alla pagina iniziale (vedi § 9).
-  - **Nascosta**: non compare nelle pagine del sito. Non è però segreta: non caricare mai foto o testi privati.
+  - **★ In evidenza**: è tra i 3 quadri grandi in cima alla pagina iniziale (vedi § 9).
+  - **In evidenza, non in home**: è in evidenza, ma più in alto nella lista ci sono già 3 opere in evidenza
+    visibili, oppure è nascosta: quindi non va in cima alla pagina iniziale.
+  - **Nascosta** (foto e titolo più chiari): non compare nelle pagine del sito. Non è però segreta: non
+    caricare mai foto o testi privati.
 - in basso il grande pulsante **+ Nuova opera**;
-- in alto **↻** (ricarica la lista) ed **Esci**.
+- in alto **↻** (ricarica la lista: gira finché sta leggendo) ed **Esci**.
 
 Tocca un’opera per aprirla e modificarla.
 
@@ -70,8 +73,9 @@ Tocca un’opera per aprirla e modificarla.
    - Su ogni foto vedi «Preparo…» per qualche secondo. Il telefono la rimpicciolisce e **toglie la posizione GPS**.
    - La **prima foto è la copertina** (ha la stella ★ e la scritta «Copertina»). Per cambiarla tocca
      **Fai copertina** su un’altra foto.
-   - Per togliere una foto tocca **×**.
+   - Per togliere una foto tocca **×** e poi **Togli la foto**.
    - Se nella foto si vede il muro, o il quadro è un po’ storto, tocca **Raddrizza** sotto la foto (vedi § 5a).
+   - Sotto ogni foto nuova c’è **Colori più vivi**, già acceso: l’admin ravviva un po’ i colori (vedi § 5b).
 3. **Titolo** e **almeno una foto** sono obbligatori. Tutto il resto puoi lasciarlo vuoto.
 4. **Anno**: c’è già l’anno di oggi. Cambialo se serve.
 5. **Misure in cm**: **Larghezza** e **Altezza**, per esempio `100` e `140` (anche `100,5`).
@@ -80,17 +84,17 @@ Tocca un’opera per aprirla e modificarla.
 7. **Collezione**: il nome della serie, per esempio «noi, DONNA.». Puoi lasciarlo vuoto.
    La serie del primo quadro in evidenza ha una sezione tutta sua nella pagina iniziale, con il nome
    in grande e alcune opere della serie.
-8. **Colore della pennellata**: il colore della pennellata dietro al quadro, sul sito (vedi § 9a).
-   Se non sai, lascia **Automatico**.
-9. **Testo**: il racconto dell’opera. Per un **nuovo paragrafo lascia una riga vuota**.
+8. **Testo**: il racconto dell’opera. Per un **nuovo paragrafo lascia una riga vuota**.
    La prima frase del testo (se non è troppo corta né troppo lunga) può comparire come citazione,
    scritta in grande, nella pagina iniziale: conviene che stia bene anche da sola.
+9. **Colore della pennellata**: il colore della pennellata dietro al quadro, sul sito (vedi § 9a).
+   Se non sai, lascia **Automatico**.
 10. **In evidenza in home**: accendilo se vuoi l’opera tra i quadri grandi in cima alla pagina iniziale (§ 9).
 11. **Visibile sul sito**: è già acceso. Spegnilo solo se l’opera non deve ancora vedersi.
 12. Tocca **Salva**.
 
 Vedi «Preparo le foto…», «Carico la foto 1 di 2…», «Pubblico…». Tieni lo schermo acceso finché non hai finito.
-Poi **Fatto!** «… sarà online tra circa 2 minuti».
+Poi **Fatto!** «… è salvata» e sotto la riga **Pubblicazione in corso… (1–3 minuti)**.
 Da qui puoi toccare **Torna alle opere** oppure **Aggiungi un’altra opera**. Il pulsante **Vedi sul sito**
 si accende quando l’opera è davvero online (la riga sopra diventa **Online ✓**): prima la pagina non c’è ancora.
 Il sito si apre fuori dall’admin: per tornare tocca **Fine** in alto, oppure riapri l’icona **TIZ Admin**.
@@ -110,7 +114,8 @@ Belle foto = un bel sito. Bastano poche attenzioni:
 - **Riempi l’inquadratura**: il quadro deve occupare quasi tutta la foto, con poco muro intorno.
 - **Senza cornice e senza ambientazioni**: niente foto del quadro appeso in salotto o montato in una stanza finta.
   Il sito mostra l’opera così com’è.
-- **Niente filtri** e niente ritocchi dei colori: chi guarda deve vedere i colori veri.
+- **Niente filtri** e niente ritocchi dei colori sul telefono: chi guarda deve vedere i colori veri.
+  L’admin li ravviva un poco da solo, in modo leggero (§ 5b).
 - Dopo la foto intera puoi aggiungere **dettagli** (un volto, la materia del colore): sono le foto 2, 3, 4…
 
 ## 5a. Raddrizzare la foto di un quadro
@@ -132,7 +137,7 @@ l’admin lo sistema. Usa solo la tua foto: non ridipinge e non inventa niente, 
 Da sapere:
 
 - **Serve solo per la foto del quadro intero.** Per le foto dei dettagli non serve: tocca **Annulla**.
-- **Finché non salvi puoi tornare indietro**: sotto una foto raddrizzata c’è **Torna alla foto originale**,
+- **Finché non salvi puoi tornare indietro**: sotto una foto raddrizzata c’è **Togli il raddrizzamento**,
   e puoi anche toccare di nuovo **Raddrizza** per spostare i punti. Dopo **Salva** resta solo la foto
   raddrizzata e questi due pulsanti non ci sono più: controlla bene i bordi prima di salvare.
 - **Le misure aiutano.** Se hai già scritto larghezza e altezza del quadro, l’admin le usa per dare al
@@ -145,11 +150,25 @@ Da sapere:
 - Per una **foto già online** il pulsante non c’è: aggiungi di nuovo la foto, raddrizzala e togli la
   vecchia con **×**. Se la vecchia era la copertina, tocca **Fai copertina** sulla nuova.
 
+## 5b. Colori più vivi
+
+Una foto fatta da vicino, con tanta luce, viene spesso **sbiadita**: il nero diventa grigio e i colori
+sono deboli. Per questo, sotto ogni foto nuova di un’opera, l’interruttore **Colori più vivi** è già
+acceso: l’admin toglie il velo grigio e rende i colori un po’ più forti. Non ridipinge niente e non
+cambia le tinte: un rosso resta quel rosso, solo meno smorto.
+
+- Se una foto era già bella, cambia pochissimo.
+- Se ti sembra che i colori non siano più quelli del quadro, **spegni l’interruttore** sotto quella foto:
+  torna esattamente com’era. Puoi riaccenderlo quando vuoi, finché non hai salvato.
+- Mentre l’admin prepara la foto vedi «Preparo…» sopra di essa: aspetta un attimo.
+- Vale anche per le foto raddrizzate (§ 5a).
+
 ## 6. Modificare un’opera
 
 1. In «Le mie opere» tocca l’opera.
-2. Cambia quello che vuoi: foto, titolo, testo, misure…
-3. Tocca **Salva**.
+2. Cambia quello che vuoi: foto, titolo, testo, misure… In alto, sotto **Sul sito**, trovi **Vedi sul sito**,
+   **In evidenza in home** e **Visibile sul sito**.
+3. Tocca **Salva**. Poi, in **Fatto!**, tocca **Torna alle opere**.
 
 Se torni indietro con la freccia **←** dell’admin senza salvare, l’admin ti chiede «Uscire senza salvare?».
 Se invece esci in un altro modo (con il gesto indietro, chiudendo l’app, o se la chiave scade), le modifiche
@@ -168,7 +187,7 @@ L’indirizzo della pagina sul sito **non cambia** anche se cambi il titolo.
 Per esempio un quadro venduto, prestato o da rifotografare.
 
 1. Apri l’opera.
-2. Spegni **Visibile sul sito**.
+2. In alto spegni **Visibile sul sito**.
 3. Tocca **Salva**.
 
 Nella lista l’opera ha l’etichetta **Nascosta**. Per farla tornare, riaccendi **Visibile sul sito** e salva.
@@ -179,11 +198,11 @@ In cima alla pagina iniziale ci sono **tre quadri grandi**, accanto al tuo motto
 in evidenza**, nell’ordine della lista.
 
 1. Apri l’opera.
-2. Accendi **In evidenza in home**.
+2. In alto accendi **In evidenza in home**.
 3. Tocca **Salva**.
 
 Nella lista compare **★ In evidenza**. Ne bastano **3**: se ne accendi di più, contano solo le prime 3
-della lista (per scegliere quali, cambia l’ordine, § 10). Se sono meno di 3, il sito aggiunge le prime opere
+della lista, e le altre mostrano **In evidenza, non in home** (per scegliere quali, cambia l’ordine, § 10). Se sono meno di 3, il sito aggiunge le prime opere
 della lista. Il sito sistema da solo i tre quadri: il più quadrato viene grande, il più alto e stretto va
 di fianco.
 
@@ -202,8 +221,11 @@ lista. Il colore non tocca mai il quadro: la foto resta com’è.
 ## 10. Cambiare l’ordine delle opere
 
 1. In «Le mie opere» tocca **Cambia l’ordine**.
-2. Con le frecce **↑** e **↓** sposti un’opera più su o più giù.
-3. Alla fine tocca **Salva l’ordine** (oppure **Annulla**).
+2. Con le frecce **↑** e **↓** sposti un’opera più su o più giù. La **★** accanto al titolo segna le 3 opere
+   che vanno in home (se quelle in evidenza sono meno di 3, il sito aggiunge le prime della lista, § 9);
+   l’occhio barrato segna quelle nascoste.
+3. Alla fine tocca **Salva l’ordine** (oppure **Annulla**: se hai già spostato qualcosa, l’admin ti chiede
+   prima di buttare via gli spostamenti).
 
 Sul sito le opere appaiono in quest’ordine. Le opere nuove vanno sempre in cima.
 
@@ -219,7 +241,8 @@ Se vuoi solo toglierla dal sito per un po’, **nascondila** (§ 8).
 ## 12. Il tuo profilo (pagina «Chi sono»)
 
 1. In «Le mie opere» tocca **Profilo**.
-2. **Ritratto**: una tua foto, oppure mentre dipingi. Puoi aggiungerla, cambiarla o toglierla con **×**.
+2. **Ritratto**: una tua foto, oppure mentre dipingi. Puoi aggiungerla, cambiarla o toglierla con **×**
+   (poi **Togli il ritratto**). L’anteprima è tagliata in verticale, come sul sito.
    Sul sito il ritratto è mostrato **in verticale** (un po’ più alto che largo): scegli una foto
    verticale. Di una foto orizzontale si vedrebbe solo la parte centrale, senza i lati.
 3. **Motto**: una frase breve, per esempio «Dialogo tra testa e cuore.». È il **grande titolo scritto
@@ -259,9 +282,9 @@ Niente panico: quello che hai salvato non si perde. Quasi sempre basta **Riprova
 | «Il sito non accetta modifiche in questo momento» | Chiama Martino. |
 | «Lista non aggiornata» | Controlla la connessione e tocca **Riprova** in quella riga. |
 | «GitHub ha ricevuto troppe richieste. Riprova tra … minuti» | Aspetta i minuti indicati. |
-| Una foto mostra «Non riesco a leggere questa foto» | Toglila con **×** e scegline un’altra, oppure rifalla con **Scatta foto**. |
+| Una foto mostra «Non riesco a leggere questa foto» | Toglila con **×** (poi **Togli la foto**) e scegline un’altra, oppure rifalla con **Scatta foto**. |
 | Le foto restano su «Preparo…» | Aspetta un momento. Se non va avanti, chiudi le altre app e aggiungi meno foto alla volta. |
-| «Il telefono non è riuscito a raddrizzare la foto» | La foto è rimasta com’era. Chiudi le altre app e tocca di nuovo **Raddrizza**. |
+| «Il telefono non è riuscito a raddrizzare la foto» oppure «… a preparare la foto» | La foto è rimasta com’era. Chiudi le altre app e tocca di nuovo lo stesso pulsante. |
 | «I punti si incrociano o sono troppo vicini», «I quattro punti non formano un quadro» oppure il pulsante **Raddrizza** resta spento | Metti un punto su ciascun angolo del quadro. Il pulsante si accende quando la linea bianca tra i punti è intera (non tratteggiata) e hai spostato almeno un punto. |
 | «Problema nell’ultima pubblicazione» | Le tue modifiche sono salvate. Chiama Martino: lui vede il problema con **Dettagli**. |
 | «Pubblicazione in corso…» per più di 15 minuti | Chiama Martino. |

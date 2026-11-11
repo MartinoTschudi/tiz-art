@@ -74,6 +74,9 @@ export function icon(name, className = 'icon') {
 
 /* ---------- images ---------- */
 
+/** Pictures already loaded once in this page (the browser keeps them): no loading look the next time. */
+const shownImages = new Set();
+
 /**
  * <div class="…"> with an <img> that tries `sources` in order (e.g. the site's thumbnail, then the
  * raw file on GitHub) and shows a quiet placeholder when none loads.
@@ -92,13 +95,18 @@ export function picture(sources, { className = 'thumb', alt = '', eager = false 
   }
   let i = 0;
   const img = h('img', { alt, decoding: 'async', loading: eager ? 'eager' : 'lazy', draggable: 'false' });
-  img.addEventListener('load', () => wrap.classList.remove('is-loading'));
+  img.addEventListener('load', () => {
+    shownImages.add(img.src);
+    wrap.classList.remove('is-loading');
+  });
   img.addEventListener('error', () => {
     i += 1;
     if (i < list.length) img.src = list[i];
     else empty();
   });
   img.src = list[0];
+  // already shown once (the screen was only drawn again): at once, without shimmer or fade
+  if (shownImages.has(img.src)) wrap.classList.remove('is-loading');
   wrap.append(img);
   return wrap;
 }
@@ -231,7 +239,9 @@ export function stepHandledBack() {
 
 /* ---------- toast ---------- */
 
-export function toast(message, { type = 'info', duration = 4000 } = {}) {
+export function toast(message, { type = 'info', duration = 0 } = {}) {
+  // long enough to read: at least 4 s (an error 7 s), plus time for a long message
+  const ms = Math.max(duration, type === 'error' ? 7000 : 4000, 2500 + String(message).length * 60);
   let host = document.querySelector('.toasts');
   if (!host) {
     host = h('div', { class: 'toasts', role: 'status', 'aria-live': 'polite' });
@@ -243,7 +253,20 @@ export function toast(message, { type = 'info', duration = 4000 } = {}) {
   setTimeout(() => {
     el.classList.remove('is-open');
     setTimeout(() => el.remove(), 250);
-  }, duration);
+  }, ms);
+}
+
+/**
+ * A text box that grows with its text instead of scrolling inside the page. It only grows, so the
+ * page never jumps while she deletes.
+ */
+export function autoGrow(textarea) {
+  const fit = () => {
+    if (textarea.scrollHeight > textarea.clientHeight) textarea.style.height = `${textarea.scrollHeight + 2}px`;
+  };
+  textarea.addEventListener('input', fit);
+  requestAnimationFrame(fit);
+  return textarea;
 }
 
 /* ---------- blocking progress overlay ("Carico… 1/3") ---------- */
@@ -311,7 +334,8 @@ export function topbar({ title, subtitle, onBack, backLabel = 'Indietro', action
       'div',
       { class: 'topbar-titles' },
       subtitle ? h('p', { class: 'topbar-sub' }, subtitle) : null,
-      h('h1', { class: 'topbar-title' }, title),
+      // a long work title goes on two lines instead of being cut mid-word
+      h('h1', { class: `topbar-title${String(title).length > 18 ? ' is-long' : ''}` }, title),
     ),
     actions,
   );
@@ -329,7 +353,7 @@ export function stickyBar(...children) {
 export function siteButton(page, className) {
   return page.ready
     ? h('a', { class: className, href: page.url, target: '_blank', rel: 'noopener' }, icon('external'), 'Vedi sul sito')
-    : h('button', { type: 'button', class: className, disabled: true }, icon('external'), page.label);
+    : h('button', { type: 'button', class: `${className} is-waiting`, disabled: true }, icon('external'), page.label);
 }
 
 /** Runs `task` while `button` shows a busy label; restores it afterwards. */

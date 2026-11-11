@@ -2,7 +2,7 @@
  * "Profilo": portrait (add / replace / remove), motto and biography. Saving = one commit.
  * Unsaved changes are kept in IndexedDB (app.persistEdit) and offered again when she comes back.
  */
-import { h, icon, topbar, stickyBar, confirmSheet, toast, progress, siteButton } from '../ui.js';
+import { h, icon, topbar, stickyBar, confirmSheet, toast, progress, siteButton, autoGrow } from '../ui.js';
 import { LIMITS, cleanLine, cleanText } from '../model.js';
 import { PROFILE } from '../drafts.js';
 import { existingPhoto, readyPhoto, newPhoto, releasePhoto, toSavePhoto, photosReady } from '../photos.js';
@@ -55,7 +55,15 @@ export function renderProfile(app, { stored = null } = {}) {
     },
   });
 
-  function removePortrait() {
+  async function removePortrait() {
+    const ok = await confirmSheet({
+      title: 'Togliere il ritratto?',
+      text: 'Sul sito cambia solo quando tocchi «Salva».',
+      confirmLabel: 'Togli il ritratto',
+      cancelLabel: 'No, tienilo',
+      danger: true,
+    });
+    if (!ok) return;
     if (draft.ritratto) releasePhoto(draft.ritratto);
     draft.ritratto = null;
     renderPortrait();
@@ -90,9 +98,13 @@ export function renderProfile(app, { stored = null } = {}) {
     }
   });
   const bio = h('textarea', { id: 'in-bio', class: 'input', rows: '12', maxlength: String(LIMITS.bio), value: draft.bio });
-  const bioCount = h('p', { class: 'char-count', 'aria-live': 'polite' });
+  autoGrow(bio);
+  // shown only near the limit (the box stops typing there anyway)
+  const bioCount = h('p', { class: 'char-count' });
   const updateCount = () => {
-    bioCount.textContent = `${draft.bio.length}/${LIMITS.bio}`;
+    const left = LIMITS.bio - draft.bio.length;
+    bioCount.hidden = left > LIMITS.bio / 10;
+    bioCount.textContent = left > 1 ? `Ancora ${left} caratteri` : left === 1 ? 'Ancora 1 carattere' : 'Hai raggiunto il massimo.';
   };
   bio.addEventListener('input', () => {
     draft.bio = bio.value;
@@ -191,7 +203,7 @@ export function renderProfile(app, { stored = null } = {}) {
         'section',
         { class: 'field' },
         h('h2', { class: 'label' }, 'Ritratto ', h('small', {}, '(facoltativo)')),
-        h('p', { class: 'hint' }, 'Una tua foto, oppure una foto mentre dipingi.'),
+        h('p', { class: 'hint' }, 'Una tua foto, oppure una foto mentre dipingi. Qui la vedi tagliata come sul sito, in verticale.'),
         portraitBox,
         picker.el,
         portraitError,
@@ -200,13 +212,13 @@ export function renderProfile(app, { stored = null } = {}) {
         'section',
         { class: 'field' },
         h('label', { class: 'label', for: 'in-motto' }, 'Motto ', h('small', {}, '(facoltativo)')),
-        h('p', { class: 'hint' }, 'Una frase breve che appare sotto il tuo nome.'),
+        h('p', { class: 'hint' }, 'È il grande titolo scritto a mano in cima alla pagina iniziale. Più è breve, più è grande.'),
         motto,
       ),
       h(
         'section',
         { class: 'field' },
-        h('label', { class: 'label', for: 'in-bio' }, 'Biografia'),
+        h('label', { class: 'label', for: 'in-bio' }, 'Biografia', h('small', {}, ' (facoltativa)')),
         h('p', { class: 'hint' }, 'Per un nuovo paragrafo lascia una riga vuota.'),
         bio,
         bioCount,

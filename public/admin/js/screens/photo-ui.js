@@ -50,7 +50,12 @@ export function pickerButtons({ multiple = false, onFiles, cameraLabel = 'Scatta
 export function photoMedia(photo, sources, alt) {
   if (photo.kind === 'existing') return picture(sources, { className: 'tile-img', alt });
   if (photo.status === 'ready') {
-    return h('div', { class: 'tile-img' }, h('img', { src: photo.previewUrl, alt }));
+    return h(
+      'div',
+      { class: `tile-img${photo.busy ? ' is-busy' : ''}` },
+      h('img', { src: photo.previewUrl, alt }),
+      photo.busy ? h('div', { class: 'tile-busy', role: 'status' }, h('div', { class: 'spinner spinner-sm', 'aria-hidden': 'true' }), h('span', {}, 'Preparo…')) : null,
+    );
   }
   if (photo.status === 'error') {
     return h('div', { class: 'tile-img tile-error', role: 'alert' }, icon('alert'), h('span', {}, photo.error));

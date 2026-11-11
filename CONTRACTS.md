@@ -357,28 +357,38 @@ Saving twice must never do harm:
 1. **Accedi** — e-mail, password (eye toggle), "Entra" (shows "Verifico…", PBKDF2 takes ~1 s).
 2. **Le mie opere** — publish status line from `GET /repos/{o}/{r}/actions/workflows/deploy.yml/runs?branch={branch}&per_page=1`
    ("Online ✓" / "Pubblicazione in corso… (1–3 minuti)" / "Problema nell'ultima pubblicazione" + link).
-   List: thumbnail, title, year · size, badges "In evidenza" / "Nascosta". "Cambia l’ordine" mode with
-   ↑/↓ buttons and one "Salva l’ordine" (renumbers `ordine` 10, 20, 30… for all works, one commit). Big "+ Nuova opera" button.
-   Links "Profilo" and "Esci", reload button.
+   List: thumbnail, title, year · size, badges "In evidenza" (one of the 3 works of the home composition:
+   the first 3 published works with `inEvidenza`, in list order, like `heroSlots`) / "In evidenza, non in
+   home" / "Nascosta" (a hidden work's row is also greyed). "Cambia l’ordine" mode with
+   ↑/↓ buttons (★ beside the 3 works of the home composition — `heroSlots`' picked set, the fill
+   included — and a crossed eye beside hidden ones) and one "Salva l’ordine"
+   (renumbers `ordine` 10, 20, 30… for all works, one commit); its "Annulla" asks first when a work was
+   moved. Big "+ Nuova opera" button. Links "Profilo" and "Esci", reload button (turns while reading).
 3. **Nuova / Modifica opera** — Foto (1–8): "Scatta foto" (`capture="environment"`) and "Dalla galleria"
    (multiple); each photo is resized in the browser (≤ 2400 px, JPEG 0.88, orientation applied, EXIF/GPS
    dropped by re-encoding); "Fai copertina" button to make one the first (the first shows "★ Copertina");
-   "×" to remove; "Raddrizza" under every new photo (§7.5a). Fields: Titolo*,
+   "×" to remove (after a confirmation sheet "Togliere questa foto?"); "Raddrizza" (§7.5a) and the switch "Colori più vivi" (§7.5b, on by default) under every
+   new photo. Fields: Titolo*,
    Anno (default current year), Larghezza cm, Altezza cm, Tecnica (datalist from existing values),
-   Collezione (datalist from existing values), "Colore della pennellata" (radio buttons drawn as large
+   Collezione (datalist from existing values), Testo (textarea that grows with its text; a character
+   counter only near the limit), "Colore della pennellata" (radio buttons drawn as large
    swatches with their names: Automatico (default, `null`) · Ocra · Rosso · Terracotta · Ottanio · Blu),
-   Testo (textarea), "In evidenza in home" toggle (hint: the first 3 make the home composition),
-   "Visibile sul sito" toggle (default on). "Salva" with nothing changed says "Nessuna modifica da salvare",
+   "In evidenza in home" toggle (hint: the first 3 make the home composition),
+   "Visibile sul sito" toggle (default on). Existing work: the two toggles are at the top, in a section
+   "Sul sito" with "Vedi sul sito"; new work: at the end. "Salva" with nothing changed says "Nessuna modifica da salvare",
    except for a file not in the current format (e.g. without `colore`, §4.1): that one is rewritten. "Salva" → progress ("Preparo le foto…", "Carico la foto 1 di 3…",
-   "Pubblico…") → "Fatto! Sarà online tra circa 2 minuti" with "Vedi sul sito", "Torna alle opere",
-   "Aggiungi un'altra opera". Existing work: "Elimina opera" at the bottom with confirmation dialog.
+   "Pubblico…") → "Fatto! «…» è salvata" + the publish status line (without status: "… sarà online tra
+   circa 2 minuti"), with "Vedi sul sito" (while waiting drawn dashed, not faded), "Torna alle opere" (main
+   button after an edit) and "Aggiungi un'altra opera" (main button after a new work). A long title in
+   the top bar goes on two lines. Existing work: "Elimina opera" at the bottom with confirmation dialog.
    New works get `ordine = min(existing) - 10` (shown first). Unsaved new work is kept as a draft
    (IndexedDB, including photos) and offered again ("Stai continuando un'opera non salvata · Ricomincia").
    Unsaved changes to an existing work are kept the same way (also after a back swipe, a reload or an
    expired key) and shown again when it is reopened ("Hai modifiche non ancora salvate · Annulla
    modifiche"); the in-app back arrow still asks "Uscire senza salvare?".
-4. **Profilo** — motto, bio (textarea), portrait photo (add/replace/remove). Save = one commit. Unsaved
-   changes are kept like those of a work.
+4. **Profilo** — motto, bio (textarea that grows), portrait photo (add/replace/remove, removing after a
+   confirmation sheet; the preview is cut 4:5 like the site). Save = one commit. Unsaved changes are
+   kept like those of a work.
 
 #### 7.5a «Raddrizza» (perspective straightening of a new photo)
 For a canvas photographed a little from the side or with wall around it. Only her own pixels are moved
@@ -403,8 +413,8 @@ portrait); never opened automatically.
   out from the photo (Zhang & He 2007) with the focal length of its Exif tag A405 when it is an uncropped
   4:3 photo, else 24 mm equivalent.
 - **Draft**: a straightened photo keeps, in memory and in IndexedDB, the photo as it was (`whole`), the
-  points (`corners`) and the focal length (`focal35`) next to `blob`/`preview`/`id`; "Torna alla foto
-  originale" under the photo restores it. None of this is uploaded: the repository gets one JPEG, with
+  points (`corners`), the focal length (`focal35`), `straightened` and the shape (`ratio`) next to
+  `blob`/`preview`/`id`; "Togli il raddrizzamento" under the photo restores it. None of this is uploaded: the repository gets one JPEG, with
   the photo's unchanged file-name id. A save repeated after the picture changed writes the new picture
   into the same folder under the same name.
 
@@ -413,6 +423,29 @@ save from this device the button stays disabled ("Vedi sul sito (tra circa 2 min
 status is "Online ✓" (about 3 minutes when Actions cannot be read), and the URL gets `?v=<commit>` so the
 browser does not show its cached copy. Right after a save the admin shows the saved data at once (it
 does not wait for the reload from GitHub).
+
+#### 7.5b «Colori più vivi» (automatic colour correction of a new photo)
+A phone photo of a painting taken close up in bright light comes out pale (grey instead of black, weak
+colours). `public/admin/js/colours.js` corrects it, read from the middle 80 % of the picture and the same
+for R, G and B (no colour cast, no hue change, nothing painted):
+- levels: the darkest 1 % to black (at most 45 levels of haze), highlights lifted by at most 15;
+- midtones: a gamma 1–1.35 only for a washed-out photo — middle tone (median of the brightest channel)
+  above 0.6 **and** grey in the blacks; a light painting photographed well, or a dark one, keeps its tones;
+- a gentle S-curve on the brightest channel, at full strength only on a washed-out photo;
+- vibrance: up to +60 % where colours are weak, little where strong, faded out on near-greys (a slight
+  cast or noise is not amplified), never pushing a channel into pure white or out of gamut.
+
+- A switch "Colori più vivi" under every new photo of a work, **on by default**; not for photos already
+  online, not for the portrait. Switching never degrades the picture: a new picture is always made from
+  the whole photo (the picked file while the form is open, else the prepared JPEG), never from an earlier
+  result; switching off an unstraightened photo restores the stored plain JPEG exactly. While a picture is
+  being made the tile shows «Preparo…» and «Salva» waits behind the progress overlay.
+- A straightened photo gets the correction on the flat picture (worked out on the canvas alone).
+- Draft: `colori` (boolean), `straightened` and `ratio` for a straightened photo, and, whenever the picture
+  differs from the plain photo, `whole` (the plain, unstraightened JPEG). A draft from before this switch:
+  with `whole` it counts as straightened (its own shape kept), without it as plain; the switch starts off.
+  A draft whose `whole` is unreadable keeps its picture as the base photo and the switch is disabled.
+  Only the final JPEG is uploaded (≤ 2400 px, JPEG 0.88, no metadata), with the photo's unchanged file-name id.
 
 ### 7.6 Local testing
 `npm run admin:dev` starts a mock GitHub API on `http://localhost:8787` (in memory, seeded from the

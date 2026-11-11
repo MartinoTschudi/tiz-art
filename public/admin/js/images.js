@@ -8,12 +8,15 @@
  *
  * «Raddrizza» (straightenPhoto) makes a flat, front-facing picture of a canvas photographed a little
  * from the side: a perspective warp of her own pixels (straighten.js), encoded the same way.
+ * «Colori più vivi» (colours.js) takes the grey haze out of a pale photo and strengthens weak colours;
+ * a photo of a work is prepared both ways, so she can switch it off without anything being lost.
  *
  * Memory: a 12-megapixel photo needs ~48 MB once decoded and iOS Safari kills pages that use too
  * much. The callers process photos one at a time; here every bitmap, object URL and canvas is
  * released as soon as it is no longer needed.
  */
 import { base64ToBytes } from './crypto.js';
+import { gradeParams, gradeRows } from './colours.js';
 import { quadIsUsable, chooseRatio, outputSize, edgeMargin, outputToPhoto, maxDensity, sourcePlan, warpRows, detectCorners, readFocal35, MIN_OUTPUT_SIDE } from './straighten.js';
 
 export const MAX_SIDE = 2400;
@@ -157,12 +160,42 @@ export function fitSize(width, height, max) {
 }
 
 /**
+ * «Colori più vivi» on the pixels of `canvas`, in place, in slices so the page keeps breathing.
+ * Returns false (and leaves the canvas as it was) when the phone cannot read the pixels back.
+ */
+async function gradeCanvas(canvas) {
+  let pixels;
+  try {
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    pixels = ctx && ctx.getImageData(0, 0, canvas.width, canvas.height);
+    if (!pixels || pixels.data[3] !== 255) return false; // a canvas the phone could not really allocate
+    const params = gradeParams(pixels);
+    let since = performance.now();
+    for (let y = 0; y < pixels.height; y += 64) {
+      gradeRows(pixels, params, y, Math.min(pixels.height, y + 64));
+      if (performance.now() - since > 40) {
+        await breathe();
+        since = performance.now();
+      }
+    }
+    ctx.putImageData(pixels, 0, 0);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Photo file from the camera or the gallery → web-ready JPEG without metadata.
+ * With `colours`, also with «Colori più vivi»: then `blob`/`preview` are the livelier picture and
+ * `plain` the photo as it was; `colours` says whether the correction was made (the phone may lack the
+ * memory for it: the photo is then simply as it was).
  * @param {File|Blob} file
- * @returns {Promise<{blob: Blob, preview: Blob, width: number, height: number}>}
+ * @param {{colours?: boolean}} [opts]
+ * @returns {Promise<{blob: Blob, preview: Blob, width: number, height: number, colours: boolean, plain?: {blob: Blob, preview: Blob}}>}
  * @throws {PhotoError} with a message for her
  */
-export async function preparePhoto(file) {
+export async function preparePhoto(file, { colours = false } = {}) {
   const image = await decode(file);
   let canvas = null;
   let previewCanvas = null;
@@ -173,13 +206,17 @@ export async function preparePhoto(file) {
     } finally {
       image.release(); // the full-size pixels are no longer needed
     }
-    const blob = await toJpeg(canvas, JPEG_QUALITY);
     const small = fitSize(size.width, size.height, PREVIEW_SIDE);
-    previewCanvas = drawScaled(canvas, small.width, small.height);
-    releaseCanvas(canvas);
-    canvas = null;
-    const preview = await toJpeg(previewCanvas, PREVIEW_QUALITY);
-    return { blob, preview, width: size.width, height: size.height };
+    const encode = async () => {
+      const blob = await toJpeg(canvas, JPEG_QUALITY);
+      releaseCanvas(previewCanvas);
+      previewCanvas = drawScaled(canvas, small.width, small.height);
+      return { blob, preview: await toJpeg(previewCanvas, PREVIEW_QUALITY) };
+    };
+    const plain = await encode();
+    if (!colours || !(await gradeCanvas(canvas))) return { ...plain, width: size.width, height: size.height, colours: false };
+    const vivid = await encode();
+    return { ...vivid, width: size.width, height: size.height, colours: true, plain };
   } catch (err) {
     throw err instanceof PhotoError ? err : unreadable(file);
   } finally {
@@ -266,10 +303,12 @@ export async function openForStraighten(photo) {
  * @param {number|null} [known.focal35]   from photoFocal35
  * @param {{larghezza: number, altezza: number}|null} [known.measures]  the canvas' size in cm, if she wrote it
  * @param {{width: number, height: number}|null} [known.expect]  size of the prepared photo: `source` must have its shape
- * @returns {Promise<{blob: Blob, preview: Blob, width: number, height: number, shape: 'measures'|'photo'}>}
+ * @param {number|null} [known.ratio]  the shape to give it (width ÷ height), when it was chosen before
+ * @param {boolean} [known.colours]    also «Colori più vivi», worked out on the canvas alone
+ * @returns {Promise<{blob: Blob, preview: Blob, width: number, height: number, shape: 'measures'|'photo'|'given', ratio: number, colours: boolean}>}
  * @throws {PhotoError} with a message for her
  */
-export async function straightenPhoto(source, corners, { focal35 = null, measures = null, expect = null } = {}) {
+export async function straightenPhoto(source, corners, { focal35 = null, measures = null, expect = null, ratio = null, colours = false } = {}) {
   const image = await decode(source);
   let work = null;
   let out = null;
@@ -286,7 +325,7 @@ export async function straightenPhoto(source, corners, { focal35 = null, measure
       if (expect && Math.abs((width / height) * (expect.height / expect.width) - 1) > 0.02) throw new PhotoError(NO_MEMORY);
       const quad = corners.map(([x, y]) => [x * width, y * height]);
       if (!quadIsUsable(quad, width, height)) throw new PhotoError(BAD_CORNERS);
-      chosen = chooseRatio(quad, width, height, { focal35, measures });
+      chosen = ratio > 0 ? { ratio, from: 'given' } : chooseRatio(quad, width, height, { focal35, measures });
       full = outputSize(quad, chosen.ratio, MAX_SIDE);
       if (Math.max(full.width, full.height) < MIN_OUTPUT_SIDE) throw new PhotoError('Il quadro è troppo piccolo in questa foto: scattala più da vicino.');
       const margin = edgeMargin(full.width, full.height);
@@ -336,6 +375,19 @@ export async function straightenPhoto(source, corners, { focal35 = null, measure
       }
     }
     pixels = null;
+    let graded = false;
+    if (colours) {
+      const params = gradeParams(target);
+      since = performance.now();
+      for (let y = 0; y < height; y += 64) {
+        gradeRows(target, params, y, Math.min(height, y + 64));
+        if (performance.now() - since > WARP_BREATH) {
+          await breathe();
+          since = performance.now();
+        }
+      }
+      graded = true;
+    }
     outCtx.putImageData(target, 0, 0);
 
     const blob = await toJpeg(out, JPEG_QUALITY);
@@ -344,7 +396,7 @@ export async function straightenPhoto(source, corners, { focal35 = null, measure
     releaseCanvas(out);
     out = null;
     const preview = await toJpeg(previewCanvas, PREVIEW_QUALITY);
-    return { blob, preview, width, height, shape: chosen.from };
+    return { blob, preview, width, height, shape: chosen.from, ratio: chosen.ratio, colours: graded };
   } catch (err) {
     throw err instanceof PhotoError ? err : new PhotoError(NO_MEMORY);
   } finally {

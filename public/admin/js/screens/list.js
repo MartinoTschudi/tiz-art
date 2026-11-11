@@ -1,6 +1,7 @@
 /**
- * "Le mie opere": publish status, the list of works (tap = edit), "Cambia l’ordine" mode with
- * up/down buttons (saved as one commit), links to the profile, reload and "Esci".
+ * "Le mie opere": publish status, the list of works (tap = edit; a hidden work greyed out; which
+ * works are really in the home composition), "Cambia l’ordine" mode with up/down buttons (saved as
+ * one commit; «Annulla» asks when something moved), links to the profile, reload and "Esci".
  */
 import { h, icon, picture, topbar, stickyBar, confirmSheet } from '../ui.js';
 import { formatMisure } from '../model.js';
@@ -29,9 +30,24 @@ function metaLine(data) {
   return [data.anno, formatMisure(data.larghezza, data.altezza)].filter(Boolean).join(' · ');
 }
 
-function badges(data) {
+/**
+ * The 3 works of the big composition at the top of the home page, exactly as the site picks them
+ * (src/components/lib/composition.ts heroSlots): the first 3 published works marked «In evidenza»,
+ * in the order of the list; with fewer than 3, the first other published works fill the places.
+ */
+export function homeSlugs(opere) {
+  const published = opere.filter((o) => o.data.pubblicata);
+  const featured = published.filter((o) => o.data.inEvidenza).slice(0, 3);
+  return new Set([...featured, ...published.filter((o) => !featured.includes(o))].slice(0, 3).map((o) => o.slug));
+}
+
+function badges(data, inHome) {
   return [
-    data.inEvidenza ? h('span', { class: 'badge badge-star' }, icon('star'), 'In evidenza') : null,
+    data.inEvidenza
+      ? inHome
+        ? h('span', { class: 'badge badge-star' }, icon('star'), 'In evidenza')
+        : h('span', { class: 'badge badge-hidden' }, icon('star'), 'In evidenza, non in home')
+      : null,
     data.pubblicata ? null : h('span', { class: 'badge badge-hidden' }, icon('eyeOff'), 'Nascosta'),
   ];
 }
@@ -51,24 +67,25 @@ export function renderList(app) {
   let movedSlug = null;
 
   const statusBox = h('div', { class: 'status-box' });
+  const live = h('p', { class: 'sr-only', role: 'status' }); // tells VoiceOver where a moved work went
   const main = h('main', { class: 'content' });
   const bar = h('div');
 
   const thumb = (o) =>
     picture(app.store.operaImageSources(o.slug, o.data.immagini && o.data.immagini[0]), { className: 'thumb row-thumb' });
 
-  function row(o) {
+  function row(o, inHome) {
     const d = o.data;
     return h(
       'a',
-      { class: 'opera-row', href: `#/opera/${encodeURIComponent(o.slug)}` },
+      { class: `opera-row${d.pubblicata ? '' : ' is-hidden'}`, href: `#/opera/${encodeURIComponent(o.slug)}` },
       thumb(o),
       h(
         'span',
         { class: 'row-body' },
         h('span', { class: 'row-title' }, d.titolo || o.slug),
         metaLine(d) ? h('span', { class: 'row-meta' }, metaLine(d)) : null,
-        h('span', { class: 'row-badges' }, badges(d)),
+        h('span', { class: 'row-badges' }, badges(d, inHome)),
       ),
       icon('chevron', 'icon row-chevron'),
     );
@@ -84,6 +101,8 @@ export function renderList(app) {
     const oldTop = before ? before.getBoundingClientRect().top : null;
     [ordering[index], ordering[target]] = [ordering[target], ordering[index]];
     renderMain();
+    const title = (state.data.opere.find((o) => o.slug === movedSlug) || { data: {} }).data.titolo || '';
+    live.textContent = `«${title}» ora è al posto ${target + 1} di ${ordering.length}.`;
     // Keep the moved work (and its arrows) under the finger: the page scrolls by the row it moved,
     // so tapping ↑ again moves it on instead of moving the neighbour back.
     const moved = rowOf(movedSlug);
@@ -94,13 +113,19 @@ export function renderList(app) {
     (again && !again.disabled ? again : moved.querySelector('.move-btn:not(:disabled)'))?.focus({ preventScroll: true });
   }
 
-  function orderRow(o, index, total) {
+  function orderRow(o, index, total, inHome) {
+    const flags = h(
+      'span',
+      { class: 'row-flags' },
+      inHome ? [icon('star', 'icon row-star is-star'), h('span', { class: 'sr-only' }, ' in home')] : null,
+      o.data.pubblicata ? null : [icon('eyeOff', 'icon row-star'), h('span', { class: 'sr-only' }, ' nascosta')],
+    );
     return h(
       'div',
       { class: `opera-row is-ordering${o.slug === movedSlug ? ' is-moved' : ''}`, dataset: { slug: o.slug } },
       h('span', { class: 'row-pos', 'aria-hidden': 'true' }, String(index + 1)),
       thumb(o),
-      h('span', { class: 'row-body' }, h('span', { class: 'row-title' }, o.data.titolo || o.slug)),
+      h('span', { class: 'row-body' }, h('span', { class: 'row-title' }, o.data.titolo || o.slug, inHome || !o.data.pubblicata ? flags : null)),
       h(
         'span',
         { class: 'move-btns' },
@@ -121,6 +146,9 @@ export function renderList(app) {
   }
 
   function renderMain() {
+    // ↻ turns while the works are read again (a tap gives an answer at once)
+    refreshBtn.classList.toggle('is-spinning', Boolean(state.loading));
+    refreshBtn.setAttribute('aria-busy', String(Boolean(state.loading)));
     const data = state.data;
     if (!data) {
       main.replaceChildren(
@@ -156,9 +184,10 @@ export function renderList(app) {
     }
     if (ordering) {
       const list = ordering.map((s) => bySlug.get(s)).filter(Boolean);
+      const home = homeSlugs(list);
       children.push(
-        h('p', { class: 'notice' }, 'Usa le frecce per spostare le opere. Sul sito appaiono in quest’ordine. Alla fine tocca «Salva l’ordine».'),
-        h('div', { class: 'rows' }, list.map((o, i) => orderRow(o, i, list.length))),
+        h('p', { class: 'hint order-hint' }, 'Usa le frecce per spostare le opere. Sul sito appaiono in quest’ordine; la ★ segna le opere in home. Alla fine tocca «Salva l’ordine».'),
+        h('div', { class: 'rows' }, list.map((o, i) => orderRow(o, i, list.length, home.has(o.slug)))),
       );
     } else {
       children.push(
@@ -172,7 +201,7 @@ export function renderList(app) {
             : null,
         ),
         opere.length
-          ? h('div', { class: 'rows' }, opere.map(row))
+          ? h('div', { class: 'rows' }, opere.map((o) => row(o, homeSlugs(opere).has(o.slug))))
           : h('p', { class: 'empty' }, 'Ancora nessuna opera. Tocca «Nuova opera» per aggiungere la prima.'),
       );
     }
@@ -186,7 +215,7 @@ export function renderList(app) {
       bar.replaceChildren(
         stickyBar(
           h('div', { class: 'bar-row' },
-            h('button', { type: 'button', class: 'btn btn-secondary', onClick: stopOrdering }, 'Annulla'),
+            h('button', { type: 'button', class: 'btn btn-secondary', onClick: cancelOrdering }, 'Annulla'),
             h('button', { type: 'button', class: 'btn btn-primary', onClick: saveOrdering }, icon('check'), 'Salva l’ordine')),
         ),
       );
@@ -210,6 +239,20 @@ export function renderList(app) {
     renderMain();
   }
 
+  /** «Annulla» in «Cambia l’ordine»: asks first when works were moved. */
+  async function cancelOrdering() {
+    if (orderChanged()) {
+      const ok = await confirmSheet({
+        title: 'Annullare il nuovo ordine?',
+        text: 'Gli spostamenti che hai fatto non vengono salvati.',
+        confirmLabel: 'Sì, annulla',
+        cancelLabel: 'No, continua',
+      });
+      if (!ok) return;
+    }
+    stopOrdering();
+  }
+
   const orderChanged = () => Boolean(ordering) && ordering.join('/') !== state.data.opere.map((o) => o.slug).join('/');
 
   async function saveOrdering() {
@@ -226,6 +269,7 @@ export function renderList(app) {
     if (ok) app.logout();
   }
 
+  const refreshBtn = h('button', { type: 'button', class: 'icon-btn', 'aria-label': 'Ricarica le opere', onClick: () => app.reload({ manual: true }) }, icon('refresh'));
   const el = h(
     'div',
     { class: 'screen' },
@@ -233,12 +277,13 @@ export function renderList(app) {
       title: 'Le mie opere',
       subtitle: 'TIZ · Admin',
       actions: [
-        h('button', { type: 'button', class: 'icon-btn', 'aria-label': 'Ricarica le opere', onClick: () => app.reload({ manual: true }) }, icon('refresh')),
-        h('button', { type: 'button', class: 'icon-btn icon-btn-label', onClick: logout }, icon('logout'), h('span', {}, 'Esci')),
+        refreshBtn,
+        h('button', { type: 'button', class: 'icon-btn icon-btn-label', 'aria-label': 'Esci', onClick: logout }, icon('logout'), h('span', {}, 'Esci')),
       ],
     }),
     main,
     bar,
+    live,
   );
   renderMain();
 
