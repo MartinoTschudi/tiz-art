@@ -268,7 +268,8 @@ export function renderForm(app, { opera, draft, restored = false }) {
   /** «Colori più vivi»: a switch under the photo, on by default. */
   function coloursSwitch(photo, n) {
     const id = `colori-${photo.key}`;
-    const input = h('input', { type: 'checkbox', role: 'switch', class: 'switch switch-sm', id, checked: hasColours(photo), disabled: Boolean(photo.busy) || !canSwitchColours(photo), 'aria-label': `Colori più vivi per la foto ${n}` });
+    const shown = photo.busy && photo.wantColours !== undefined ? photo.wantColours : hasColours(photo);
+    const input = h('input', { type: 'checkbox', role: 'switch', class: 'switch switch-sm', id, checked: shown, disabled: Boolean(photo.busy) || !canSwitchColours(photo), 'aria-label': `Colori più vivi per la foto ${n}` });
     input.addEventListener('change', () => switchColours(photo, input.checked));
     return h('label', { class: 'tile-colours', for: id }, h('span', {}, 'Colori più vivi'), input);
   }
@@ -303,6 +304,21 @@ export function renderForm(app, { opera, draft, restored = false }) {
     );
   }
 
+  /** A tile drawn while its photo is busy is drawn again when the photo is free (whoever started the work). */
+  const watched = new WeakSet();
+  function watchBusy() {
+    for (const p of draft.photos) {
+      if (!p.busy || watched.has(p.busy)) continue;
+      watched.add(p.busy);
+      p.busy.then(() => {
+        if (!closed && draft.photos.includes(p)) {
+          renderPhotos();
+          changed();
+        }
+      });
+    }
+  }
+
   function renderPhotos() {
     photoGrid.replaceChildren(...draft.photos.map(photoTile));
     photoGrid.hidden = draft.photos.length === 0;
@@ -310,6 +326,7 @@ export function renderForm(app, { opera, draft, restored = false }) {
     onlineHint.hidden = !draft.photos.some((p) => p.kind === 'existing');
     photoCount.textContent = `${draft.photos.length}/${MAX_IMMAGINI}`;
     picker.setDisabled(draft.photos.length >= MAX_IMMAGINI);
+    watchBusy();
   }
   draft.onPhotosChange = () => {
     renderPhotos();
@@ -446,6 +463,7 @@ export function renderForm(app, { opera, draft, restored = false }) {
 
   async function runSave(fields) {
     try {
+      progress.show('Preparo le foto…'); // blocks the form (and a second «Salva») while pictures are finished
       const ok = await photosReady(draft.photos, (done, total) => progress.show(`Preparo le foto… ${done}/${total}`, done / total));
       if (!ok) {
         progress.hide();

@@ -135,14 +135,26 @@ describe('«Raddrizza»: the state of a photo', () => {
     assert.equal(restored.result.id, 'abc123');
   });
 
+  test('a draft of the admin before «Colori più vivi» with a straightened photo stays straightened', () => {
+    const whole = { blob: jpeg(3), preview: jpeg(103), width: 2400, height: 1800 };
+    // exactly what the live admin stored: no `straightened`, no `colori`, no `ratio`
+    const photo = readyPhoto({ blob: jpeg(7), preview: jpeg(107), width: 2380, height: 1700, id: 'abc123', focal35: 24, whole, corners: CORNERS });
+    assert.equal(isStraightened(photo), true, '«Togli il raddrizzamento» is offered');
+    assert.equal(hasColours(photo), false);
+    assert.equal(photo.result.ratio, 2380 / 1700, 'the shape she chose, for a picture made again');
+    assert.deepEqual(straightenView(photo), { blob: whole.blob, corners: CORNERS });
+  });
+
   test('a damaged draft (the whole photo lost): the picture stays, nothing to switch back to', () => {
     const photo = readyPhoto(prepared(1, { whole: { width: 2400, height: 1800 }, corners: CORNERS, straightened: true, colori: true }));
     assert.equal(isStraightened(photo), false);
     assert.equal(canSwitchColours(photo), false, 'the plain photo is gone');
+    assert.equal(photo.result.colori, false, 'the picture is now the base photo: it is never corrected twice');
     assert.equal(straightenView(photo).blob, photo.result.blob);
     assert.equal(straightenView(photo).corners, null, 'points placed on the lost whole photo are dropped with it');
     useStraightened(photo, MADE, CORNERS);
     assert.equal(isStraightened(photo), true);
+    assert.equal(canSwitchColours(photo), false, 'still nothing plain to go back to');
   });
 
   test('a photo removed while its flat picture was being made is left alone', () => {

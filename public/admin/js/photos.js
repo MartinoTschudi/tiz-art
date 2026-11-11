@@ -39,12 +39,20 @@ export function existingPhoto(ref) {
 /** A photo prepared earlier (restored from the draft). */
 export function readyPhoto(result) {
   if (!result.id) result.id = randomId(6); // drafts saved before ids existed
+  if (result.whole && result.straightened === undefined && result.colori === undefined) {
+    // a draft of the admin before «Colori più vivi»: there `whole` meant «straightened», and the flat
+    // picture's own shape is the one she chose
+    result.straightened = true;
+    result.ratio ??= result.width / result.height;
+  }
   if (result.whole && !(result.whole.blob && result.whole.preview)) {
-    // a damaged draft: the picture stays as it is, but there is nothing to go back to, and the points
-    // (placed on the lost whole photo) mean nothing on it
+    // a damaged draft: the picture stays as it is and becomes the base photo (corrected or not, it
+    // cannot be undone), and the points (placed on the lost whole photo) mean nothing on it
     delete result.whole;
     delete result.corners;
     delete result.straightened;
+    delete result.ratio;
+    result.colori = false;
     result.locked = true;
   }
   return { key: newKey(), kind: 'new', status: 'ready', result, previewUrl: URL.createObjectURL(result.preview) };
@@ -162,6 +170,7 @@ export function useStraightened(photo, made, corners) {
   setResult(photo, {
     blob: made.blob, preview: made.preview, width: made.width, height: made.height, id, focal35,
     colori: Boolean(made.colours), straightened: true, ratio: made.ratio, whole: wholeOf(photo), corners,
+    ...(photo.result.locked ? { locked: true } : {}),
   });
 }
 
@@ -190,26 +199,35 @@ export function canSwitchColours(photo) {
  * the whole photo, never from a picture made earlier, so nothing gets worse by switching back and forth.
  * @throws {PhotoError} with a message for her; the photo is then left as it was
  */
-function remake(photo, { straightened, colori }) {
-  return queued(photo, async () => {
-    const whole = wholeOf(photo);
-    const { id, focal35 = null, corners, ratio } = photo.result;
-    let next;
-    if (!straightened && !colori) {
-      next = { ...whole, id, focal35, colori: false };
-    } else if (!straightened) {
-      const made = await fromBestSource(photo, (source) => preparePhoto(source, { colours: true }));
-      if (!made.colours) throw new PhotoError('Il telefono non è riuscito a ravvivare i colori (memoria piena?). Chiudi altre app e riprova.');
-      next = { blob: made.blob, preview: made.preview, width: made.width, height: made.height, id, focal35, colori: true, whole };
-    } else {
-      const known = { focal35, ratio, expect: { width: whole.width, height: whole.height }, colours: colori };
-      const made = await fromBestSource(photo, (source) => straightenPhoto(source, corners, known));
-      next = { blob: made.blob, preview: made.preview, width: made.width, height: made.height, id, focal35, colori: made.colours, straightened: true, ratio, whole };
-    }
-    if (corners) next.corners = corners;
-    if (!photo.removed) setResult(photo, next);
-    return next;
+function remake(photo, target) {
+  return queued(photo, () => remakeNow(photo, target)).catch((err) => {
+    // the step she took was a switch or «Togli il raddrizzamento», not «Raddrizza»
+    throw new PhotoError(err instanceof PhotoError && err.message === BAD_CORNERS_MESSAGE ? err.message : NO_MEMORY_MESSAGE);
   });
+}
+
+const NO_MEMORY_MESSAGE = 'Il telefono non è riuscito a preparare la foto (memoria piena?). Chiudi altre app e riprova.';
+const BAD_CORNERS_MESSAGE = 'I quattro punti non formano un quadro: mettine uno su ogni angolo della tela.';
+
+async function remakeNow(photo, { straightened, colori }) {
+  const whole = wholeOf(photo);
+  const { id, focal35 = null, corners, ratio } = photo.result;
+  let next;
+  if (!straightened && !colori) {
+    next = { ...whole, id, focal35, colori: false };
+  } else if (!straightened) {
+    const made = await fromBestSource(photo, (source) => preparePhoto(source, { colours: true }));
+    if (!made.colours) throw new PhotoError(NO_MEMORY_MESSAGE);
+    next = { blob: made.blob, preview: made.preview, width: made.width, height: made.height, id, focal35, colori: true, whole };
+  } else {
+    const known = { focal35, ratio, expect: { width: whole.width, height: whole.height }, colours: colori };
+    const made = await fromBestSource(photo, (source) => straightenPhoto(source, corners, known));
+    next = { blob: made.blob, preview: made.preview, width: made.width, height: made.height, id, focal35, colori: made.colours, straightened: true, ratio, whole };
+  }
+  if (corners) next.corners = corners;
+  if (photo.result.locked) next.locked = true;
+  if (!photo.removed) setResult(photo, next);
+  return next;
 }
 
 /** «Togli il raddrizzamento»: the photo as it was before «Raddrizza», livelier if it was; her points are kept for another try. */
@@ -218,10 +236,15 @@ export async function restoreWhole(photo) {
   await remake(photo, { straightened: false, colori: Boolean(photo.result.colori) });
 }
 
-/** Switches «Colori più vivi» on or off. */
+/** Switches «Colori più vivi» on or off. While the new picture is made, `wantColours` says where the switch is going. */
 export async function setColours(photo, on) {
   if (!canSwitchColours(photo) || Boolean(photo.result.colori) === Boolean(on)) return;
-  await remake(photo, { straightened: Boolean(photo.result.straightened), colori: Boolean(on) });
+  photo.wantColours = Boolean(on);
+  try {
+    await remake(photo, { straightened: Boolean(photo.result.straightened), colori: Boolean(on) });
+  } finally {
+    delete photo.wantColours;
+  }
 }
 
 /** What the store needs: { file } for photos already online, { upload } for new ones. */
@@ -234,7 +257,8 @@ export function toSavePhoto(photo) {
  * Resolves false when one could not be read.
  */
 export async function photosReady(photos, onCount) {
-  for (const p of photos) if (p.busy) await p.busy; // a picture being remade (e.g. «Colori più vivi»)
+  // pictures being remade (e.g. «Colori più vivi»): wait until none is, also one started meanwhile
+  while (photos.some((p) => p.busy)) await Promise.all(photos.map((p) => p.busy));
   const pending = photos.filter((p) => p.kind === 'new');
   const done = () => pending.filter((p) => p.status !== 'processing').length;
   if (done() < pending.length) {

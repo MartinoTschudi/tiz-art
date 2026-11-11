@@ -81,7 +81,8 @@ describe('«Colori più vivi»', () => {
     const dark = picture(100, 100, (x) => [x / 3, x / 4, x / 5]);
     const p2 = gradeParams(dark);
     assert.ok(255 - p2.white <= MAX_WHITE_LIFT && p2.gamma === 1, JSON.stringify(p2));
-    assert.deepEqual(gradeParams({ data: new Uint8ClampedArray(0), width: 0, height: 0 }), { black: 0, white: 255, gamma: 1 });
+    const empty = gradeParams({ data: new Uint8ClampedArray(0), width: 0, height: 0 });
+    assert.deepEqual([empty.black, empty.white, empty.gamma], [0, 255, 1]);
   });
 
   test('greys stay grey and every hue stays the same hue: no colour cast is added', () => {
@@ -111,9 +112,41 @@ describe('«Colori più vivi»', () => {
     image.data[3] = 128;
     gradeRows(image, { black: 0, white: 255, gamma: 1 });
     assert.equal(image.data[3], 128);
-    for (const v of image.data) assert.ok(v >= 0 && v <= 255);
     // the red stays red and strong
     assert.ok(image.data[0] > 230 && image.data[1] < 20, [...image.data.subarray(0, 4)].join());
+  });
+
+  test('a light pastel keeps its hue and is not pushed into white', () => {
+    const image = picture(1, 1, () => [229, 202, 247]);
+    gradeRows(image, { black: 0, white: 255, gamma: 1, contrast: 0 });
+    const [r, g, b] = image.data;
+    assert.ok(Math.max(r, g, b) <= 248, `${r},${g},${b}: no channel pushed to white`);
+    const hue = (r, g, b) => {
+      const mx = Math.max(r, g, b);
+      const mn = Math.min(r, g, b);
+      const h = mx === r ? (g - b) / (mx - mn) : mx === g ? 2 + (b - r) / (mx - mn) : 4 + (r - g) / (mx - mn);
+      return (h * 60 + 360) % 360;
+    };
+    assert.ok(Math.abs(hue(r, g, b) - hue(229, 202, 247)) < 3, `${hue(r, g, b)} vs ${hue(229, 202, 247)}`);
+  });
+
+  test('extra colour: clearly more on a weak colour, none on a near-grey with a slight cast', () => {
+    const image = picture(2, 1, (x) => (x ? [150, 120, 100] : [200, 197, 192]));
+    gradeRows(image, { black: 0, white: 255, gamma: 1, contrast: 0 });
+    const sat = (r, g, b) => (Math.max(r, g, b) - Math.min(r, g, b)) / Math.max(r, g, b);
+    const weak = sat(...image.data.subarray(4, 7)) / sat(150, 120, 100);
+    assert.ok(weak > 1.1 && weak < 1.6, `weak colour ×${weak.toFixed(2)}`);
+    const [r, , b] = image.data;
+    assert.ok(Math.abs(r - b - 8) <= 1, `the warm grey keeps its cast as it was (${r - b} vs 8), not stronger`);
+  });
+
+  test('a light painting photographed well keeps its middle tones', () => {
+    // mostly light paint, but 2 % of real black: no haze, so no darkening and a softer S-curve
+    const image = picture(100, 100, (x, y) => ((x * 7 + y * 3) % 50 === 0 ? [0, 0, 0] : [235 - (x % 40), 220 - (y % 30), 200]));
+    const params = gradeParams(image);
+    assert.equal(params.black, 0);
+    assert.equal(params.gamma, 1);
+    assert.ok(params.contrast < 0.05, JSON.stringify(params));
   });
 
   test('done in slices of rows it gives the same picture as in one go', () => {

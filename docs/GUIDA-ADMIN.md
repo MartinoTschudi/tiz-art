@@ -276,8 +276,7 @@ Niente panico: quello che hai salvato non si perde. Quasi sempre basta **Riprova
 | «GitHub ha ricevuto troppe richieste. Riprova tra … minuti» | Aspetta i minuti indicati. |
 | Una foto mostra «Non riesco a leggere questa foto» | Toglila con **×** e scegline un’altra, oppure rifalla con **Scatta foto**. |
 | Le foto restano su «Preparo…» | Aspetta un momento. Se non va avanti, chiudi le altre app e aggiungi meno foto alla volta. |
-| «Il telefono non è riuscito a raddrizzare la foto» | La foto è rimasta com’era. Chiudi le altre app e tocca di nuovo **Raddrizza**. |
-| «Il telefono non è riuscito a ravvivare i colori» | La foto è rimasta com’era. Chiudi le altre app e tocca di nuovo **Colori più vivi**. |
+| «Il telefono non è riuscito a raddrizzare la foto» oppure «… a preparare la foto» | La foto è rimasta com’era. Chiudi le altre app e tocca di nuovo lo stesso pulsante. |
 | «I punti si incrociano o sono troppo vicini», «I quattro punti non formano un quadro» oppure il pulsante **Raddrizza** resta spento | Metti un punto su ciascun angolo del quadro. Il pulsante si accende quando la linea bianca tra i punti è intera (non tratteggiata) e hai spostato almeno un punto. |
 | «Problema nell’ultima pubblicazione» | Le tue modifiche sono salvate. Chiama Martino: lui vede il problema con **Dettagli**. |
 | «Pubblicazione in corso…» per più di 15 minuti | Chiama Martino. |
