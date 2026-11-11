@@ -1,0 +1,69 @@
+# ─────────────────────────────────────────────────────────────────────────────────────────────────
+# Image cache keep-alive: keeps the converted artwork images of deploy.yml in the GitHub Actions cache.
+#
+# WHY
+#   GitHub deletes a cache entry that nobody has read for 7 days. Tiziana does not save every week, so
+#   after a quiet week the next Deploy found no cache and converted all images again: about 3–5 minutes
+#   instead of about 1 (docs/SETUP.md section 7). Reading the newest entry counts as use, so it stays.
+#   Daily, not weekly: GitHub may delay or drop a scheduled run, and one lost run must not open a gap
+#   of 7 days.
+#
+# WHAT IT DOES
+#   Only reads (restores) the cache. It builds nothing, saves nothing and publishes nothing, so it never
+#   changes the site and never waits for or blocks a Deploy run. Takes a few seconds.
+#
+# KEEP IN SYNC WITH deploy.yml: the "Image cache key" step (id, key, restore-keys), the cache path
+# (CONTRACTS.md section 8) and the runner must be the same as there (scripts/test/workflows.test.mjs
+# fails otherwise); a different one makes every restore miss without any error.
+#
+# GitHub disables scheduled workflows in a public repository after 60 days without any commit. Then
+# Actions → Image cache → "Enable workflow" (docs/SETUP.md section 7).
+# ─────────────────────────────────────────────────────────────────────────────────────────────────
+name: Image cache
+
+on:
+  schedule:
+    - cron: '17 4 * * *' # every day 04:17 UTC
+  workflow_dispatch:
+
+# Nothing by default; the job asks only for what it needs.
+permissions: {}
+
+jobs:
+  keep-alive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read # check out the two files the cache key is computed from
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            /package-lock.json
+            /astro.config.mjs
+          sparse-checkout-cone-mode: false
+
+      - name: Image cache key
+        id: image-prefix
+        run: echo "prefix=astro-images-v1-${{ hashFiles('package-lock.json', 'astro.config.mjs') }}-" >> "$GITHUB_OUTPUT"
+
+      # The key never matches; the restore key picks the newest entry Deploy saved, as in deploy.yml.
+      - name: Restore image cache
+        id: image-cache
+        uses: actions/cache/restore@v6
+        with:
+          path: node_modules/.astro/assets
+          key: ${{ steps.image-prefix.outputs.prefix }}keep-alive
+          restore-keys: ${{ steps.image-prefix.outputs.prefix }}
+
+      - name: Report
+        env:
+          MATCHED: ${{ steps.image-cache.outputs.cache-matched-key }}
+        run: |
+          if [ -n "$MATCHED" ]; then
+            echo "Image cache kept: $MATCHED ($(ls node_modules/.astro/assets | wc -l) files)"
+          else
+            echo "::notice::No image cache yet for this package-lock.json + astro.config.mjs; the next Deploy converts all images and saves one."
+          fi

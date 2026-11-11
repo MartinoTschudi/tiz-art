@@ -270,6 +270,9 @@ switch at a quiet moment, e.g. in the evening.
 | "Enforce HTTPS" stays greyed out | certificate not issued yet | wait; after 24 h: clear the custom domain, Save, enter it again, Save |
 | Links point to `/tiz-art/…` after the domain switch | the site was not rebuilt | Actions → Deploy → **Run workflow** (step 5.3) |
 | Admin save works but the site does not change | the run is still busy or waiting | Actions shows a yellow run; runs never overlap, a waiting one starts after the current one |
+| A Deploy run stays yellow for more than about 40 minutes and newer ones wait behind it | a GitHub glitch: a job ended (or passed its limit: 20 minutes for *build*, 15 for *deploy*) but the run was never closed | Actions → that run → **Cancel workflow**. If GitHub answers that it cannot be cancelled, wait: GitHub ends such runs by itself eventually, then the newest waiting run publishes all commits. Still stuck the next day: GitHub Support with the run ID |
+| One Deploy takes 3–5 minutes instead of about 1; *Build site* lists each image with "before/after" instead of "reused cache entry" | the image cache was empty: first Deploy after a change to `package-lock.json` / `astro.config.mjs` / the base path, or after more than 7 days without a Deploy while the **Image cache** workflow was off | nothing for that run: it converts all images and saves the cache, so the next Deploy is fast again. After a quiet week: Actions → **Image cache**; if it shows "This scheduled workflow is disabled" (GitHub does that after 60 days without a commit) → **Enable workflow** |
+| Every Deploy takes 3–5 minutes, again and again | the cache is not saved or not found (a changed *Image cache key* step, a failing *Save image cache*) | open *Restore image cache* and *Save image cache* in the latest run; `npm test` (`workflows`) checks that both workflows use the same key |
 
 Checking the content locally (same check as the Deploy run): `npm run check:content`.
 

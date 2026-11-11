@@ -60,7 +60,8 @@ GitHub Pages serves it.
 1. Tiziana saves an artwork in the admin → the admin validates it (CONTRACTS.md §4), resizes the photos in
    the browser (≤ 2400 px JPEG, no EXIF/GPS) and commits `src/content/opere/<slug>/` to `main`.
 2. The push starts **Deploy**: `npm test`, `npm run check:content` (the same rules again, with a clear
-   message per file), `astro build`, upload, deploy. About 1–3 minutes.
+   message per file), `astro build`, upload, deploy. About 1–3 minutes (3–5 when the converted images are not in the cache,
+   e.g. after a change to package-lock.json or astro.config.mjs).
 3. The admin follows the latest Deploy run and shows "Pubblicazione in corso…" → "Online ✓".
 4. If any step fails, nothing is published and the previous version stays online; the admin shows
    "Problema nell'ultima pubblicazione" with a link to the run.
@@ -71,6 +72,7 @@ Other changes (code, `src/data/sito.json`) go through normal commits on `main` a
 
 ```
 .github/workflows/deploy.yml   build + publish (keep the file name: the admin reads its runs)
+.github/workflows/image-cache.yml   daily: keeps deploy's image cache from expiring (no build, no deploy)
 astro.config.mjs               site/base from SITE_URL/BASE_PATH, redirects from sito.json, sitemap
 src/content.config.ts          content schema (= CONTRACTS.md §4)
 src/content/opere/<slug>/      opera.json + photos, one folder per artwork (written by the admin)

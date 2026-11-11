@@ -69,6 +69,10 @@ jobs:
       # Astro names each file after the hash of its source photo and resize options, but not after the
       # Astro/sharp versions or the image settings, so the cache is tied to package-lock.json +
       # astro.config.mjs (a change there = one full rebuild). Bump v1 to flush the cache by hand.
+      # The base path is part of each name too, so the switch /tiz-art/ → / (custom domain) rebuilds once.
+      # GitHub deletes an entry nobody read for 7 days; image-cache.yml reads it every day so a quiet
+      # week does not cost a full rebuild. Keep this step, the cache path and the runner the same there
+      # (scripts/test/workflows.test.mjs).
       - name: Image cache key
         id: image-prefix
         run: echo "prefix=astro-images-v1-${{ hashFiles('package-lock.json', 'astro.config.mjs') }}-" >> "$GITHUB_OUTPUT"
