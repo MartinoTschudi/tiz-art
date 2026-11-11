@@ -448,6 +448,30 @@ describe('Store: saving twice never does harm', () => {
     assert.deepEqual(folders().filter((f) => f.startsWith('tramonto')), ['tramonto']);
   });
 
+  test('a photo straightened after a save that reached GitHub unnoticed: saved again, same folder, same name', async () => {
+    store = makeStore(losingAnswers({ patches: 1, refReads: 2 }));
+    const photos = [upload(1), upload(2)];
+    const work = { slug: null, fields: fields({ titolo: 'Mare d’inverno' }), photos };
+    await assert.rejects(() => store.saveOpera(work), (err) => err.kind === 'network');
+    const before = mock.log().length;
+    const crooked = folder('mare-d-inverno');
+    // «Raddrizza» on the cover: the same photo id, another picture
+    photos[0].upload.blob = jpeg(9);
+    const again = await store.saveOpera(work);
+    assert.equal(again.action, 'create');
+    assert.equal(again.slug, 'mare-d-inverno', 'no "mare-d-inverno-2"');
+    assert.equal(mock.log().length, before + 1, 'the straightened picture is written');
+    const data = assertValidFolder('mare-d-inverno');
+    const [cover, second] = data.immagini.map((r) => r.slice(2));
+    const now = folder('mare-d-inverno');
+    assert.deepEqual([...now.keys()].sort(), [...crooked.keys()].sort(), 'the same file names');
+    assert.deepEqual([...now.get(cover)], [...new Uint8Array(await jpeg(9).arrayBuffer())], 'the cover is the new picture');
+    assert.deepEqual([...now.get(second)], [...crooked.get(second)], 'the other photo is untouched');
+    // and saving once more writes nothing
+    await store.saveOpera(work);
+    assert.equal(mock.log().length, before + 1);
+  });
+
   test('«Riprova» after a failure in the commit step does not upload the photos again', async () => {
     const photos = [upload(1), upload(2), upload(3)];
     mock.failNext({ match: '/git/refs/heads/', method: 'PATCH', status: 502 });

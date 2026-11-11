@@ -367,7 +367,9 @@ export class Store {
 
         const changedMeanwhile = !isNew && base && previous.data.aggiornataIl !== base;
         if ((isNew && previous) || changedMeanwhile) {
-          if (sameOpera(previous.data, opera)) {
+          // …unless a picture itself changed since (e.g. straightened): same name, other content
+          const samePictures = uploadIdx.every((i, k) => (files.get(dir + fileNames[i]) || {}).sha === shas[k]);
+          if (sameOpera(previous.data, opera) && samePictures) {
             result.opera = previous.data; // exactly this was saved already: nothing to write
             return null;
           }

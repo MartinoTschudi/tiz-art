@@ -6,16 +6,31 @@
  * important, because the repository and the website are public. A small preview (480 px) is made
  * at the same time for the screens of the admin.
  *
+ * «Raddrizza» (straightenPhoto) makes a flat, front-facing picture of a canvas photographed a little
+ * from the side: a perspective warp of her own pixels (straighten.js), encoded the same way.
+ *
  * Memory: a 12-megapixel photo needs ~48 MB once decoded and iOS Safari kills pages that use too
  * much. The callers process photos one at a time; here every bitmap, object URL and canvas is
  * released as soon as it is no longer needed.
  */
 import { base64ToBytes } from './crypto.js';
+import { quadIsUsable, chooseRatio, outputSize, edgeMargin, outputToPhoto, maxDensity, sourcePlan, warpRows, detectCorners, readFocal35, MIN_OUTPUT_SIDE } from './straighten.js';
 
 export const MAX_SIDE = 2400;
 export const JPEG_QUALITY = 0.88;
 export const PREVIEW_SIDE = 480;
 const PREVIEW_QUALITY = 0.8;
+/** «Raddrizza»: the photo as shown while she places the corners, and the small copy the first guess is made on. */
+export const EDIT_SIDE = 1600;
+const DETECT_SIDE = 480;
+/**
+ * The warp reads the photo's own pixels as long as no pixel of the result covers more than this many
+ * of them (a 12-megapixel photo: about 1.5 on the near side of the canvas); a larger photo is first
+ * reduced to that, so that fine paint texture does not shimmer.
+ */
+const WARP_DENSITY = 1.6;
+/** The warp pauses this often (milliseconds) so the page stays alive. */
+const WARP_BREATH = 40;
 
 /** A photo that cannot be used; the message is meant for her. */
 export class PhotoError extends Error {
@@ -169,6 +184,172 @@ export async function preparePhoto(file) {
     throw err instanceof PhotoError ? err : unreadable(file);
   } finally {
     releaseCanvas(canvas);
+    releaseCanvas(previewCanvas);
+  }
+}
+
+/* ---------- «Raddrizza» ---------- */
+
+const NO_MEMORY = 'Il telefono non è riuscito a raddrizzare la foto (memoria piena?). Chiudi altre app e riprova.';
+const BAD_CORNERS = 'I quattro punti non formano un quadro: mettine uno su ogni angolo della tela.';
+
+/** The focal length the phone wrote in the photo (35 mm equivalent), or null. Read before the photo is re-encoded. */
+export async function photoFocal35(file) {
+  try {
+    return readFocal35(new Uint8Array(await file.slice(0, 131072).arrayBuffer()));
+  } catch {
+    return null;
+  }
+}
+
+/** Lets the page handle touches and draw; unlike a timer it is not slowed down in a background tab. */
+function breathe() {
+  return new Promise((resolve) => {
+    if (typeof MessageChannel !== 'function') return setTimeout(resolve, 0);
+    const channel = new MessageChannel();
+    channel.port1.onmessage = () => resolve();
+    channel.port2.postMessage(0);
+  });
+}
+
+/**
+ * What the «Raddrizza» screen needs to show a photo: a canvas at most EDIT_SIDE px (the caller puts it
+ * in the page and frees it with `release()`), the first guess of the canvas' corners as fractions of
+ * the photo's sides (or null when no canvas with wall around it is recognised) and the photo's size.
+ * @param {Blob} photo  the prepared JPEG (at most 2400 px): opening the screen never decodes a 12-megapixel original
+ * @returns {Promise<{canvas: HTMLCanvasElement, width: number, height: number, guess: number[][]|null, release: () => void}>}
+ * @throws {PhotoError}
+ */
+export async function openForStraighten(photo) {
+  const image = await decode(photo);
+  let canvas = null;
+  let small = null;
+  try {
+    const { width, height } = image;
+    const size = fitSize(width, height, EDIT_SIDE);
+    try {
+      canvas = drawScaled(image.source, size.width, size.height);
+    } finally {
+      image.release();
+    }
+    const tiny = fitSize(size.width, size.height, DETECT_SIDE);
+    small = drawScaled(canvas, tiny.width, tiny.height);
+    const found = detectCorners(small.getContext('2d').getImageData(0, 0, tiny.width, tiny.height));
+    const shown = canvas;
+    canvas = null; // now the caller's
+    return {
+      canvas: shown,
+      width,
+      height,
+      guess: found ? found.map(([x, y]) => [x / tiny.width, y / tiny.height]) : null,
+      release: () => releaseCanvas(shown),
+    };
+  } catch (err) {
+    throw err instanceof PhotoError ? err : unreadable(photo);
+  } finally {
+    releaseCanvas(canvas);
+    releaseCanvas(small);
+  }
+}
+
+/**
+ * The canvas marked by `corners` as a flat, front-facing picture, made only of the photo's own pixels.
+ *
+ * Steps, each freeing what the one before needed: decode · copy the part of the photo that holds the
+ * canvas to a working canvas (reduced only if it is much denser than the result) · read its pixels ·
+ * warp them into the result (straighten.js) · JPEG. The largest things in memory at once are the
+ * decoded photo and the working copy.
+ *
+ * @param {Blob} source          the photo: the original file while at hand, else the prepared JPEG
+ * @param {number[][]} corners   top-left, top-right, bottom-right, bottom-left as fractions (0–1) of the photo's sides
+ * @param {object} [known]
+ * @param {number|null} [known.focal35]   from photoFocal35
+ * @param {{larghezza: number, altezza: number}|null} [known.measures]  the canvas' size in cm, if she wrote it
+ * @param {{width: number, height: number}|null} [known.expect]  size of the prepared photo: `source` must have its shape
+ * @returns {Promise<{blob: Blob, preview: Blob, width: number, height: number, shape: 'measures'|'photo'}>}
+ * @throws {PhotoError} with a message for her
+ */
+export async function straightenPhoto(source, corners, { focal35 = null, measures = null, expect = null } = {}) {
+  const image = await decode(source);
+  let work = null;
+  let out = null;
+  let previewCanvas = null;
+  try {
+    let pixels;
+    let plan;
+    let full; // size of the whole marked canvas in the result, before the margin is cut
+    let chosen;
+    try {
+      const { width, height } = image;
+      // iOS answers a photo it has no memory for with a 1 × 1 picture instead of an error
+      if (width < 16 || height < 16) throw new PhotoError(NO_MEMORY);
+      if (expect && Math.abs((width / height) * (expect.height / expect.width) - 1) > 0.02) throw new PhotoError(NO_MEMORY);
+      const quad = corners.map(([x, y]) => [x * width, y * height]);
+      if (!quadIsUsable(quad, width, height)) throw new PhotoError(BAD_CORNERS);
+      chosen = chooseRatio(quad, width, height, { focal35, measures });
+      full = outputSize(quad, chosen.ratio, MAX_SIDE);
+      if (Math.max(full.width, full.height) < MIN_OUTPUT_SIDE) throw new PhotoError('Il quadro è troppo piccolo in questa foto: scattala più da vicino.');
+      const margin = edgeMargin(full.width, full.height);
+      const direct = outputToPhoto(quad, full.width, full.height, margin);
+      if (!direct) throw new PhotoError(BAD_CORNERS);
+      const density = maxDensity(direct, full.width - 2 * margin, full.height - 2 * margin);
+      plan = sourcePlan(quad, width, height, Math.min(1, WARP_DENSITY / density));
+      work = document.createElement('canvas');
+      work.width = plan.dw;
+      work.height = plan.dh;
+      const ctx = work.getContext('2d', { willReadFrequently: true });
+      if (!ctx) throw new PhotoError(NO_MEMORY);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, plan.dw, plan.dh);
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(image.source, plan.sx, plan.sy, plan.sw, plan.sh, 0, 0, plan.dw, plan.dh);
+      image.release(); // the decoded photo is no longer needed
+      pixels = ctx.getImageData(0, 0, plan.dw, plan.dh);
+    } finally {
+      image.release();
+    }
+    releaseCanvas(work);
+    work = null;
+    // a canvas the phone could not really allocate reads back as transparent black
+    for (const [fx, fy] of [[0.5, 0.5], [0.1, 0.1], [0.9, 0.1], [0.9, 0.9], [0.1, 0.9]]) {
+      if (pixels.data[((Math.floor(fy * plan.dh) * plan.dw + Math.floor(fx * plan.dw)) * 4) + 3] !== 255) throw new PhotoError(NO_MEMORY);
+    }
+
+    const margin = edgeMargin(full.width, full.height);
+    const width = full.width - 2 * margin;
+    const height = full.height - 2 * margin;
+    const map = outputToPhoto(plan.quad, full.width, full.height, margin);
+    if (!map) throw new PhotoError(BAD_CORNERS);
+    out = document.createElement('canvas');
+    out.width = width;
+    out.height = height;
+    const outCtx = out.getContext('2d');
+    if (!outCtx) throw new PhotoError(NO_MEMORY);
+    const target = outCtx.createImageData(width, height);
+    let since = performance.now();
+    for (let y = 0; y < height; y += 16) {
+      warpRows(target, pixels, map, y, Math.min(height, y + 16));
+      if (performance.now() - since > WARP_BREATH) {
+        await breathe();
+        since = performance.now();
+      }
+    }
+    pixels = null;
+    outCtx.putImageData(target, 0, 0);
+
+    const blob = await toJpeg(out, JPEG_QUALITY);
+    const small = fitSize(width, height, PREVIEW_SIDE);
+    previewCanvas = drawScaled(out, small.width, small.height);
+    releaseCanvas(out);
+    out = null;
+    const preview = await toJpeg(previewCanvas, PREVIEW_QUALITY);
+    return { blob, preview, width, height, shape: chosen.from };
+  } catch (err) {
+    throw err instanceof PhotoError ? err : new PhotoError(NO_MEMORY);
+  } finally {
+    releaseCanvas(work);
+    releaseCanvas(out);
     releaseCanvas(previewCanvas);
   }
 }
