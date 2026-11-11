@@ -1,7 +1,8 @@
 /**
  * "Nuova opera" / "Modifica opera": one scrolling form.
- *   Foto (1–8, each new one with «Raddrizza») · Titolo · Anno · Misure · Tecnica · Collezione · Colore della pennellata · Testo ·
- *   In evidenza · Visibile
+ *   (existing work: Sul sito — «Vedi sul sito», In evidenza, Visibile) · Foto (1–8, each new one with
+ *   «Raddrizza» and «Colori più vivi») · Titolo · Anno · Misure · Tecnica · Collezione · Testo ·
+ *   Colore della pennellata · (new work: In evidenza, Visibile)
  * plus, when editing, "Vedi sul sito" and "Elimina opera".
  *
  * The form state is a "draft" object. For a new work the app keeps it in memory and in IndexedDB
@@ -9,14 +10,14 @@
  * to an existing work are kept in IndexedDB too (app.persistEdit) and offered again when the work is
  * reopened: a back swipe, a reload or an expired key never throws them away.
  */
-import { h, icon, topbar, stickyBar, confirmSheet, toast, progress, siteButton } from '../ui.js';
+import { h, icon, topbar, stickyBar, confirmSheet, toast, progress, siteButton, autoGrow } from '../ui.js';
 import { MAX_IMMAGINI, LIMITS, COLORI, parseOperaForm, parseMisura, formatNumber } from '../model.js';
 import { workKey } from '../drafts.js';
 import { existingPhoto, readyPhoto, newPhoto, releasePhoto, toSavePhoto, photosReady, canStraighten, isStraightened, restoreWhole, hasColours, canSwitchColours, setColours } from '../photos.js';
 import { pickerButtons, photoMedia } from './photo-ui.js';
 import { straightenScreen } from './straighten-ui.js';
 
-const FIELD_ORDER = ['foto', 'titolo', 'anno', 'larghezza', 'altezza', 'tecnica', 'collezione', 'colore', 'testo'];
+const FIELD_ORDER = ['foto', 'titolo', 'anno', 'larghezza', 'altezza', 'tecnica', 'collezione', 'testo', 'colore'];
 
 /** Choices of «Colore della pennellata»: '' = Automatico (colore null), then COLORI. */
 const COLORE_LABELS = { '': 'Automatico', ocra: 'Ocra', rosso: 'Rosso', terracotta: 'Terracotta', ottanio: 'Ottanio', blu: 'Blu' };
@@ -190,7 +191,7 @@ export function renderForm(app, { opera, draft, restored = false }) {
   const photoGrid = h('div', { class: 'photo-grid' });
   const photoCount = h('span', { class: 'field-count' });
   const straightenHint = h('p', { class: 'hint photo-hint', hidden: true }, 'Si vede il muro, o il quadro è un po’ storto? Tocca «Raddrizza» sulla foto del quadro intero. Per le foto dei dettagli non serve.');
-  const onlineHint = h('p', { class: 'hint photo-hint', hidden: true }, 'Per raddrizzare una foto già online: aggiungila di nuovo, raddrizzala e togli la vecchia con ×. Se era la copertina, tocca «Fai copertina» sulla nuova.');
+  const onlineHint = h('p', { class: 'hint photo-hint', hidden: true }, 'Per raddrizzare una foto già online, aggiungila di nuovo e togli la vecchia con ×. Se era la copertina, tocca «Fai copertina» sulla nuova.');
   const picker = pickerButtons({ multiple: true, onFiles: addFiles });
 
   function addFiles(files) {
@@ -204,7 +205,16 @@ export function renderForm(app, { opera, draft, restored = false }) {
     renderPhotos();
   }
 
-  function removePhoto(photo) {
+  /** «×»: asks first, like every other way of losing something in the admin. */
+  async function removePhoto(photo) {
+    const ok = await confirmSheet({
+      title: 'Togliere questa foto?',
+      text: isNew ? 'Se ti serve ancora, dovrai sceglierla di nuovo.' : 'Sul sito cambia solo quando tocchi «Salva».',
+      confirmLabel: 'Togli la foto',
+      cancelLabel: 'No, tienila',
+      danger: true,
+    });
+    if (!ok || !draft.photos.includes(photo)) return;
     releasePhoto(photo);
     draft.photos = draft.photos.filter((p) => p !== photo);
     renderPhotos();
@@ -338,10 +348,10 @@ export function renderForm(app, { opera, draft, restored = false }) {
     { class: 'field', id: 'field-foto' },
     h('h2', { class: 'label' }, 'Foto ', photoCount),
     h('p', { class: 'hint' }, 'Da 1 a 8 foto. La prima è la copertina (★): con «Fai copertina» scegli un’altra foto.'),
-    picker.el,
-    photoGrid,
+    photoGrid, // the paintings first, then the buttons to add more
     straightenHint,
     onlineHint,
+    picker.el,
     errorEl('foto'),
   );
 
@@ -354,9 +364,13 @@ export function renderForm(app, { opera, draft, restored = false }) {
   const tecnica = textInput('tecnica', { list: 'list-tecnica', maxlength: String(LIMITS.tecnica), autocapitalize: 'sentences', placeholder: 'es. Acrilico su tela' });
   const collezione = textInput('collezione', { list: 'list-collezione', maxlength: String(LIMITS.collezione), placeholder: 'es. noi, DONNA.' });
   const testo = h('textarea', { id: 'in-testo', name: 'testo', class: 'input', rows: '7', maxlength: String(LIMITS.testo), value: draft.fields.testo });
-  const testoCount = h('p', { class: 'char-count', 'aria-live': 'polite' });
+  autoGrow(testo);
+  // shown only near the limit (the box stops typing there anyway)
+  const testoCount = h('p', { class: 'char-count' });
   const updateCount = () => {
-    testoCount.textContent = `${draft.fields.testo.length}/${LIMITS.testo}`;
+    const left = LIMITS.testo - draft.fields.testo.length;
+    testoCount.hidden = left > LIMITS.testo / 10;
+    testoCount.textContent = left > 1 ? `Ancora ${left} caratteri` : left === 1 ? 'Ancora 1 carattere' : 'Hai raggiunto il massimo.';
   };
   testo.addEventListener('input', () => {
     draft.fields.testo = testo.value;
@@ -406,7 +420,7 @@ export function renderForm(app, { opera, draft, restored = false }) {
   }
 
   function toggle(name, label, hint) {
-    const input = h('input', { type: 'checkbox', role: 'switch', class: 'switch', id: `in-${name}`, checked: draft.fields[name] });
+    const input = h('input', { type: 'checkbox', role: 'switch', class: 'switch', id: `in-${name}`, checked: draft.fields[name], 'aria-labelledby': `lbl-${name}`, 'aria-describedby': `hint-${name}` });
     input.addEventListener('change', () => {
       draft.fields[name] = input.checked;
       changed();
@@ -414,7 +428,7 @@ export function renderForm(app, { opera, draft, restored = false }) {
     return h(
       'label',
       { class: 'switch-row', for: `in-${name}` },
-      h('span', { class: 'switch-text' }, h('span', { class: 'switch-label' }, label), h('span', { class: 'hint' }, hint)),
+      h('span', { class: 'switch-text' }, h('span', { class: 'switch-label', id: `lbl-${name}` }, label), h('span', { class: 'hint', id: `hint-${name}` }, hint)),
       input,
     );
   }
@@ -441,7 +455,7 @@ export function renderForm(app, { opera, draft, restored = false }) {
     for (const name of FIELD_ORDER) showError(name, errors[name] || '');
     const first = FIELD_ORDER.find((n) => errors[n]);
     if (first) {
-      sections[first].scrollIntoView({ behavior: 'smooth', block: 'center' });
+      sections[first].scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' });
       const input = sections[first].querySelector('input:not([type=file]), textarea');
       if (input) input.focus({ preventScroll: true });
       return null;
@@ -579,6 +593,15 @@ export function renderForm(app, { opera, draft, restored = false }) {
       h('button', { type: 'button', class: 'btn btn-secondary btn-small', onClick: undoChanges }, 'Annulla modifiche'));
   }
 
+  // «In evidenza» and «Visibile»: for an existing work at the top, where she changes them most
+  const toggles = h(
+    'section',
+    { class: 'field toggles' },
+    toggle('inEvidenza', 'In evidenza in home', 'Le prime 3 in evidenza della lista sono i quadri grandi in cima alla pagina iniziale.'),
+    toggle('pubblicata', 'Visibile sul sito', 'Spento: l’opera non compare sul sito, ma non è segreta. Niente foto o testi privati.'),
+  );
+  const sulSito = isNew ? null : h('section', { class: 'field sul-sito' }, h('h2', { class: 'label' }, 'Sul sito'), siteLink, toggles);
+
   const el = h(
     'div',
     { class: 'screen' },
@@ -592,7 +615,7 @@ export function renderForm(app, { opera, draft, restored = false }) {
       'main',
       { class: 'content form' },
       notice,
-      siteLink,
+      sulSito,
       sections.foto,
       field('titolo', h('span', {}, 'Titolo ', h('span', { class: 'required', 'aria-hidden': 'true' }, '*')), titolo),
       field('anno', 'Anno', anno, { optional: true }),
@@ -601,14 +624,9 @@ export function renderForm(app, { opera, draft, restored = false }) {
       datalist('list-tecnica', suggestions(opere, 'tecnica')),
       field('collezione', 'Collezione', collezione, { optional: true, hint: 'Il nome della serie. Scrivi o scegli tra quelle già usate.' }),
       datalist('list-collezione', suggestions(opere, 'collezione')),
-      colorePicker(),
       field('testo', 'Testo', testo, { optional: true, hint: 'Per andare a capo con un nuovo paragrafo lascia una riga vuota.', after: testoCount }),
-      h(
-        'section',
-        { class: 'field toggles' },
-        toggle('inEvidenza', 'In evidenza in home', 'Le prime 3 opere in evidenza (nell’ordine della lista) formano la composizione grande in cima alla pagina iniziale.'),
-        toggle('pubblicata', 'Visibile sul sito', 'Se lo togli, l’opera non compare nelle pagine del sito. Non è però segreta: non caricare foto o testi privati.'),
-      ),
+      colorePicker(),
+      isNew ? toggles : null,
       isNew
         ? null
         : h('section', { class: 'field danger-zone' },

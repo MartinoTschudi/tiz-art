@@ -635,6 +635,8 @@ function boot() {
   });
   // iOS may kill a page in the background: keep the unsaved work first.
   window.addEventListener('pagehide', flushDrafts);
+  // iOS Safari shows :active (the pressed look of buttons) only when the page listens to touches
+  document.addEventListener('touchstart', () => {}, { passive: true });
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') return flushDrafts();
     if (!state.store) return;

@@ -357,29 +357,37 @@ Saving twice must never do harm:
 1. **Accedi** — e-mail, password (eye toggle), "Entra" (shows "Verifico…", PBKDF2 takes ~1 s).
 2. **Le mie opere** — publish status line from `GET /repos/{o}/{r}/actions/workflows/deploy.yml/runs?branch={branch}&per_page=1`
    ("Online ✓" / "Pubblicazione in corso… (1–3 minuti)" / "Problema nell'ultima pubblicazione" + link).
-   List: thumbnail, title, year · size, badges "In evidenza" / "Nascosta". "Cambia l’ordine" mode with
-   ↑/↓ buttons and one "Salva l’ordine" (renumbers `ordine` 10, 20, 30… for all works, one commit). Big "+ Nuova opera" button.
-   Links "Profilo" and "Esci", reload button.
+   List: thumbnail, title, year · size, badges "In evidenza" (one of the 3 works of the home composition:
+   the first 3 published works with `inEvidenza`, in list order, like `heroSlots`) / "In evidenza, non in
+   home" / "Nascosta" (a hidden work's row is also greyed). "Cambia l’ordine" mode with
+   ↑/↓ buttons (★ beside the works in the home, a crossed eye beside hidden ones) and one "Salva l’ordine"
+   (renumbers `ordine` 10, 20, 30… for all works, one commit); its "Annulla" asks first when a work was
+   moved. Big "+ Nuova opera" button. Links "Profilo" and "Esci", reload button (turns while reading).
 3. **Nuova / Modifica opera** — Foto (1–8): "Scatta foto" (`capture="environment"`) and "Dalla galleria"
    (multiple); each photo is resized in the browser (≤ 2400 px, JPEG 0.88, orientation applied, EXIF/GPS
    dropped by re-encoding); "Fai copertina" button to make one the first (the first shows "★ Copertina");
-   "×" to remove; "Raddrizza" (§7.5a) and the switch "Colori più vivi" (§7.5b, on by default) under every
+   "×" to remove (after a confirmation sheet "Togliere questa foto?"); "Raddrizza" (§7.5a) and the switch "Colori più vivi" (§7.5b, on by default) under every
    new photo. Fields: Titolo*,
    Anno (default current year), Larghezza cm, Altezza cm, Tecnica (datalist from existing values),
-   Collezione (datalist from existing values), "Colore della pennellata" (radio buttons drawn as large
+   Collezione (datalist from existing values), Testo (textarea that grows with its text; a character
+   counter only near the limit), "Colore della pennellata" (radio buttons drawn as large
    swatches with their names: Automatico (default, `null`) · Ocra · Rosso · Terracotta · Ottanio · Blu),
-   Testo (textarea), "In evidenza in home" toggle (hint: the first 3 make the home composition),
-   "Visibile sul sito" toggle (default on). "Salva" with nothing changed says "Nessuna modifica da salvare",
+   "In evidenza in home" toggle (hint: the first 3 make the home composition),
+   "Visibile sul sito" toggle (default on). Existing work: the two toggles are at the top, in a section
+   "Sul sito" with "Vedi sul sito"; new work: at the end. "Salva" with nothing changed says "Nessuna modifica da salvare",
    except for a file not in the current format (e.g. without `colore`, §4.1): that one is rewritten. "Salva" → progress ("Preparo le foto…", "Carico la foto 1 di 3…",
-   "Pubblico…") → "Fatto! Sarà online tra circa 2 minuti" with "Vedi sul sito", "Torna alle opere",
-   "Aggiungi un'altra opera". Existing work: "Elimina opera" at the bottom with confirmation dialog.
+   "Pubblico…") → "Fatto! «…» è salvata" + the publish status line (without status: "… sarà online tra
+   circa 2 minuti"), with "Vedi sul sito" (while waiting drawn dashed, not faded), "Torna alle opere" (main
+   button after an edit) and "Aggiungi un'altra opera" (main button after a new work). A long title in
+   the top bar goes on two lines. Existing work: "Elimina opera" at the bottom with confirmation dialog.
    New works get `ordine = min(existing) - 10` (shown first). Unsaved new work is kept as a draft
    (IndexedDB, including photos) and offered again ("Stai continuando un'opera non salvata · Ricomincia").
    Unsaved changes to an existing work are kept the same way (also after a back swipe, a reload or an
    expired key) and shown again when it is reopened ("Hai modifiche non ancora salvate · Annulla
    modifiche"); the in-app back arrow still asks "Uscire senza salvare?".
-4. **Profilo** — motto, bio (textarea), portrait photo (add/replace/remove). Save = one commit. Unsaved
-   changes are kept like those of a work.
+4. **Profilo** — motto, bio (textarea that grows), portrait photo (add/replace/remove, removing after a
+   confirmation sheet; the preview is cut 4:5 like the site). Save = one commit. Unsaved changes are
+   kept like those of a work.
 
 #### 7.5a «Raddrizza» (perspective straightening of a new photo)
 For a canvas photographed a little from the side or with wall around it. Only her own pixels are moved
