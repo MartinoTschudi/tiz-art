@@ -1997,6 +1997,7 @@ html.is-straightening .toasts {
   *::before,
   *::after {
     animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important; /* a spinning ↻ or shimmer stops instead of flickering */
     transition-duration: 0.01ms !important;
   }
 }

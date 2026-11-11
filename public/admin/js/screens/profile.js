@@ -218,7 +218,7 @@ export function renderProfile(app, { stored = null } = {}) {
       h(
         'section',
         { class: 'field' },
-        h('label', { class: 'label', for: 'in-bio' }, 'Biografia', h('small', {}, ' (facoltativo)')),
+        h('label', { class: 'label', for: 'in-bio' }, 'Biografia', h('small', {}, ' (facoltativa)')),
         h('p', { class: 'hint' }, 'Per un nuovo paragrafo lascia una riga vuota.'),
         bio,
         bioCount,

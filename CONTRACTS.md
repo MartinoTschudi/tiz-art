@@ -360,7 +360,8 @@ Saving twice must never do harm:
    List: thumbnail, title, year · size, badges "In evidenza" (one of the 3 works of the home composition:
    the first 3 published works with `inEvidenza`, in list order, like `heroSlots`) / "In evidenza, non in
    home" / "Nascosta" (a hidden work's row is also greyed). "Cambia l’ordine" mode with
-   ↑/↓ buttons (★ beside the works in the home, a crossed eye beside hidden ones) and one "Salva l’ordine"
+   ↑/↓ buttons (★ beside the 3 works of the home composition — `heroSlots`' picked set, the fill
+   included — and a crossed eye beside hidden ones) and one "Salva l’ordine"
    (renumbers `ordine` 10, 20, 30… for all works, one commit); its "Annulla" asks first when a work was
    moved. Big "+ Nuova opera" button. Links "Profilo" and "Esci", reload button (turns while reading).
 3. **Nuova / Modifica opera** — Foto (1–8): "Scatta foto" (`capture="environment"`) and "Dalla galleria"

@@ -191,7 +191,7 @@ export function renderForm(app, { opera, draft, restored = false }) {
   const photoGrid = h('div', { class: 'photo-grid' });
   const photoCount = h('span', { class: 'field-count' });
   const straightenHint = h('p', { class: 'hint photo-hint', hidden: true }, 'Si vede il muro, o il quadro è un po’ storto? Tocca «Raddrizza» sulla foto del quadro intero. Per le foto dei dettagli non serve.');
-  const onlineHint = h('p', { class: 'hint photo-hint', hidden: true }, 'Per raddrizzare una foto già online, aggiungila di nuovo e togli la vecchia con ×. Se era la copertina, tocca «Fai copertina» sulla nuova.');
+  const onlineHint = h('p', { class: 'hint photo-hint', hidden: true }, 'Per raddrizzare una foto già online, aggiungila di nuovo, tocca «Raddrizza» sulla nuova e togli la vecchia con ×. Se era la copertina, tocca «Fai copertina» sulla nuova.');
   const picker = pickerButtons({ multiple: true, onFiles: addFiles });
 
   function addFiles(files) {

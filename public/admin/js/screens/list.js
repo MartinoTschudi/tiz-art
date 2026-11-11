@@ -31,12 +31,14 @@ function metaLine(data) {
 }
 
 /**
- * The works that make the big composition at the top of the home page: like the site
- * (src/components/lib/composition.ts heroSlots), the first 3 published works marked «In evidenza»,
- * in the order of the list.
+ * The 3 works of the big composition at the top of the home page, exactly as the site picks them
+ * (src/components/lib/composition.ts heroSlots): the first 3 published works marked «In evidenza»,
+ * in the order of the list; with fewer than 3, the first other published works fill the places.
  */
 export function homeSlugs(opere) {
-  return new Set(opere.filter((o) => o.data.pubblicata && o.data.inEvidenza).slice(0, 3).map((o) => o.slug));
+  const published = opere.filter((o) => o.data.pubblicata);
+  const featured = published.filter((o) => o.data.inEvidenza).slice(0, 3);
+  return new Set([...featured, ...published.filter((o) => !featured.includes(o))].slice(0, 3).map((o) => o.slug));
 }
 
 function badges(data, inHome) {

@@ -9,10 +9,10 @@ import { heroSlots } from '../../src/components/lib/composition.ts';
 /** A work as the admin holds it ({ slug, data }), in list order. */
 const work = (slug, { pubblicata = true, inEvidenza = false } = {}) => ({ slug, data: { titolo: slug, pubblicata, inEvidenza } });
 
-/** What the site puts in the hero: the featured ones it picked (it fills the rest with others). */
-function siteFeatured(opere) {
+/** The works the site puts in the hero (featured first, then the fill). */
+function siteHero(opere) {
   const published = opere.filter((o) => o.data.pubblicata).map((o) => ({ id: o.slug, featured: o.data.inEvidenza, w: 100, h: 100, ratio: 1 }));
-  return new Set(heroSlots(published).picked.filter((w) => w.featured).map((w) => w.id));
+  return new Set(heroSlots(published).picked.map((w) => w.id));
 }
 
 describe('which works are in the home composition', () => {
@@ -24,13 +24,15 @@ describe('which works are in the home composition', () => {
   };
   for (const [name, opere] of Object.entries(cases)) {
     test(name, () => {
-      assert.deepEqual([...homeSlugs(opere)].sort(), [...siteFeatured(opere)].sort());
+      assert.deepEqual([...homeSlugs(opere)].sort(), [...siteHero(opere)].sort());
     });
   }
 
-  test('the fourth featured work is not in the home', () => {
+  test('the fourth featured work is not in the home; with fewer than 3, the first others fill in', () => {
     const home = homeSlugs(cases['four featured: only the first three']);
     assert.deepEqual([...home], ['a', 'c', 'd']);
     assert.equal(home.has('e'), false);
+    assert.deepEqual([...homeSlugs(cases['fewer than three featured'])], ['b', 'a', 'c']);
+    assert.deepEqual([...homeSlugs(cases['a hidden featured work does not count'])], ['b', 'c', 'd']);
   });
 });

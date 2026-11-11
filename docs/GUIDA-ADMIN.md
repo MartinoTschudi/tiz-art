@@ -54,8 +54,8 @@ Se leggi **«E-mail o password non corretti»**: controlla le maiuscole e gli sp
 - i pulsanti **Profilo** e **Cambia l’ordine**;
 - le tue opere, nell’ordine del sito. Ogni opera mostra la foto, il titolo, l’anno e le misure.
   - **★ In evidenza**: è tra i 3 quadri grandi in cima alla pagina iniziale (vedi § 9).
-  - **In evidenza, non in home**: è in evidenza, ma non tra le prime 3 della lista, quindi non va in cima
-    alla pagina iniziale.
+  - **In evidenza, non in home**: è in evidenza, ma più in alto nella lista ci sono già 3 opere in evidenza
+    visibili, oppure è nascosta: quindi non va in cima alla pagina iniziale.
   - **Nascosta** (foto e titolo più chiari): non compare nelle pagine del sito. Non è però segreta: non
     caricare mai foto o testi privati.
 - in basso il grande pulsante **+ Nuova opera**;
@@ -221,8 +221,9 @@ lista. Il colore non tocca mai il quadro: la foto resta com’è.
 ## 10. Cambiare l’ordine delle opere
 
 1. In «Le mie opere» tocca **Cambia l’ordine**.
-2. Con le frecce **↑** e **↓** sposti un’opera più su o più giù. La **★** accanto al titolo segna le opere
-   che sono in home; l’occhio barrato quelle nascoste.
+2. Con le frecce **↑** e **↓** sposti un’opera più su o più giù. La **★** accanto al titolo segna le 3 opere
+   che vanno in home (se quelle in evidenza sono meno di 3, il sito aggiunge le prime della lista, § 9);
+   l’occhio barrato segna quelle nascoste.
 3. Alla fine tocca **Salva l’ordine** (oppure **Annulla**: se hai già spostato qualcosa, l’admin ti chiede
    prima di buttare via gli spostamenti).
 

@@ -29,7 +29,8 @@ function describe(result, live) {
  * @param {object} result  what the store returned
  */
 export function renderDone(app, result) {
-  const { text, page } = describe(result, !app.state.deployDisabled);
+  const { page } = describe(result, false);
+  const textEl = h('p', { class: 'done-text' });
   // After a new work the next step is often another one; after an edit, back to the list.
   const isCreate = result.action === 'create';
   const home = (className) => h('button', { type: 'button', class: `btn btn-block ${className}`, onClick: () => app.home() }, 'Torna alle opere');
@@ -39,7 +40,10 @@ export function renderDone(app, result) {
   const link = h('div', { class: 'done-link' });
 
   function update() {
-    status.replaceChildren(...[page ? deployLine(app.state.deploy) : null].filter(Boolean));
+    const line = page ? deployLine(app.state.deploy) : null;
+    // the short text only while the status line says when it will be online
+    textEl.textContent = describe(result, Boolean(line)).text;
+    status.replaceChildren(...[line].filter(Boolean));
     if (page) link.replaceChildren(siteButton(app.sitePage(page), 'btn btn-secondary btn-block'));
   }
 
@@ -51,7 +55,7 @@ export function renderDone(app, result) {
       { class: 'content done' },
       h('div', { class: 'done-check', 'aria-hidden': 'true' }, icon('check')),
       h('h1', { class: 'done-title' }, 'Fatto!'),
-      h('p', { class: 'done-text' }, text),
+      textEl,
       page ? status : null,
       page ? link : null,
       isCreate ? home('btn-ghost') : result.action === 'update' ? another('btn-ghost') : null,

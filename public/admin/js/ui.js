@@ -74,6 +74,9 @@ export function icon(name, className = 'icon') {
 
 /* ---------- images ---------- */
 
+/** Pictures already loaded once in this page (the browser keeps them): no loading look the next time. */
+const shownImages = new Set();
+
 /**
  * <div class="…"> with an <img> that tries `sources` in order (e.g. the site's thumbnail, then the
  * raw file on GitHub) and shows a quiet placeholder when none loads.
@@ -92,13 +95,18 @@ export function picture(sources, { className = 'thumb', alt = '', eager = false 
   }
   let i = 0;
   const img = h('img', { alt, decoding: 'async', loading: eager ? 'eager' : 'lazy', draggable: 'false' });
-  img.addEventListener('load', () => wrap.classList.remove('is-loading'));
+  img.addEventListener('load', () => {
+    shownImages.add(img.src);
+    wrap.classList.remove('is-loading');
+  });
   img.addEventListener('error', () => {
     i += 1;
     if (i < list.length) img.src = list[i];
     else empty();
   });
   img.src = list[0];
+  // already shown once (the screen was only drawn again): at once, without shimmer or fade
+  if (shownImages.has(img.src)) wrap.classList.remove('is-loading');
   wrap.append(img);
   return wrap;
 }
