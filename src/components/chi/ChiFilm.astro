@@ -1,0 +1,252 @@
+---
+/**
+ * The film of the exhibition «noi, DONNA.» on "Chi sono" (CONTRACTS §5.6; added after the Claude
+ * Design handoff, there is no frame: it follows ChiFigure above it): the film hung like a tall
+ * painting, with the tela shadow, a brushstroke behind it and a handwritten note under it.
+ *
+ *   <ChiFilm poster={filmPoster} />      poster = src/assets/video/<name>.jpg, a frame of the film
+ *
+ * - A native <video>: `controls`, `preload="none"` (nothing of the film is fetched until the visitor
+ *   starts it), `playsinline`, never autoplay, loop or muted (it has voices). The file is
+ *   `public/video/<FILM.file>`, its URL built from the base path. Self-hosted, no third-party player.
+ * - Two renditions of the poster. A `poster` attribute is one URL that the browser fetches at once,
+ *   however far below the fold the film is, so it is a small, light WebP (lib/images.ts → posterUrl):
+ *   what a visitor without JS sees (without any poster Chrome paints a grey box behind the controls).
+ *   With JS the play button covers the video with the sharp one: a ResponsivePicture, lazy, AVIF /
+ *   WebP in the width the box needs. It waits in a <template> until the script takes it out: an
+ *   <img> in the markup would be fetched without JS too (browsers ignore `loading="lazy"` when
+ *   scripting is off, and `hidden` does not stop a fetch), by the very visitors who never see it.
+ * - The play button («Guarda il film») is a real <button> as large as the tela, hidden until the
+ *   script shows it; the native controls are switched off while it shows, so that iOS Safari does
+ *   not draw its own play symbol under ours. A click starts the film, gives the controls back and
+ *   moves the focus to the video. Without JS the native controls are simply there.
+ * - The box per breakpoint and the poster's `sizes` come from lib/film.ts (keep the CSS in step);
+ *   on a short screen the box gets smaller, so the film is whole without scrolling, but never
+ *   narrower than 200 px (the play button needs that): below about 360 px of screen height the film
+ *   is taller than the screen. The box has the ratio of the film without its black side bars
+ *   (FILM.bars) and the film fills it, so the bars are cut off; in full screen the whole picture shows.
+ * The parent places it; like ChiFigure, the stroke reaches into the page gutter, so an ancestor must
+ * clip horizontally (`overflow-x: clip`).
+ *
+ * Hooks for the script below: [data-film] > video · [data-film-play] (the button) ·
+ * template[data-film-picture] in it (the sharp poster).
+ */
+import type { ImageMetadata } from 'astro';
+import ResponsivePicture from '../ResponsivePicture.astro';
+import Stroke from '../Stroke.astro';
+import { withBase } from '../lib/site';
+import { posterUrl } from '../lib/images';
+import { FILM, FILM_BOXES, FILM_PATH, FILM_RATIO, MOSTRA, durationLabel, filmSizes, megabytes } from '../lib/film';
+
+interface Props {
+  /** A frame of the film (run through astro:assets like every image; the original is never shipped). */
+  poster: ImageMetadata;
+  /** The handwritten note under the film. */
+  caption?: string;
+  /** CSS colour of the stroke. */
+  paint?: string;
+}
+
+const { poster, caption = 'il film della mostra', paint = 'var(--tiz-ottanio)' } = Astro.props;
+const src = withBase(FILM_PATH);
+// The light poster: as wide as the phone box at 1× (the narrowest box, the last of FILM_BOXES).
+const lightPoster = await posterUrl(poster, FILM_BOXES[FILM_BOXES.length - 1].w);
+const label = `Film della mostra «${MOSTRA.titolo}»`;
+---
+
+<figure class="chi-film" style={`--film-ratio: ${FILM_RATIO.toFixed(4)}`}>
+  <div class="chi-film__frame" data-reveal="" data-film>
+    <Stroke color={paint} left="var(--film-sl)" top="var(--film-st)" width="var(--film-sw)" height="var(--film-sh)" rotate="5deg" shape={2} />
+    <div class="chi-film__tela" style={`aspect-ratio: ${FILM.width - 2 * FILM.bars} / ${FILM.height}`}>
+      <video
+        class="chi-film__video"
+        controls
+        preload="none"
+        playsinline
+        poster={lightPoster}
+        width={FILM.width}
+        height={FILM.height}
+        aria-label={label}
+      >
+        <source src={src} type={FILM.type} />
+        <p>
+          Il tuo browser non riproduce i video. <a href={src}>Scarica il film (MP4, {megabytes(FILM.bytes)})</a>
+        </p>
+      </video>
+      <button class="chi-film__play" type="button" hidden data-film-play>
+        {/* Decorative: the button is named by its text. Inert in the <template> until the script
+            takes it out (nothing of it is fetched without JS), then lazy. */}
+        <template data-film-picture>
+          <ResponsivePicture image={poster} alt="" preset="card" sizes={filmSizes()} />
+        </template>
+        <span class="tiz-btn chi-film__pill">
+          <svg class="chi-film__icon" viewBox="0 0 12 14" width="12" height="14" aria-hidden="true" focusable="false">
+            <path d="M0 0v14l12-7z" fill="currentColor"></path>
+          </svg>
+          Guarda il film
+        </span>
+        <span class="visually-hidden">{` (${durationLabel(FILM.seconds)}, con audio)`}</span>
+      </button>
+    </div>
+  </div>
+  <figcaption class="chi-film__note" data-reveal="write" style="--tiz-reveal-delay: 600ms">{caption}</figcaption>
+</figure>
+
+<script>
+  // The play button over the poster. Without this script the film keeps the native controls of the
+  // markup and the button stays hidden.
+  document.querySelectorAll<HTMLElement>('[data-film]').forEach((film) => {
+    const video = film.querySelector('video');
+    const play = film.querySelector<HTMLButtonElement>('[data-film-play]');
+    // Leave a film alone that has no player (no <video> support) or was already started.
+    if (!video || !play || typeof video.play !== 'function' || !video.paused || video.currentTime > 0) return;
+
+    // The sharp poster leaves its <template> only now, so a page without this script never fetches it.
+    const template = play.querySelector<HTMLTemplateElement>('template[data-film-picture]');
+    if (template) template.replaceWith(template.content);
+
+    // One play symbol only: iOS Safari draws its own in the middle of a video with controls.
+    video.controls = false;
+    play.hidden = false;
+
+    play.addEventListener('click', () => {
+      // While the film loads, the video goes on showing the sharp picture the visitor was looking at
+      // (it is in the cache), not the light poster of the markup. Only a picture that really loaded:
+      // `complete` is also true for one that failed, and the light poster is better than none.
+      const picture = play.querySelector('img');
+      if (picture?.complete && picture.naturalWidth > 0 && picture.currentSrc) video.poster = picture.currentSrc;
+      play.hidden = true;
+      video.controls = true;
+      // The button is gone: the keyboard goes on at the player. Where a video is not focusable by
+      // itself (Safari), make it so for this call without adding a tab stop.
+      if (!video.hasAttribute('tabindex') && video.tabIndex < 0) video.tabIndex = -1;
+      video.focus({ preventScroll: true });
+      // If the browser refuses to start it, the controls are there to try again.
+      video.play().catch(() => undefined);
+    });
+  });
+</script>
+
+<style>
+  .chi-film {
+    /* The width of the box per breakpoint and its indent: keep in step with FILM_BOXES in lib/film.ts
+       (the indent is the portrait's, ChiFigure: both hang on the same line). */
+    --film-box-w: 280px;
+    --film-indent: 40px;
+    /* The stroke, relative to the film: across its lower half, wider than the tela on both sides. */
+    --film-sl: -30%;
+    --film-st: 40%;
+    --film-sw: 150%;
+    --film-sh: 50%;
+    padding-left: var(--film-indent);
+  }
+
+  .chi-film__frame {
+    position: relative;
+    isolation: isolate;
+    /* Never wider than the column. */
+    width: min(var(--film-box-w), 100%);
+  }
+
+  /* Short screens (a phone held sideways, a low window): the film stays whole in one screen, down to
+     a box of 200 px (the play button is about 180 px wide); lower than about 360 px it is cut. */
+  @supports (height: 100svh) {
+    .chi-film__frame {
+      width: min(var(--film-box-w), 100%, max(200px, (100svh - 48px) * var(--film-ratio)));
+    }
+  }
+
+  /* The box has the film's ratio before anything has loaded (no layout shift). */
+  .chi-film__tela {
+    position: relative;
+    background: var(--tiz-gesso);
+    box-shadow: var(--tiz-shadow-tela);
+  }
+
+  /* Film and posters fill the tela. The tela has the ratio of the film without the black bars on
+     its sides (FILM.bars in lib/film.ts), so "cover" cuts exactly those off, and the half pixel by
+     which the poster frame differs from the film (1120 × 1974 against 720 × 1270). */
+  .chi-film__video,
+  .chi-film__play :global(img) {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  /* Full screen shows the whole film: the browser's own `object-fit: contain` for a full-screen
+     element is not !important, so the "cover" above would win and cut a portrait film down to a
+     band on a wide screen. (No `:-webkit-full-screen` twin for Safari before 16.4: the build's CSS
+     minifier rewrites it to `:fullscreen`. An iPhone plays full screen in its own player anyway.) */
+  .chi-film__video:fullscreen {
+    object-fit: contain;
+  }
+
+  /* The whole tela starts the film; the red button sits low, clear of the painted face, where the
+     browser's controls appear afterwards. */
+  .chi-film__play {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding: 0 0 var(--tiz-s5);
+    border: 0;
+    background: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .chi-film__play[hidden] {
+    display: none;
+  }
+
+  .chi-film__pill {
+    position: relative; /* above the picture */
+    gap: 10px;
+    box-shadow: var(--tiz-shadow-thumb);
+  }
+
+  .chi-film__icon {
+    flex: none;
+  }
+
+  /* The focus ring of the site around the button, on a lino gap so that it reads on any frame. */
+  .chi-film__play:focus-visible {
+    outline: none;
+  }
+
+  .chi-film__play:focus-visible .chi-film__pill {
+    outline: var(--tiz-focus);
+    outline-offset: var(--tiz-focus-offset);
+    box-shadow: 0 0 0 var(--tiz-focus-offset) var(--tiz-lino);
+  }
+
+  @media (hover: hover) and (prefers-reduced-motion: no-preference) {
+    .chi-film__play:hover .chi-film__pill {
+      transform: rotate(-1.5deg) scale(1.03);
+    }
+  }
+
+  /* As under the portrait (ChiFigure): a line in her hand, turned −3deg. */
+  .chi-film__note {
+    margin: 16px 0 0 10px;
+    font: 400 var(--tiz-mano-caption) / 1 var(--tiz-font-mano);
+    text-wrap: balance;
+    overflow-wrap: anywhere;
+    transform: rotate(-3deg);
+  }
+
+  @media (min-width: 640px) {
+    .chi-film {
+      --film-box-w: 320px;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .chi-film {
+      --film-box-w: 340px;
+      --film-indent: 30px;
+    }
+  }
+</style>

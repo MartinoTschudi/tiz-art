@@ -2,7 +2,9 @@
 // - the paint names and colours: site (composition.ts, content.config.ts, tokens.css), admin
 //   (model.js, form.js, admin.css), validator (check-content.mjs) and CONTRACTS §4.1;
 // - the layout numbers the `sizes` helpers compute with, against the CSS that really lays the page out
-//   (tokens.css, ArtworkGallery, ArtworkPager, ChiFigure, HomeHero, HomeQuote, the Opera page grid).
+//   (tokens.css, ArtworkGallery, ArtworkPager, ChiFigure, ChiFilm, HomeHero, HomeQuote, the Opera page
+//   grid);
+// - the film's file and its size limit: lib/film.ts and CONTRACTS §5.6.
 // A CSS-only change that breaks one of these pairs fails here instead of silently making every
 // `sizes` attribute (or the admin's colour swatches) wrong.
 import { describe, test } from 'node:test';
@@ -11,6 +13,7 @@ import { readFileSync } from 'node:fs';
 import { GUTTERS, PAGE_MAX, PAINTS, PAINT_CYCLE, REAL_SCALE } from '../../src/components/lib/composition.ts';
 import { PAGER_THUMB_H, STAGE, THUMB_H } from '../../src/components/lib/opera.ts';
 import { CHI_BOXES } from '../../src/components/lib/chi.ts';
+import { FILM_BOXES, FILM_MAX_BYTES, FILM_PATH } from '../../src/components/lib/film.ts';
 import { HERO_SIZES, QUOTE_SIZES } from '../../src/components/lib/home.ts';
 import { COLORI } from '../../public/admin/js/model.js';
 
@@ -165,6 +168,77 @@ describe('Chi sono picture (ChiFigure) = CHI_BOXES', () => {
       indent = css.includes('--chi-indent') ? prop(css, '--chi-indent') : indent;
       assert.equal(indent, `${box.indent}px`, `indent from ${box.minWidth}`);
     }
+  });
+});
+
+describe('Chi sono film (ChiFilm) = FILM_BOXES', () => {
+  const film = styleOf('src/components/chi/ChiFilm.astro');
+
+  test('box width and indent per breakpoint; the indent is the portrait\'s', () => {
+    const figure = styleOf('src/components/chi/ChiFigure.astro');
+    let indent = null;
+    let portraitIndent = null;
+    for (const box of [...FILM_BOXES].reverse()) {
+      const css = box.minWidth === 0 ? baseOf(film) : mediaBlock(film, box.minWidth, '--film-box-w');
+      assert.equal(prop(css, '--film-box-w'), `${box.w}px`, `width from ${box.minWidth}`);
+      // A breakpoint without its own indent keeps the narrower one's (in both components).
+      indent = css.includes('--film-indent') ? prop(css, '--film-indent') : indent;
+      assert.equal(indent, `${box.indent}px`, `indent from ${box.minWidth}`);
+      const portrait = box.minWidth === 0 ? baseOf(figure) : mediaBlock(figure, box.minWidth, '--chi-box-w');
+      portraitIndent = portrait.includes('--chi-indent') ? prop(portrait, '--chi-indent') : portraitIndent;
+      assert.equal(indent, portraitIndent, `film and portrait on one line from ${box.minWidth}`);
+    }
+  });
+
+  test('the short-screen rule only ever makes the box smaller (sizes stays an upper bound)', () => {
+    assert.match(film, /width: min\(var\(--film-box-w\), 100%\);/);
+    assert.match(film, /@supports \(height: 100svh\) \{\s*\.chi-film__frame \{\s*width: min\(var\(--film-box-w\), 100%, /);
+  });
+
+  test('its floor (the play button needs that width) is the limit CONTRACTS §5.6 names', () => {
+    const floor = /width: min\(var\(--film-box-w\), 100%, max\((\d+)px, \(100svh - \d+px\) \* var\(--film-ratio\)\)\);/.exec(film);
+    assert.ok(floor, 'the short-screen rule has a floor in px');
+    assert.ok(Number(floor[1]) <= Math.min(...FILM_BOXES.map((box) => box.w)), 'the floor never widens a box');
+    assert.ok(read('CONTRACTS.md').includes(`never below ${floor[1]} px wide`), `CONTRACTS names the ${floor[1]} px floor`);
+  });
+
+  test('full screen shows the whole film: "contain" again, over the box\'s "cover"', () => {
+    assert.match(film, /\.chi-film__video,\s*\.chi-film__play :global\(img\) \{[^}]*object-fit: cover;/);
+    assert.match(film, /\.chi-film__video:fullscreen \{\s*object-fit: contain;\s*\}/);
+  });
+
+  test('CONTRACTS §5.6 names the same file and size limit', () => {
+    const contract = read('CONTRACTS.md');
+    // Only §5.6 itself: the file name is also in the layout listing of §3.
+    const section = contract.slice(contract.indexOf('### 5.6'), contract.indexOf('## 6.'));
+    assert.ok(section.startsWith('### 5.6'), 'CONTRACTS has a §5.6 before §6');
+    assert.ok(section.includes(`public/${FILM_PATH}`), `CONTRACTS §5.6 names public/${FILM_PATH}`);
+    assert.match(section, new RegExp(`≤ ${FILM_MAX_BYTES / 1_000_000} MB`));
+  });
+
+  test('the player never fetches or starts the film unasked (CONTRACTS §5.6)', () => {
+    // The opening tag in the template (the comments only say "<video>", without attributes).
+    const tag = /<video\s[^>]*>/.exec(read('src/components/chi/ChiFilm.astro'))?.[0];
+    assert.ok(tag, 'ChiFilm has a <video …> element');
+    for (const attribute of ['controls', 'preload="none"', 'playsinline', 'poster=']) {
+      assert.ok(tag.includes(attribute), `<video> has ${attribute}`);
+    }
+    assert.doesNotMatch(tag, /\b(autoplay|loop|muted)\b/);
+  });
+});
+
+describe('Reveal on scroll (global.css)', () => {
+  // BaseLayout's IntersectionObserver must be able to see an element that waits for its reveal.
+  // Chrome never reports one that its own clip-path has clipped away: such an element below the fold
+  // would stay hidden for good (the handwritten notes on Chi sono once did).
+  test('an element that waits is hidden by opacity, never by clip-path', () => {
+    const css = read('src/styles/global.css');
+    const waiting = [...css.matchAll(/([^{}]*:not\(\.is-in\)[^{}]*)\{([^}]*)\}/g)];
+    assert.ok(waiting.length > 0, 'global.css hides [data-reveal]:not(.is-in)');
+    for (const [, selector, body] of waiting) {
+      assert.doesNotMatch(body, /clip-path|visibility|display/, selector.trim());
+    }
+    assert.ok(waiting.some(([, , body]) => /opacity: 0;/.test(body)));
   });
 });
 

@@ -10,6 +10,8 @@ Everything Martino has to do once (and how to redo each part later), in this ord
 6. [The old WordPress site](#6-the-old-wordpress-site)
 7. [Troubleshooting](#7-troubleshooting)
 
+Not part of the setup, for later: [8. Replace or remove the film on «Chi sono»](#8-replace-or-remove-the-film-on-chi-sono).
+
 > Never paste a password or token into a file of the repository, an e-mail or a chat. The token goes only
 > into the setup page (step 3) or `npm run admin:setup`, which store it **encrypted**. Keep the admin password
 > in a password manager and give it to Tiziana in person.
@@ -277,3 +279,99 @@ Checking the content locally (same check as the Deploy run): `npm run check:cont
 |---|---|
 | Two weeks before the token expires | steps 2 and 3 (new token, same login); tell Tiziana she will log in once more |
 | Before the domain renewal date | make sure `tiz-art.ch` renews (WordPress.com → Domains, or the registrar of option B) |
+
+## 8. Replace or remove the film on «Chi sono»
+
+The film of the exhibition «noi, DONNA.» under the bio is not edited in the admin. It is one file in the
+repository, `public/video/noi-donna-2023.mp4`, with its poster frame `src/assets/video/noi-donna-2023.jpg`
+and its facts in `src/components/lib/film.ts` (rules: CONTRACTS.md §5.6). Needs `ffmpeg` (macOS:
+`brew install ffmpeg`). **Never commit the original**: only the web version below. Everything committed
+stays in the public git history for good, and a file over 100 MB is refused by GitHub (it warns above 50 MB).
+
+### Encode the web version
+
+MP4 with H.264 + AAC, 720 px wide, about 0.95 Mbit/s (≈ 7 MB per minute), the index in front, no metadata
+(camera, place and date of the recording are dropped). Two passes, from the project folder:
+
+```bash
+ORIGINAL=~/Movies/film-originale.mov        # the original, outside the repository
+NAME=noi-donna-2023                         # lower case, digits and hyphens
+
+ffmpeg -y -i "$ORIGINAL" -vf "scale=720:-2,setsar=1" -c:v libx264 -profile:v high -b:v 850k -maxrate 1700k \
+  -bufsize 3400k -g 60 -pass 1 -passlogfile "${TMPDIR:-/tmp}/tiz-film" -an -f null /dev/null
+
+ffmpeg -y -i "$ORIGINAL" -vf "scale=720:-2,setsar=1" -c:v libx264 -profile:v high -b:v 850k -maxrate 1700k \
+  -bufsize 3400k -g 60 -pass 2 -passlogfile "${TMPDIR:-/tmp}/tiz-film" -c:a aac -b:a 96k -ac 2 \
+  -movflags +faststart -map_metadata -1 "public/video/$NAME.mp4"
+```
+
+(`setsar=1` = square pixels. The 2023 film was encoded without it: `-2` rounded its height to an even
+number and ffmpeg kept the exact shape in the pixel ratio, so browsers report it 721 px wide. Nothing shows,
+the tela crops its edges anyway; a new film should not repeat it.)
+
+The poster is one frame of the original (sharper than the 720 px version), at a moment that shows a
+painting and not the title card; here 12 seconds in:
+
+```bash
+ffmpeg -y -ss 12 -i "$ORIGINAL" -frames:v 1 -update 1 -q:v 2 "src/assets/video/$NAME.jpg"
+```
+
+(`-update 1` = "one picture, not a numbered series"; without it ffmpeg 8 writes the file all the same but
+prints a warning that reads like an error.)
+
+A film longer than about 7 minutes does not fit into 50 MB at this quality: lower `-b:v` (and `-maxrate` =
+2 ×, `-bufsize` = 4 × that value) until it does.
+
+### Replace the film
+
+1. Encode the new film and its poster as above, under a **new name** (browsers and GitHub Pages keep a file
+   they already have under the same address), and delete the old `.mp4` and `.jpg`.
+2. Read the facts of the new file:
+
+   ```bash
+   ffprobe -v error -show_entries stream=codec_name,width,height:format=duration,size -of default=nw=1 "public/video/$NAME.mp4"
+   ```
+
+3. `src/components/lib/film.ts`: update `FILM` (`file`, `width`, `height`, `seconds` = duration, `bytes` =
+   size, `uploadDate` = today, `bars`) and, for another exhibition, the texts in `MOSTRA`. `bars` is the
+   width of a black bar at the left and right edge of the picture, in pixels of the film: 0 for a film
+   without one (the 2023 film has 4; such bars are better cut off while encoding, with
+   `-vf "crop=…,scale=720:-2,setsar=1"`). The box heights follow the film's ratio by themselves. A landscape film,
+   or a portrait one too tall for a phone (`npm test` says so), needs new widths in `FILM_BOXES`, in the
+   CSS of `src/components/chi/ChiFilm.astro` and in the two tests that name them
+   (`scripts/test/film.test.mjs`: "340, 320 and 280 px wide" and "filmSizes").
+4. `src/pages/chi-sono.astro`: the `import filmPoster from '../assets/video/….jpg'` line.
+5. The docs that quote this film:
+   - the file name: CONTRACTS.md (§3, §5.6), AGENTS.md and this section;
+   - the running time («6 minuti e mezzo», "PT6M38S"): CONTRACTS.md (§5.3, §5.6), docs/DESIGN-HANDOFF.md
+     (§2 "The exhibition block", §3 `film.ts`);
+   - the box heights (340 × 606 / 320 × 571 / 280 × 499): docs/DESIGN-HANDOFF.md §2 and the comment above
+     `FILM_BOXES`;
+   - for another exhibition also its title, place and dates: CONTRACTS.md (§5.1, §5.6),
+     docs/DESIGN-HANDOFF.md (the list above its §1, and §2), docs/GUIDA-ADMIN.md (§12), README.md and
+     this section.
+6. `npm test` (it compares the committed file with `FILM`: size, ≤ 50 MB, H.264 + AAC, picture size,
+   running time, index in front; the tests need no change for a new film, they read the constants),
+   `npm run build`, then look at `/chi-sono/` with `npm run dev`: the poster, the play button, the film to
+   its end, full screen, and once with JavaScript switched off.
+
+### Add subtitles
+
+The film has voices and no subtitles, which the page says («senza sottotitoli»; CONTRACTS.md §5.6).
+To add them: write the spoken Italian as a WebVTT file with times (`public/video/noi-donna-2023.it.vtt`,
+first line `WEBVTT`), add
+`<track kind="captions" srclang="it" label="Italiano" src={withBase('video/noi-donna-2023.it.vtt')} />`
+after the `<source>` in `src/components/chi/ChiFilm.astro`, take «, senza sottotitoli» out of the line in
+`src/pages/chi-sono.astro`, and bring CONTRACTS.md §5.6 and docs/DESIGN-HANDOFF.md §2 in step.
+
+### Remove the film
+
+Delete the `<section id="mostra">` block, its styles and the film lines of the front matter in
+`src/pages/chi-sono.astro` (the `filmJsonLd(…)` entry of `jsonLd` included), then
+`src/components/chi/ChiFilm.astro`, `src/components/lib/film.ts`, `filmJsonLd` in
+`src/components/lib/structured-data.ts`, `posterUrl` in `src/components/lib/images.ts`,
+`scripts/test/film.test.mjs`, the film block of `scripts/test/design-sync.test.mjs`, `public/video/` and
+`src/assets/video/`. Three places only mention the film and may stay with the mention removed: the `boxes`
+option of `chiSizes` in `src/components/lib/chi.ts`, its test in `scripts/test/chi.test.mjs`, and the film
+line in the header comment of `src/components/lib/images.ts`. Then take it out of CONTRACTS.md (§3, §5.1, §5.3, §5.5, §5.6), AGENTS.md, README.md,
+docs/DESIGN-HANDOFF.md, docs/GUIDA-ADMIN.md and this section. The file itself stays in the git history.

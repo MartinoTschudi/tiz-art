@@ -53,15 +53,17 @@ export function coverFactor(boxRatio: number, photoRatio: number): number {
  * - otherwise (painting): the box is the painting itself, fitted in the breakpoint's box.
  * On phones narrower than the box plus gutters and indent, the box shrinks with the viewport.
  * Example, portrait 4:5: "(min-width: 1024px) 400px, (min-width: 640px) 360px, (min-width: 360px) 280px, calc(100vw - 80px)".
+ * `boxes`: another set of boxes in the same column, widest breakpoint first (the film of the
+ * exhibition under the bio, lib/film.ts); default CHI_BOXES.
  */
-export function chiSizes(ratio: number, { cover = false }: { cover?: boolean } = {}): string {
+export function chiSizes(ratio: number, { cover = false, boxes = CHI_BOXES }: { cover?: boolean; boxes?: readonly ChiBox[] } = {}): string {
   const factor = cover ? coverFactor(PORTRAIT_RATIO, ratio) : 1;
   const boxRatio = cover ? PORTRAIT_RATIO : ratio;
   const px = (n: number) => `${Math.round(n * factor)}px`;
   const when = (from: number) => (from > 0 ? `(min-width: ${from}px) ` : '');
   const parts: string[] = [];
   let upper = Infinity; // an earlier entry already answers for viewports ≥ upper
-  for (const box of CHI_BOXES) {
+  for (const box of boxes) {
     const width = fitWidth(box, boxRatio);
     const margin = 2 * box.gutter + box.indent; // viewport width minus this = room for the picture
     const full = width + margin; // viewport width from which the picture has its full size

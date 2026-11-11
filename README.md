@@ -45,6 +45,8 @@ GitHub Pages serves it.
 - **Site**: [Astro 7](https://astro.build), static output, plain CSS with design tokens, no UI framework;
   design «Lo studio» by Claude Design ([docs/DESIGN-HANDOFF.md](docs/DESIGN-HANDOFF.md)).
   Artwork photos are converted by Astro (`astro:assets` + sharp) into AVIF/WebP in several widths.
+  Pages: home, Opere (all works), one page per work, Chi sono (portrait, bio and the film of the 2023
+  exhibition «noi, DONNA.», self-hosted in `public/video/`), Contatti.
 - **Admin**: `public/admin/`, plain ES modules served as-is at `<site>/admin/`. Login = e-mail + password,
   which decrypt a GitHub fine-grained token stored in `public/admin/auth.json` (AES-256-GCM, PBKDF2-SHA256
   600 000 rounds). It reads and writes the repository through the GitHub REST API; one commit per save.
@@ -76,6 +78,8 @@ src/content/profilo/           profilo.json + optional portrait (written by the 
 src/data/sito.json             fixed settings: name, repository, Web3Forms key, old WordPress redirects
 src/pages/ layouts/ components/ styles/   the public site (design values in src/styles/tokens.css)
 public/admin/                  the admin (index.html, admin.css, js/, setup/, manifest, icons, auth.json)
+public/video/                  the film on Chi sono (one MP4, ≤ 50 MB, served as it is); its poster frame is in
+                               src/assets/video/, its facts in src/components/lib/film.ts (CONTRACTS.md §5.6)
 scripts/check-content.mjs      content validator (npm run check:content)
 scripts/admin-setup.mjs        creates public/admin/auth.json from the terminal (npm run admin:setup)
 scripts/dev/admin-dev.mjs      local mock of the GitHub API for the admin (npm run admin:dev)
@@ -124,7 +128,7 @@ admin always talks to the real repository.
 |---|---|---|
 | [CONTRACTS.md](CONTRACTS.md) | developers, AI agents | Data formats, pages, admin behaviour, deploy: the rules every part follows |
 | [AGENTS.md](AGENTS.md) | AI assistants, developers | How to work in this repository safely |
-| [docs/SETUP.md](docs/SETUP.md) | Martino | One-time setup: Pages, token, admin login, contact form, domain switch, troubleshooting |
+| [docs/SETUP.md](docs/SETUP.md) | Martino | One-time setup: Pages, token, admin login, contact form, domain switch, troubleshooting; replacing the film on Chi sono |
 | [docs/GUIDA-ADMIN.md](docs/GUIDA-ADMIN.md) | Tiziana (Italian) | Using the admin on the phone |
 | [docs/DESIGN-HANDOFF.md](docs/DESIGN-HANDOFF.md) | developers, designers | The «Lo studio» design as built: pages, components, tokens, images, behaviour |
 

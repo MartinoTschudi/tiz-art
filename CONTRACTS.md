@@ -50,13 +50,15 @@ src/data/sito.json               fixed technical config (NOT editable in the adm
 src/layouts/, src/components/, src/styles/, src/pages/   site agent
 src/pages/admin/anteprime.json.ts         site agent (thumbnail index for the admin, section 6)
 public/ (except public/admin/)            site agent (favicon etc.)
+public/video/noi-donna-2023.mp4           site agent (the film on Chi sono, served as it is; section 5.6)
+src/assets/video/noi-donna-2023.jpg       site agent (its poster frame, through astro:assets)
 public/admin/**                  admin agent (index.html, admin.css, js/*.js, manifest, icons, setup/)
 public/admin/auth.json           created by the setup page / setup script, never by hand
 scripts/admin-setup.mjs          admin agent (CLI alternative to the setup page)
 scripts/dev/admin-dev.mjs        admin agent (`npm run admin:dev`: local mock GitHub API, section 7.6)
 scripts/check-content.mjs        infra agent (`npm run check:content`, validates section 4)
 scripts/test/admin-*.test.mjs    admin agent       scripts/test/content-*.test.mjs   infra agent
-scripts/test/{composition,home,opera,chi,contatti,design-sync}.test.mjs   site agent (the site's design rules)
+scripts/test/{composition,home,opera,chi,film,contatti,design-sync}.test.mjs   site agent (the site's design rules; `film` also checks the committed film)
 scripts/dev/make-mano-font.py, src/assets/fonts/   site agent (the self-hosted fonts, docs/DESIGN-HANDOFF.md §4)
 scripts/test/fixtures/repo/      admin agent (small committed copy of src/content for the tests, section 8)
 scripts/dev/site-icons.mjs       site agent (renders favicon-32.png / apple-touch-icon.png from favicon.svg)
@@ -157,7 +159,7 @@ package.json, CONTRACTS.md       fixed — do not edit (report needed changes in
 | `/` | **Hero composition**: the motto (last word in rosso; the artist's name when the motto is empty) and up to 3 works = the first 3 published `inEvidenza` works in display order, filled up with the first published works not already picked when fewer than 3. Slots by aspect ratio: the most square → large (ties: larger canvas, then display order), the tallest of the rest → narrow, the other → small; the handwritten note "{titolo}, {anno}" under the large one; the intro paragraph with "Guarda le opere →". Below 1024 px: motto → the large work → paragraph. Then the **series section**: the `collezione` of the first hero work (else the most common non-empty one) with the highest `anno` of its works and up to 5 of its published works that are not in the hero or the quote ("Le ultime opere" and the first 5 such works when no work has a series), and the link "Tutte le {n} opere →". Then the **quote band**: the first sentence (20–140 chars) of a published work's text outside the hero, searched from the last work in display order backwards, with that painting; hidden when there is none; the attribution links to the work. Then the large home footer. No bio teaser, no contact call-to-action |
 | `/opere/` | ONE list of all published works in display order (`ordine`), hung at real relative scale ("{n} tele, appese come nello studio"; "1 tela"). No grouping or filtering by `collezione` |
 | `/opere/<slug>/` | the cover on a stage with the work's brushstroke behind it (whole painting); with 2 or more photos all of them as thumbnails under it, the one on the stage marked (tap = swap the stage image; without JS a link to the full-size JPEG); tap on the stage = full-screen viewer with zoom, keyboard + swipe; "{nn} / {total} · {collezione}" (series part omitted when empty), title, `<dl>` Anno / Misure / Tecnica (empty ones skipped), her text + "— TIZ" (the block is omitted when the text is empty), "Chiedi di quest’opera →" → `/contatti/?opera=<slug>`, previous/next work (wrapping around; with two published works only the other one, as next on the first and previous on the second). Phone: a fixed bottom bar with ← · the button · → |
-| `/chi-sono/` | `profilo.ritratto` (4:5 crop allowed here only: it is a photo, not a painting) with an ocra brushstroke and the note "nello studio"; without a portrait the first hero painting, uncropped, captioned «titolo», anno. Name, motto (last word in rosso), bio (`profilo.bio`, plain text), "Vedi le opere" and "Scrivimi →" |
+| `/chi-sono/` | `profilo.ritratto` (4:5 crop allowed here only: it is a photo, not a painting) with an ocra brushstroke and the note "nello studio"; without a portrait the first hero painting, uncropped, captioned «titolo», anno. Name, motto (last word in rosso), bio (`profilo.bio`, plain text), "Vedi le opere" and "Scrivimi →". Under it, as a block of its own: the exhibition «noi, DONNA.» (2023) with its film (5.6) |
 | `/contatti/` | contact form (5.4) |
 | `/contatti/grazie/` | the form's success page for visitors without JS (5.4); `noindex`, not in the sitemap |
 | `/404.html` | Italian 404: "Qui la tela è ancora bianca.", "Guarda le opere →" and "Torna alla home" |
@@ -183,7 +185,9 @@ Tschudi Belloli, anno` (+ "dettaglio N" for extra images).
 Per page `<title>` ("Titolo — Tiziana Tschudi Belloli"; home: "Tiziana Tschudi Belloli — TIZ"),
 meta description (from text, ≤ 155 chars), canonical, Open Graph + Twitter card (cover image
 inside a 1200 × 1200 box, JPEG quality 75, never cropped), `lang="it"`, JSON-LD (`Person` on home/chi-sono, `VisualArtwork` on artwork pages with
-`artMedium`, `width`/`height` in cm, `dateCreated`, `image`, `creator`).
+`artMedium`, `width`/`height` in cm, `dateCreated`, `image`, `creator`; on chi-sono also a `VideoObject` for the film (5.6), next to the
+`Person`: `name`, `description`, `thumbnailUrl` (a JPEG of the poster) and `contentUrl` (the MP4) as absolute URLs,
+`encodingFormat` ("video/mp4"), `duration` (ISO 8601, "PT6M38S"), `uploadDate`, `inLanguage`; no author).
 
 ### 5.4 Contact form
 Fields: nome (`name`, required), email (`email`, required, type email), messaggio (`message`, required,
@@ -214,12 +218,57 @@ ancora attivo" and the build prints a warning.
 
 ### 5.5 Quality bar
 Semantic HTML, keyboard accessible, visible focus, `prefers-reduced-motion` respected, works without
-JS (only the viewer, the phone menu overlay, the photo swap, the `?opera` chip and the animations need
-it; the contact form falls back to a normal POST, §5.4, which then carries no work), Lighthouse-friendly
+JS (only the viewer, the phone menu overlay, the photo swap, the `?opera` chip, the film's play button and
+the animations need it; the contact form falls back to a normal POST, §5.4, which then carries no work; the
+film keeps its native controls, §5.6), Lighthouse-friendly
 (no layout shift, also while the fonts load; lazy images below the fold), mobile-first. Colours, fonts,
 the type and spacing scales, gutters, shadows and motion are CSS custom properties in
 `src/styles/tokens.css` (a value equal to a token is written as the token); layout numbers read off a
 single frame stay as px in the component that uses them.
+
+### 5.6 The film of the exhibition (Chi sono)
+
+One film: the exhibition «noi, DONNA.» (Atelier Attila, Bellinzona, 22 aprile – 7 maggio 2023), shown on
+`/chi-sono/` in a `<section>` of its own under the bio: "la mostra", the title (h2), place and dates, the
+exhibition's own sentence («Un tributo alla femminilità…»), one line on the film («Il film dura 6 minuti e
+mezzo, con audio, senza sottotitoli.»), and the film hung like a tall painting (tela shadow, a brushstroke
+behind it, the note "il film della mostra"). No credit line and no names of the people in it. It is **site copy, not admin data**: nothing of it is in section 4, and the admin
+does not know it.
+
+- **Files**: `public/video/noi-donna-2023.mp4` (served as it is; its URL is built from the base path) and
+  the poster, a frame of the film, `src/assets/video/noi-donna-2023.jpg` (same name; through `astro:assets`
+  like every image, the original is never shipped). The facts of the file (name, pixel size, the width of
+  its black side bars, seconds, bytes, upload date) and the exhibition's texts are constants in
+  `src/components/lib/film.ts`; `scripts/test/film.test.mjs` fails when the committed file no longer
+  matches them.
+- **Encoding**: MP4 with H.264 (High) video and AAC stereo audio, 720 px wide, ≤ 50 MB (GitHub warns on a
+  push above 50 MB and refuses 100 MB; no Git LFS, Pages does not serve it), the index in front
+  (`-movflags +faststart`: `moov` before `mdat`), no metadata. The command is in `docs/SETUP.md` §8.
+- **Player**: a native `<video>` with `controls`, `preload="none"` (nothing of the film is fetched until the
+  visitor starts it), `playsinline`, `poster`, `width`/`height`, a text fallback with a link to the file.
+  Never `autoplay`, `loop` or `muted`. Self-hosted: no third-party player, no tracker, no external request.
+  It **works without JS** with the browser's own controls. With JS a play button «Guarda il film» (a real
+  `<button>` as large as the film, accessible name with the duration) covers it and the native controls are
+  off until it is pressed (one play symbol only, also on iOS); pressing it starts the film, gives the
+  controls back and moves the focus to the video. In full screen the whole picture shows
+  (`object-fit: contain`), never a cut-out of it.
+- **Subtitles: none yet.** The film has voices and neither captions nor a transcript (WCAG 1.2.2 is not
+  met; an audit flags the missing `<track>`), so the page says «senza sottotitoli». They need the
+  spoken Italian written down as WebVTT by the owner: `public/video/noi-donna-2023.it.vtt`, a
+  `<track kind="captions" srclang="it" label="Italiano">` with a base-path URL in the `<video>`, and
+  then the line on the page without «senza sottotitoli» (`docs/SETUP.md` §8).
+- **Poster**: the `poster` attribute cannot be lazy and is fetched with the page, so it is one light WebP
+  (as wide as the phone box, 280 px; quality 60). The sharp one (AVIF / WebP, responsive, lazy) is the
+  picture inside the play button; it waits in a `<template>` that the script unpacks, so without JS
+  nothing of it is fetched (an `<img>` in the markup would be: `loading="lazy"` needs scripting).
+- **Layout**: the film's box is 340 / 320 / 280 px wide (≥ 1024 / ≥ 640 / phone) at the ratio of the
+  picture without its black side bars (the film fills the box, so the bars are cut off), never wider
+  than the column; its ratio is reserved before anything loads (no layout shift). The widths are chosen
+  so that the whole film is visible without scrolling on a phone from 375 × 667; on a short screen (a
+  phone held sideways) the box gets smaller for the same reason, but never below 200 px wide (the play
+  button needs that), so under about 360 px of screen height the film is taller than the screen. From
+  1024 px it hangs in the portrait's column and the text in the bio's; below, one column: title → film
+  → text.
 
 ## 6. Thumbnail index for the admin — `/admin/anteprime.json`
 

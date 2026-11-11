@@ -7,6 +7,8 @@
  *   photo, ≤ 2400 px) as the largest size. Also used for the no-JS links and the JSON-LD `image`.
  * - Open Graph: JPEG inside a 1200 × 1200 box, quality 75 (≈ 150–400 KB: WhatsApp and others drop
  *   link previews of heavier images). Admin thumbnails (anteprime.json): WebP 480 px wide.
+ * - The film on Chi sono: its poster frame as a `card` picture in the play button, a light WebP as the
+ *   `poster` attribute (posterUrl) and the Open Graph JPEG as the JSON-LD thumbnail.
  *
  * The original file itself is never linked. Astro decides whether to keep an original in dist/ by
  * tracking reads of `image.src`, keyed by the emitted file name; two identical photos (same bytes,
@@ -69,6 +71,19 @@ export async function socialImage(src: ImageMetadata, alt: string): Promise<Soci
   const size = fit(src, Math.round(Math.min(OG_BOX, (OG_BOX * src.width) / src.height)));
   const image = await getImage({ src, ...size, format: 'jpg', quality: OG_QUALITY });
   return { url: absoluteUrl(image.src), ...size, alt };
+}
+
+/**
+ * The `poster` attribute of the film on Chi sono (ChiFilm): one small WebP, `width` px wide. A video
+ * poster cannot be lazy or responsive and the browser fetches it with the page, far above the film,
+ * so it is kept light: ChiFilm asks for the width of the film's phone box at 1× (≈ 40 KB for the 2023
+ * film). With JS the sharp, lazy picture of the play button covers it; it is what shows without JS.
+ */
+export const POSTER_QUALITY = 60;
+
+export async function posterUrl(src: ImageMetadata, width: number): Promise<string> {
+  const image = await getImage({ src, ...fit(src, width), format: 'webp', quality: POSTER_QUALITY });
+  return image.src;
 }
 
 /** Full-size JPEG of a photo (same pixel size, quality 90): the viewer's largest size and the JSON-LD image. */

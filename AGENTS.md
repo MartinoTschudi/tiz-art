@@ -57,6 +57,11 @@ or assets, also the `/tiz-art/` build above. These are the same checks Deploy ru
   the type and spacing scales, gutters, shadows and motion are custom properties in `src/styles/tokens.css`
   (write a value that equals a token as the token; layout px read off one frame stay in the component); the
   design («Lo studio») is described as built in `docs/DESIGN-HANDOFF.md`. Artwork images go through `astro:assets` (AVIF/WebP); never crop a painting.
+- **The film** on Chi sono (CONTRACTS §5.6) is site copy, not admin data: `public/video/noi-donna-2023.mp4`
+  (MP4 H.264 + AAC, 720 px wide, ≤ 50 MB, faststart; never re-encode or rename it in passing) with its facts
+  and texts in `src/components/lib/film.ts`. Replace the file and those constants together (`npm test`
+  compares them; steps in `docs/SETUP.md` §8). A native `<video>`: `preload="none"`, no autoplay, usable
+  without JS, no third-party player. It has no subtitles yet and the page says so (§5.6).
 - **Admin**: plain ES modules, no build step, no CDN, no external fonts; strict CSP in `index.html`. Never
   put untrusted strings into `innerHTML` (use `textContent`/DOM APIs). Phone first: 375 px wide, touch
   targets ≥ 44 px. It reads data only from the GitHub API, never from the deployed site.
@@ -71,9 +76,10 @@ or assets, also the `/tiz-art/` build above. These are the same checks Deploy ru
 | Content schema | `src/content.config.ts` (= CONTRACTS §4) |
 | Pages, layout, components, styles | `src/pages/`, `src/layouts/`, `src/components/`, `src/styles/` |
 | Name, repository, Web3Forms key, old WordPress redirects | `src/data/sito.json` |
+| The film of the exhibition on Chi sono | `public/video/` (the MP4), `src/assets/video/` (its poster frame), `src/components/lib/film.ts` (facts, texts, box sizes), `src/components/chi/ChiFilm.astro` (player) |
 | Site address and base path, redirects, sitemap | `astro.config.mjs` (from `SITE_URL` / `BASE_PATH`) |
 | Admin | `public/admin/` (`js/` modules, `setup/` page); local mock: `scripts/dev/admin-dev.mjs` |
 | Content validator | `scripts/check-content.mjs` |
-| Tests | `scripts/test/` (`admin-*.test.mjs`, `content-*.test.mjs`, the site's design rules `composition`, `home`, `opera`, `chi`, `contatti`, and `design-sync`, which checks the values the CSS, the `sizes` helpers, the admin and CONTRACTS share; `npm test` runs every `scripts/test/*.test.mjs` through the glob in `package.json`, there is no index file). The admin tests use the committed fixture `scripts/test/fixtures/repo/`, never the live `src/content` (Deploy runs `npm test` after every save of Tiziana) |
+| Tests | `scripts/test/` (`admin-*.test.mjs`, `content-*.test.mjs`, the site's design rules `composition`, `home`, `opera`, `chi`, `film` (also checks the committed film against its constants), `contatti`, and `design-sync`, which checks the values the CSS, the `sizes` helpers, the admin and CONTRACTS share; `npm test` runs every `scripts/test/*.test.mjs` through the glob in `package.json`, there is no index file). The admin tests use the committed fixture `scripts/test/fixtures/repo/`, never the live `src/content` (Deploy runs `npm test` after every save of Tiziana) |
 | Docs | `docs/SETUP.md` (owner), `docs/GUIDA-ADMIN.md` (Tiziana, Italian), `docs/DESIGN-HANDOFF.md` (the site's design as built) |
 | Site icons | `public/favicon.svg` → `node scripts/dev/site-icons.mjs` renders `favicon-32.png` and `apple-touch-icon.png` |

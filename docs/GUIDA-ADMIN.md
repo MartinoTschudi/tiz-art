@@ -197,6 +197,9 @@ Se vuoi solo toglierla dal sito per un po’, **nascondila** (§ 8).
 
 Anche qui le modifiche non salvate restano sul telefono finché non salvi o tocchi **Annulla modifiche**.
 
+Sotto la biografia, nella pagina «Chi sono», c’è anche **il film della mostra «noi, DONNA.»**. Il film e i
+suoi testi non si modificano dall’admin: se vuoi cambiarlo o toglierlo, chiedi a Martino.
+
 ## 13. «Pubblicazione in corso»: cosa vuol dire
 
 Quando salvi, le tue modifiche sono **già al sicuro**. Poi il sito si ricostruisce da solo:
@@ -295,6 +298,10 @@ Ogni `opera.json` ha `colore` (`"ocra"`, `"rosso"`, `"terracotta"`, `"ottanio"`,
 automatico, CONTRACTS §4.1). Un file salvato da un admin più vecchio può non averlo: il sito lo legge come
 `null`, `npm run check:content` dà solo un avviso (non un errore) e il prossimo **Salva** di Tiziana lo
 aggiunge.
+
+### Il film della mostra
+Il film su «Chi sono» (`public/video/`, CONTRACTS §5.6) non passa dall’admin: è un file del repository, con
+i suoi dati in `src/components/lib/film.ts`. Sostituirlo o toglierlo: `docs/SETUP.md` §8.
 
 ### Se Tiziana chiama
 - «Problema nell’ultima pubblicazione»: apri **Dettagli** (GitHub Actions), guarda il passo fallito.
