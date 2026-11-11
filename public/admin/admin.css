@@ -1269,6 +1269,58 @@ a.opera-row:active {
   background: var(--paper-2);
 }
 
+/* «Colori più vivi» under a new photo */
+.tile-colours {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 44px;
+  padding: 4px 2px 4px 6px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.switch-sm {
+  width: 46px;
+  height: 28px;
+}
+
+.switch-sm::after {
+  width: 22px;
+  height: 22px;
+}
+
+.switch-sm:checked::after {
+  transform: translateX(18px);
+}
+
+.switch:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.tile-straighten:disabled,
+.tile-whole:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* a new picture is being made (e.g. «Colori più vivi» switched): the old one stays visible under it */
+.tile-busy {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: rgba(247, 243, 236, 0.72);
+  font-size: 14px;
+  color: var(--muted);
+}
+
 .tile-whole {
   width: 100%;
   min-height: 44px;

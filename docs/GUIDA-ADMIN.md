@@ -72,6 +72,7 @@ Tocca un’opera per aprirla e modificarla.
      **Fai copertina** su un’altra foto.
    - Per togliere una foto tocca **×**.
    - Se nella foto si vede il muro, o il quadro è un po’ storto, tocca **Raddrizza** sotto la foto (vedi § 5a).
+   - Sotto ogni foto nuova c’è **Colori più vivi**, già acceso: l’admin ravviva un po’ i colori (vedi § 5b).
 3. **Titolo** e **almeno una foto** sono obbligatori. Tutto il resto puoi lasciarlo vuoto.
 4. **Anno**: c’è già l’anno di oggi. Cambialo se serve.
 5. **Misure in cm**: **Larghezza** e **Altezza**, per esempio `100` e `140` (anche `100,5`).
@@ -110,7 +111,8 @@ Belle foto = un bel sito. Bastano poche attenzioni:
 - **Riempi l’inquadratura**: il quadro deve occupare quasi tutta la foto, con poco muro intorno.
 - **Senza cornice e senza ambientazioni**: niente foto del quadro appeso in salotto o montato in una stanza finta.
   Il sito mostra l’opera così com’è.
-- **Niente filtri** e niente ritocchi dei colori: chi guarda deve vedere i colori veri.
+- **Niente filtri** e niente ritocchi dei colori sul telefono: chi guarda deve vedere i colori veri.
+  L’admin li ravviva un poco da solo, in modo leggero (§ 5b).
 - Dopo la foto intera puoi aggiungere **dettagli** (un volto, la materia del colore): sono le foto 2, 3, 4…
 
 ## 5a. Raddrizzare la foto di un quadro
@@ -132,7 +134,7 @@ l’admin lo sistema. Usa solo la tua foto: non ridipinge e non inventa niente, 
 Da sapere:
 
 - **Serve solo per la foto del quadro intero.** Per le foto dei dettagli non serve: tocca **Annulla**.
-- **Finché non salvi puoi tornare indietro**: sotto una foto raddrizzata c’è **Torna alla foto originale**,
+- **Finché non salvi puoi tornare indietro**: sotto una foto raddrizzata c’è **Togli il raddrizzamento**,
   e puoi anche toccare di nuovo **Raddrizza** per spostare i punti. Dopo **Salva** resta solo la foto
   raddrizzata e questi due pulsanti non ci sono più: controlla bene i bordi prima di salvare.
 - **Le misure aiutano.** Se hai già scritto larghezza e altezza del quadro, l’admin le usa per dare al
@@ -144,6 +146,19 @@ Da sapere:
 - Lungo i bordi viene tolto un filo di tela (pochi millimetri), per non lasciare strisce di muro.
 - Per una **foto già online** il pulsante non c’è: aggiungi di nuovo la foto, raddrizzala e togli la
   vecchia con **×**. Se la vecchia era la copertina, tocca **Fai copertina** sulla nuova.
+
+## 5b. Colori più vivi
+
+Una foto fatta da vicino, con tanta luce, viene spesso **sbiadita**: il nero diventa grigio e i colori
+sono deboli. Per questo, sotto ogni foto nuova di un’opera, l’interruttore **Colori più vivi** è già
+acceso: l’admin toglie il velo grigio e rende i colori un po’ più forti. Non ridipinge niente e non
+cambia le tinte: un rosso resta quel rosso, solo meno smorto.
+
+- Se una foto era già bella, cambia pochissimo.
+- Se ti sembra che i colori non siano più quelli del quadro, **spegni l’interruttore** sotto quella foto:
+  torna esattamente com’era. Puoi riaccenderlo quando vuoi, finché non hai salvato.
+- Mentre l’admin prepara la foto vedi «Preparo…» sopra di essa: aspetta un attimo.
+- Vale anche per le foto raddrizzate (§ 5a).
 
 ## 6. Modificare un’opera
 
@@ -262,6 +277,7 @@ Niente panico: quello che hai salvato non si perde. Quasi sempre basta **Riprova
 | Una foto mostra «Non riesco a leggere questa foto» | Toglila con **×** e scegline un’altra, oppure rifalla con **Scatta foto**. |
 | Le foto restano su «Preparo…» | Aspetta un momento. Se non va avanti, chiudi le altre app e aggiungi meno foto alla volta. |
 | «Il telefono non è riuscito a raddrizzare la foto» | La foto è rimasta com’era. Chiudi le altre app e tocca di nuovo **Raddrizza**. |
+| «Il telefono non è riuscito a ravvivare i colori» | La foto è rimasta com’era. Chiudi le altre app e tocca di nuovo **Colori più vivi**. |
 | «I punti si incrociano o sono troppo vicini», «I quattro punti non formano un quadro» oppure il pulsante **Raddrizza** resta spento | Metti un punto su ciascun angolo del quadro. Il pulsante si accende quando la linea bianca tra i punti è intera (non tratteggiata) e hai spostato almeno un punto. |
 | «Problema nell’ultima pubblicazione» | Le tue modifiche sono salvate. Chiama Martino: lui vede il problema con **Dettagli**. |
 | «Pubblicazione in corso…» per più di 15 minuti | Chiama Martino. |

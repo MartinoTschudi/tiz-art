@@ -12,7 +12,7 @@
 import { h, icon, topbar, stickyBar, confirmSheet, toast, progress, siteButton } from '../ui.js';
 import { MAX_IMMAGINI, LIMITS, COLORI, parseOperaForm, parseMisura, formatNumber } from '../model.js';
 import { workKey } from '../drafts.js';
-import { existingPhoto, readyPhoto, newPhoto, releasePhoto, toSavePhoto, photosReady, canStraighten, isStraightened, restoreWhole } from '../photos.js';
+import { existingPhoto, readyPhoto, newPhoto, releasePhoto, toSavePhoto, photosReady, canStraighten, isStraightened, restoreWhole, hasColours, canSwitchColours, setColours } from '../photos.js';
 import { pickerButtons, photoMedia } from './photo-ui.js';
 import { straightenScreen } from './straighten-ui.js';
 
@@ -198,7 +198,7 @@ export function renderForm(app, { opera, draft, restored = false }) {
     if (room <= 0) return toast(`Puoi aggiungere al massimo ${MAX_IMMAGINI} foto.`);
     if (files.length > room) toast(`Al massimo ${MAX_IMMAGINI} foto: ho aggiunto solo le prime ${room}.`);
     for (const file of files.slice(0, room)) {
-      draft.photos.push(newPhoto(file, () => draft.onPhotosChange && draft.onPhotosChange()));
+      draft.photos.push(newPhoto(file, () => draft.onPhotosChange && draft.onPhotosChange(), { colours: true }));
     }
     showError('foto', '');
     renderPhotos();
@@ -224,10 +224,10 @@ export function renderForm(app, { opera, draft, restored = false }) {
     return !larghezza.error && !altezza.error && larghezza.value && altezza.value ? { larghezza: larghezza.value, altezza: altezza.value } : null;
   }
 
-  /** Focus goes back to the photo's own button (the tiles are rebuilt on every change). */
-  function focusTile(photo) {
+  /** Focus goes back to the photo's own control (the tiles are rebuilt on every change). */
+  function focusTile(photo, selector = '.tile-straighten') {
     const tile = [...photoGrid.children].find((el) => el.dataset.key === photo.key);
-    const target = tile && tile.querySelector('.tile-straighten');
+    const target = tile && (tile.querySelector(`${selector}:not(:disabled)`) || tile.querySelector('.tile-straighten:not(:disabled)'));
     if (target) target.focus({ preventScroll: true });
   }
 
@@ -242,12 +242,35 @@ export function renderForm(app, { opera, draft, restored = false }) {
     focusTile(photo);
   }
 
-  function wholePhoto(photo) {
-    restoreWhole(photo);
+  /** A new picture is being made for the photo: its tile shows it, then the result (or why not). */
+  async function remaking(photo, task, done, focus) {
+    const run = task();
+    renderPhotos();
+    try {
+      await run;
+      if (done) toast(done);
+    } catch (err) {
+      toast(`${err.message || 'Non è stato possibile cambiare la foto.'} La foto è rimasta com’era.`, { type: 'error', duration: 7000 });
+    }
     renderPhotos();
     changed();
-    toast('La foto è tornata com’era.');
-    focusTile(photo);
+    focusTile(photo, focus);
+  }
+
+  function wholePhoto(photo) {
+    remaking(photo, () => restoreWhole(photo), 'La foto non è più raddrizzata.');
+  }
+
+  function switchColours(photo, on) {
+    remaking(photo, () => setColours(photo, on), null, '.tile-colours input');
+  }
+
+  /** «Colori più vivi»: a switch under the photo, on by default. */
+  function coloursSwitch(photo, n) {
+    const id = `colori-${photo.key}`;
+    const input = h('input', { type: 'checkbox', role: 'switch', class: 'switch switch-sm', id, checked: hasColours(photo), disabled: Boolean(photo.busy) || !canSwitchColours(photo), 'aria-label': `Colori più vivi per la foto ${n}` });
+    input.addEventListener('change', () => switchColours(photo, input.checked));
+    return h('label', { class: 'tile-colours', for: id }, h('span', {}, 'Colori più vivi'), input);
   }
 
   function photoTile(photo, index) {
@@ -270,9 +293,10 @@ export function renderForm(app, { opera, draft, restored = false }) {
         ? h(
             'div',
             { class: 'tile-tools' },
-            h('button', { type: 'button', class: 'tile-straighten', 'aria-label': `Raddrizza la foto ${n}`, onClick: () => straighten(photo) }, icon('straighten'), 'Raddrizza'),
+            h('button', { type: 'button', class: 'tile-straighten', 'aria-label': `Raddrizza la foto ${n}`, disabled: Boolean(photo.busy), onClick: () => straighten(photo) }, icon('straighten'), 'Raddrizza'),
+            coloursSwitch(photo, n),
             isStraightened(photo)
-              ? h('button', { type: 'button', class: 'tile-whole', 'aria-label': `Torna alla foto ${n} originale`, onClick: () => wholePhoto(photo) }, 'Torna alla foto originale')
+              ? h('button', { type: 'button', class: 'tile-whole', 'aria-label': `Togli il raddrizzamento alla foto ${n}`, disabled: Boolean(photo.busy), onClick: () => wholePhoto(photo) }, 'Togli il raddrizzamento')
               : null,
           )
         : null,

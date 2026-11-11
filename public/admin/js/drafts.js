@@ -6,7 +6,8 @@
  *   PROFILE       unsaved changes to the profile
  *
  * Stored values: new work { fields: {…as typed}, photos: [{ blob, preview, width, height, id,
- * focal35, whole?, corners? }] (the last three for «Raddrizza», see photos.js), savedAt };
+ * focal35, colori, whole?, corners?, straightened?, ratio? }] (for «Colori più vivi» and «Raddrizza», see
+ * photos.js), savedAt };
  * an edit also has `base` (the `aggiornataIl` / `aggiornatoIl` it started from) and keeps existing
  * photos as { ref }. `fields` are the form's (screens/form.js createDraft); a draft kept by an older
  * admin may lack a newer field (e.g. `colore`): restoring it starts from createDraft's defaults, so
