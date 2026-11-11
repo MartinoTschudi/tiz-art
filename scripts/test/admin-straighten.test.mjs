@@ -121,6 +121,7 @@ describe('the quad', () => {
     const diamond = [[100, 0], [200, 100], [100, 200], [0, 100]];
     const ordered = orderCorners([diamond[2], diamond[0], diamond[3], diamond[1]]);
     assert.equal(quadIsUsable(ordered, 400, 400), true, 'clockwise, so it can be straightened');
+    assert.deepEqual(ordered[0], [100, 0]);
     assert.deepEqual([...ordered].sort(), [...diamond].sort());
   });
 
@@ -219,6 +220,16 @@ describe('the true shape of the canvas', () => {
     const chosen = chooseRatio(estasi, 3024, 4032, { focal35: 24, measures: { larghezza: 60, altezza: 130 } });
     assert.equal(chosen.from, 'photo');
     close(chosen.ratio, 0.4284, 0.001);
+  });
+
+  test('chooseRatio: measurements never bend the picture more than 12 % from the photo’s own estimate', () => {
+    // far from the side with an ultra-wide lens the photo allows almost any shape: the cap still holds
+    const [w, h] = [4032, 3024];
+    const quad = photograph({ W: 140, H: 100, yaw: 28, pitch: 5, f: focalPixels(13, w, h), w, h, distance: 150 });
+    assert.equal(quadIsUsable(quad, w, h), true);
+    const estimate = chooseRatio(quad, w, h).ratio;
+    assert.equal(chooseRatio(quad, w, h, { measures: { larghezza: estimate * 1.115, altezza: 1 } }).from, 'measures');
+    assert.equal(chooseRatio(quad, w, h, { measures: { larghezza: estimate * 1.125, altezza: 1 } }).from, 'photo');
   });
 
   test('chooseRatio: the focal length in the photo is trusted only for an uncropped 4:3 photo', () => {

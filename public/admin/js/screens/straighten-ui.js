@@ -31,10 +31,10 @@ const DRAG_START = 4;
 const HINTS = {
   found: 'Ho messo i quattro punti sugli angoli del quadro: controllali. Se uno non è giusto, trascinalo sull’angolo.',
   notFound: 'Non ho trovato il quadro da solo. Trascina i quattro punti sugli angoli del quadro. Per la foto di un dettaglio non serve: tocca «Annulla».',
-  remembered: 'Questi sono i punti che avevi messo tu. Spostali se serve.',
-  bad: 'I punti si incrociano o sono troppo vicini. Rimetti ogni punto su un angolo del quadro.',
+  remembered: 'Questi sono i punti dell’ultima volta. Spostali se serve.',
+  bad: 'I punti si incrociano o sono troppo vicini: rimettine uno su ogni angolo. Se il quadro è preso molto di lato, rifai la foto più di fronte.',
   result: 'Va bene così? Guarda che il quadro si veda tutto e che lungo i bordi non resti del muro.',
-  shape: ' Se ti sembra troppo largo o troppo stretto, scrivi prima le misure del quadro e raddrizza di nuovo.',
+  resultShape: 'Va bene così? Il quadro si deve vedere tutto, senza muro. Troppo largo o stretto? Tocca «Sì, va bene», scrivi le misure e raddrizza di nuovo.',
 };
 
 const clamp01 = (v) => Math.min(1, Math.max(0, v));
@@ -142,7 +142,8 @@ export function straightenScreen(photo, { measures = null } = {}) {
 
     /** Fits the photo into the stage and puts outline and points on it. */
     function layout() {
-      if (!opened || closed) return;
+      if (!opened || closed || box.hidden) return; // only the points screen has something to fit
+      draw(); // first the hint: its height decides how much room the photo has
       const availW = stage.clientWidth - 2 * STAGE_PAD;
       const availH = stage.clientHeight - 2 * STAGE_PAD;
       if (availW <= 0 || availH <= 0) return;
@@ -153,7 +154,6 @@ export function straightenScreen(photo, { measures = null } = {}) {
       box.style.height = `${hgt}px`;
       box.style.left = `${Math.round((stage.clientWidth - w) / 2)}px`;
       box.style.top = `${Math.round((stage.clientHeight - hgt) / 2)}px`;
-      draw();
     }
 
     /** The points in the order top-left … bottom-left as she sees them, in photo pixels. */
@@ -316,7 +316,7 @@ export function straightenScreen(photo, { measures = null } = {}) {
         made = await makeStraightened(photo, chosen, measures);
       } catch (err) {
         if (closed) return;
-        toast(`${err.message || 'Non sono riuscita a raddrizzare la foto.'} La foto è rimasta com’era.`, { type: 'error', duration: 7000 });
+        toast(`${err.message || 'Non è stato possibile raddrizzare la foto.'} La foto è rimasta com’era.`, { type: 'error', duration: 7000 });
         return showPoints();
       }
       if (closed) return;
@@ -326,7 +326,7 @@ export function straightenScreen(photo, { measures = null } = {}) {
       resultImg.src = resultUrl;
       working.hidden = true;
       resultImg.hidden = false;
-      hint.textContent = HINTS.result + (made.shape === 'photo' && !measures ? HINTS.shape : '');
+      hint.textContent = made.shape === 'photo' && !measures ? HINTS.resultShape : HINTS.result;
       actions.replaceChildren(
         button('Sposta i punti', 'btn-dark', showPoints),
         button('Sì, va bene', 'btn-primary', () => {

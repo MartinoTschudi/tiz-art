@@ -194,6 +194,18 @@ export function stepEntry(onBack) {
 }
 
 /**
+ * At start: the page was reloaded while a step was open (iOS does that to a page that used too much
+ * memory). Its history entry is still there, with the same address as the screen: step off it, so
+ * that the first «back» afterwards leaves the screen instead of showing it again.
+ */
+export function dropStaleStep() {
+  if (history.state && history.state.tizStep) {
+    ownBack = true;
+    history.back();
+  }
+}
+
+/**
  * For the app's "popstate" handler: true when the event only concerned such a step, so there is
  * nothing to route (the step was closed by the back gesture, we took its entry away ourselves, or a
  * forward gesture landed on the entry of a step that is no longer open).

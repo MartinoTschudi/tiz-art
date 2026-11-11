@@ -132,17 +132,18 @@ l’admin lo sistema. Usa solo la tua foto: non ridipinge e non inventa niente, 
 Da sapere:
 
 - **Serve solo per la foto del quadro intero.** Per le foto dei dettagli non serve: tocca **Annulla**.
-- **Puoi sempre tornare indietro**: sotto una foto raddrizzata c’è **Torna alla foto originale**.
-  Finché non hai salvato l’opera puoi anche toccare di nuovo **Raddrizza** e spostare i punti.
+- **Finché non salvi puoi tornare indietro**: sotto una foto raddrizzata c’è **Torna alla foto originale**,
+  e puoi anche toccare di nuovo **Raddrizza** per spostare i punti. Dopo **Salva** resta solo la foto
+  raddrizzata e questi due pulsanti non ci sono più: controlla bene i bordi prima di salvare.
 - **Le misure aiutano.** Se hai già scritto larghezza e altezza del quadro, l’admin le usa per dare al
   quadro la forma giusta. Se il quadro raddrizzato ti sembra troppo largo o troppo stretto, scrivi le
   misure e raddrizza di nuovo.
-- **Meglio una foto presa bene.** Raddrizza corregge una foto un po’ storta, non una presa molto di
+- **Meglio una foto presa bene.** **Raddrizza** corregge una foto un po’ storta, non una presa molto di
   lato: più sei davanti al quadro, più il risultato è nitido. I riflessi della luce restano: per quelli
   serve un’altra foto.
 - Lungo i bordi viene tolto un filo di tela (pochi millimetri), per non lasciare strisce di muro.
 - Per una **foto già online** il pulsante non c’è: aggiungi di nuovo la foto, raddrizzala e togli la
-  vecchia con **×**.
+  vecchia con **×**. Se la vecchia era la copertina, tocca **Fai copertina** sulla nuova.
 
 ## 6. Modificare un’opera
 
@@ -258,7 +259,7 @@ Niente panico: quello che hai salvato non si perde. Quasi sempre basta **Riprova
 | Una foto mostra «Non riesco a leggere questa foto» | Toglila con **×** e scegline un’altra, oppure rifalla con **Scatta foto**. |
 | Le foto restano su «Preparo…» | Aspetta un momento. Se non va avanti, chiudi le altre app e aggiungi meno foto alla volta. |
 | «Il telefono non è riuscito a raddrizzare la foto» | La foto è rimasta com’era. Chiudi le altre app e tocca di nuovo **Raddrizza**. |
-| «I quattro punti non formano un quadro» oppure il pulsante **Raddrizza** resta spento | Metti un punto su ciascun angolo del quadro: quando la cornice bianca torna intera il pulsante si accende. |
+| «I punti si incrociano o sono troppo vicini», «I quattro punti non formano un quadro» oppure il pulsante **Raddrizza** resta spento | Metti un punto su ciascun angolo del quadro. Il pulsante si accende quando la linea bianca tra i punti è intera (non tratteggiata) e hai spostato almeno un punto. |
 | «Problema nell’ultima pubblicazione» | Le tue modifiche sono salvate. Chiama Martino: lui vede il problema con **Dettagli**. |
 | «Pubblicazione in corso…» per più di 15 minuti | Chiama Martino. |
 | L’app resta bianca o dice che non c’è connessione | Chiudi l’app (scorri verso l’alto dal fondo dello schermo e spingila via) e riaprila quando hai di nuovo rete. |

@@ -107,6 +107,7 @@ describe('«Raddrizza»: the state of a photo', () => {
     const photo = readyPhoto(prepared(1, { whole: { width: 2400, height: 1800 }, corners: CORNERS }));
     assert.equal(isStraightened(photo), false);
     assert.equal(straightenView(photo).blob, photo.result.blob);
+    assert.equal(straightenView(photo).corners, null, 'points placed on the lost whole photo are dropped with it');
     useStraightened(photo, MADE, CORNERS);
     assert.equal(isStraightened(photo), true);
   });

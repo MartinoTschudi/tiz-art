@@ -35,7 +35,11 @@ export function existingPhoto(ref) {
 /** A photo prepared earlier (restored from the draft). */
 export function readyPhoto(result) {
   if (!result.id) result.id = randomId(6); // drafts saved before ids existed
-  if (result.whole && !(result.whole.blob && result.whole.preview)) delete result.whole; // a damaged draft: treat as not straightened
+  if (result.whole && !(result.whole.blob && result.whole.preview)) {
+    // a damaged draft: a plain photo, and the points (placed on the lost whole photo) mean nothing on it
+    delete result.whole;
+    delete result.corners;
+  }
   return { key: newKey(), kind: 'new', status: 'ready', result, previewUrl: URL.createObjectURL(result.preview) };
 }
 

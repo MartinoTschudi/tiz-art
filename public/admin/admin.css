@@ -1290,6 +1290,11 @@ html.is-straightening body {
   overflow: hidden;
 }
 
+/* a message about the step («Il telefono non è riuscito…») shows over it, under the progress overlay */
+html.is-straightening .toasts {
+  z-index: 75;
+}
+
 .straighten {
   position: fixed;
   inset: 0;
@@ -1323,6 +1328,12 @@ html.is-straightening body {
   font-size: 15.5px;
   line-height: 1.35;
   color: rgba(255, 255, 255, 0.82);
+}
+
+@media (max-width: 359px) {
+  .straighten-hint {
+    min-height: 5.4em; /* four lines on a narrow phone */
+  }
 }
 
 .straighten-stage {

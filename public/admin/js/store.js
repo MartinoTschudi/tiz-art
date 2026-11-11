@@ -369,12 +369,15 @@ export class Store {
         if ((isNew && previous) || changedMeanwhile) {
           // …unless a picture itself changed since (e.g. straightened): same name, other content
           const samePictures = uploadIdx.every((i, k) => (files.get(dir + fileNames[i]) || {}).sha === shas[k]);
-          if (sameOpera(previous.data, opera) && samePictures) {
+          // Same data, including the random names of this form's new photos: the stored version is
+          // this form's own earlier attempt, whatever happened to its pictures since.
+          const mine = sameOpera(previous.data, opera);
+          if (mine && samePictures) {
             result.opera = previous.data; // exactly this was saved already: nothing to write
             return null;
           }
           // Someone saved this work after the form was opened: writing the whole form would undo it.
-          if (changedMeanwhile) throw new StoreError(CHANGED_MEANWHILE_OPERA);
+          if (changedMeanwhile && !mine) throw new StoreError(CHANGED_MEANWHILE_OPERA);
         }
 
         const keep = new Set([OPERA_FILE, ...fileNames]);

@@ -472,6 +472,27 @@ describe('Store: saving twice never does harm', () => {
     assert.equal(mock.log().length, before + 1);
   });
 
+  test('the same on an edit: a photo added, the answer lost, then straightened → written, not «cambiata dopo che l’hai aperta»', async () => {
+    const opened = seedWork('guardami').data;
+    const later = new Date(NOW.getTime() + 60000);
+    store = makeStore(losingAnswers({ patches: 1, refReads: 2 }), () => later);
+    const photos = [{ file: '01.jpg' }, upload(5)];
+    const change = { slug: 'guardami', fields: parseOperaForm(createDraft(seedWork('guardami')).fields).fields, photos, base: opened.aggiornataIl };
+    await assert.rejects(() => store.saveOpera(change), (err) => err.kind === 'network');
+    const before = mock.log().length;
+    photos[1].upload.blob = jpeg(9); // «Raddrizza» on the new photo
+    const again = await store.saveOpera(change);
+    assert.equal(again.action, 'update');
+    assert.equal(mock.log().length, before + 1, 'the straightened picture is written');
+    const data = assertValidFolder('guardami');
+    assert.deepEqual([...folder('guardami').get(data.immagini[1].slice(2))], [...new Uint8Array(await jpeg(9).arrayBuffer())]);
+    // someone else's change in between is still a conflict
+    const other = makeStore(mock.fetch, () => new Date(later.getTime() + 60000));
+    await other.saveOpera({ ...unchangedSave({ slug: 'guardami', data }), fields: { ...change.fields, testo: 'Da un altro telefono.' } });
+    photos[1].upload.blob = jpeg(10);
+    await assert.rejects(() => store.saveOpera(change), /cambiata dopo che l’hai aperta/);
+  });
+
   test('«Riprova» after a failure in the commit step does not upload the photos again', async () => {
     const photos = [upload(1), upload(2), upload(3)];
     mock.failNext({ match: '/git/refs/heads/', method: 'PATCH', status: 502 });
