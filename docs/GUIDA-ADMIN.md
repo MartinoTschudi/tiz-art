@@ -24,7 +24,7 @@ Ogni volta che salvi, il sito si aggiorna da solo **in circa 2 minuti**.
 2. Tocca **Condividi** (il quadrato con la freccia verso l’alto). Se non lo vedi, tocca prima **···** in basso.
 3. Scorri e tocca **Aggiungi alla schermata Home**. Se vedi l’interruttore **Apri come app web**, lascialo
    acceso. Poi tocca **Aggiungi**.
-4. Ora hai l’icona **TIZ Admin** (rossa, con le lettere TIZ). Da adesso apri l’admin da lì.
+4. Ora hai l’icona **TIZ Admin** (rossa, con la tua firma). Da adesso apri l’admin da lì.
 
 **Android (Chrome)**
 1. Apri l’indirizzo dell’admin in **Chrome**.

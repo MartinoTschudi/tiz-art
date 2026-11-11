@@ -1,24 +1,43 @@
 #!/usr/bin/env node
 /**
- * Generates the "TIZ Admin" home-screen icons in public/admin/icons/ (run once; the PNGs are
- * committed):  node scripts/dev/admin-icons.mjs
+ * Generates the "TIZ Admin" home-screen icons in public/admin/icons/ (run after changing her
+ * signature, src/assets/firma.svg, or the colours below; the PNGs are committed):
+ *   node scripts/dev/admin-icons.mjs [--out <folder>]
  *
  *   apple-touch-icon.png   180 × 180  iPhone "Aggiungi alla schermata Home" (opaque, iOS rounds it)
  *   icon-192.png / icon-512.png        Android / manifest, purpose "any"
- *   icon-maskable-512.png              manifest, purpose "maskable" (letters inside the safe circle)
+ *   icon-maskable-512.png              manifest, purpose "maskable" (the signature inside the safe circle)
  *
- * The letters are drawn as paths (no font needed), so the result is the same on every machine.
+ * The mark is her signature (the site's logo: the shapes of src/assets/firma.svg, painted with
+ * currentColor there) in cream on the admin's terracotta, over an ocra brushstroke. No font is
+ * needed, so the result is the same on every machine. --out writes the PNGs somewhere else (to
+ * compare them before replacing the committed ones).
  */
 import sharp from 'sharp';
-import { mkdir } from 'node:fs/promises';
+import { mkdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const OUT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', 'public', 'admin', 'icons');
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
+const outFlag = process.argv.indexOf('--out');
+if (outFlag !== -1 && !process.argv[outFlag + 1]) throw new Error('--out needs a folder');
+const OUT = outFlag === -1 ? path.join(ROOT, 'public', 'admin', 'icons') : path.resolve(process.argv[outFlag + 1]);
 
 const BACKGROUND = '#a8432a'; // the admin's terracotta accent
-const LETTERS = '#fbf6ee';
+const SIGNATURE = '#fbf6ee';
 const BRUSH = '#f0b84d';
+
+/** Her signature fitted into the 512 artwork: this wide, its top edge at this y. */
+const WIDTH = 400;
+const TOP = 106;
+
+const firma = await readFile(path.join(ROOT, 'src', 'assets', 'firma.svg'), 'utf8');
+const viewBox = /<svg\b[^>]*\bviewBox="0 0 ([\d.]+) ([\d.]+)"/.exec(firma);
+const shapes = /<svg\b[^>]*>([\s\S]*)<\/svg>/.exec(firma)?.[1].trim();
+if (!viewBox || !shapes?.includes('currentColor')) {
+  throw new Error('src/assets/firma.svg: expected <svg viewBox="0 0 W H"> with shapes painted with currentColor');
+}
+const k = WIDTH / Number(viewBox[1]);
 
 /** 512 × 512 artwork; `scale` shrinks the mark around the centre (maskable safe zone). */
 function svg(scale) {
@@ -26,12 +45,8 @@ function svg(scale) {
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <rect width="512" height="512" fill="${BACKGROUND}"/>
   <g transform="translate(${t} ${t}) scale(${scale})">
-    <g fill="${LETTERS}">
-      <path d="M96 168h124v38h-43v138h-38V206H96z"/>
-      <rect x="238" y="168" width="38" height="176"/>
-      <path d="M294 168h122v34l-78 104h78v38H294v-34l78-104h-78z"/>
-    </g>
-    <path d="M110 384c74-17 178-21 292-7" fill="none" stroke="${BRUSH}" stroke-width="16" stroke-linecap="round"/>
+    <g transform="translate(${(512 - WIDTH) / 2} ${TOP}) scale(${k})">${shapes.replaceAll('currentColor', SIGNATURE)}</g>
+    <path d="M84 398c90-18 212-22 344-7" fill="none" stroke="${BRUSH}" stroke-width="16" stroke-linecap="round"/>
   </g>
 </svg>`;
 }
