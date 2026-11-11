@@ -346,8 +346,8 @@ A film longer than about 7 minutes does not fit into 50 MB at this quality: lowe
 4. `src/pages/chi-sono.astro`: the `import filmPoster from '../assets/video/….jpg'` line.
 5. The docs that quote this film:
    - the file name: CONTRACTS.md (§3, §5.6), AGENTS.md and this section;
-   - the running time («6 minuti e mezzo», "PT6M38S"): CONTRACTS.md (§5.3, §5.6), docs/DESIGN-HANDOFF.md
-     (§2 "The exhibition block", §3 `film.ts`);
+   - the running time ("PT6M38S", «6 minuti e mezzo»): CONTRACTS.md (§5.3), docs/DESIGN-HANDOFF.md
+     (§3 `film.ts`);
    - the box heights (340 × 606 / 320 × 571 / 280 × 499): docs/DESIGN-HANDOFF.md §2 and the comment above
      `FILM_BOXES`;
    - for another exhibition also its title, place and dates: CONTRACTS.md (§5.1, §5.6),
@@ -360,12 +360,11 @@ A film longer than about 7 minutes does not fit into 50 MB at this quality: lowe
 
 ### Add subtitles
 
-The film has voices and no subtitles, which the page says («senza sottotitoli»; CONTRACTS.md §5.6).
+The film has voices and no subtitles (CONTRACTS.md §5.6; the page does not mention it).
 To add them: write the spoken Italian as a WebVTT file with times (`public/video/noi-donna-2023.it.vtt`,
 first line `WEBVTT`), add
 `<track kind="captions" srclang="it" label="Italiano" src={withBase('video/noi-donna-2023.it.vtt')} />`
-after the `<source>` in `src/components/chi/ChiFilm.astro`, take «, senza sottotitoli» out of the line in
-`src/pages/chi-sono.astro`, and bring CONTRACTS.md §5.6 and docs/DESIGN-HANDOFF.md §2 in step.
+after the `<source>` in `src/components/chi/ChiFilm.astro`, and bring CONTRACTS.md §5.6 in step.
 
 ### Remove the film
 

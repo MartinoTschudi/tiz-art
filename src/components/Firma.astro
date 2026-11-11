@@ -1,0 +1,38 @@
+---
+/**
+ * Her signature (lib/firma.ts), in the text colour of where it stands. The page needs BaseLayout:
+ * the drawing itself is there once, as a <symbol>.
+ *
+ *   <Firma class="tiz-header__tiz" label={SITE.firma} />     an image named "TIZ"
+ *   <Firma class="tiz-footer__tiz" />                         decorative (aria-hidden)
+ *
+ * The parent gives it a `height` (the width follows: the drawing is never stretched) and a `color`.
+ */
+import { FIRMA } from './lib/firma';
+
+interface Props {
+  /** Accessible name; without it the signature is hidden from assistive technology. */
+  label?: string;
+  class?: string;
+}
+
+const { label, class: className, ...rest } = Astro.props;
+---
+
+<svg
+  class:list={['tiz-firma', className]}
+  viewBox={FIRMA.viewBox}
+  role={label ? 'img' : undefined}
+  aria-label={label}
+  aria-hidden={label ? undefined : 'true'}
+  focusable="false"
+  {...rest}><use href={`#${FIRMA.id}`}></use></svg
+>
+
+<style>
+  .tiz-firma {
+    display: block;
+    flex: none;
+    width: auto;
+  }
+</style>

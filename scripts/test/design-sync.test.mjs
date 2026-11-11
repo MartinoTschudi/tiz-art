@@ -4,7 +4,8 @@
 // - the layout numbers the `sizes` helpers compute with, against the CSS that really lays the page out
 //   (tokens.css, ArtworkGallery, ArtworkPager, ChiFigure, ChiFilm, HomeHero, HomeQuote, the Opera page
 //   grid);
-// - the film's file and its size limit: lib/film.ts and CONTRACTS §5.6.
+// - the film's file and its size limit: lib/film.ts and CONTRACTS §5.6;
+// - her signature: the drawing src/assets/firma.svg and the favicon made from it.
 // A CSS-only change that breaks one of these pairs fails here instead of silently making every
 // `sizes` attribute (or the admin's colour swatches) wrong.
 import { describe, test } from 'node:test';
@@ -16,6 +17,7 @@ import { CHI_BOXES } from '../../src/components/lib/chi.ts';
 import { FILM_BOXES, FILM_MAX_BYTES, FILM_PATH } from '../../src/components/lib/film.ts';
 import { HERO_SIZES, QUOTE_SIZES } from '../../src/components/lib/home.ts';
 import { COLORI } from '../../public/admin/js/model.js';
+import { currentFaviconSvg } from '../dev/site-icons.mjs';
 
 const read = (path) => readFileSync(new URL(`../../${path}`, import.meta.url), 'utf8');
 const TOKENS = read('src/styles/tokens.css');
@@ -264,5 +266,34 @@ describe('Home (HomeHero, HomeQuote) = HERO_SIZES / QUOTE_SIZES', () => {
     const desktop = Number(/grid-template-columns: (\d+)px minmax\(0, 1fr\);/.exec(mediaBlock(quote, 1024, 'grid-template-columns'))[1]);
     const tablet = Number(/grid-template-columns: (\d+)px minmax\(0, 1fr\);/.exec(mediaBlock(quote, 640, 'grid-template-columns'))[1]);
     assert.equal(QUOTE_SIZES, `(min-width: 1024px) ${desktop * share}px, (min-width: 640px) ${tablet * share}px, ${desktop * share}px`);
+  });
+});
+
+describe('Her signature (src/assets/firma.svg) and the site icons', () => {
+  const firma = read('src/assets/firma.svg');
+
+  test('the drawing is shapes in one colour: currentColor, so each place paints it with `color`', () => {
+    assert.match(firma, /^<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg" viewBox="0 0 [\d.]+ [\d.]+">/);
+    assert.ok(firma.includes('currentColor'), 'painted with currentColor');
+    const paints = [...firma.matchAll(/\b(?:fill|stroke)="([^"]+)"/g)].map((m) => m[1]);
+    assert.deepEqual(paints.filter((paint) => paint !== 'currentColor' && paint !== 'none'), [], 'no other colour');
+    assert.doesNotMatch(firma, /<(?:text|image|style|script|filter|mask|linearGradient|radialGradient)\b|\bid=|\bwidth=|\bheight=/);
+    assert.ok(Buffer.byteLength(firma) <= 10_000, 'every page carries it once (the <symbol> in BaseLayout): keep it under 10 kB');
+  });
+
+  test('the page carries the drawing once: a <symbol> in BaseLayout, shown by Firma.astro with <use>', () => {
+    const id = /id: '([\w-]+)'/.exec(read('src/components/lib/firma.ts'))[1];
+    assert.ok(read('src/layouts/BaseLayout.astro').includes('<symbol id={FIRMA.id} viewBox={FIRMA.viewBox} set:html={FIRMA.shapes} />'));
+    assert.ok(read('src/components/Firma.astro').includes('<use href={`#${FIRMA.id}`}></use>'));
+    assert.doesNotMatch(firma, new RegExp(`\\bid="${id}"`));
+    for (const file of ['src/components/SiteHeader.astro', 'src/components/SiteFooter.astro', 'src/pages/opere/[slug].astro']) {
+      assert.match(read(file), /<Firma class="[\w-]+"/, `${file} signs with <Firma>`);
+    }
+  });
+
+  test('public/favicon.svg is what scripts/dev/site-icons.mjs writes from it and from --tiz-lino / --tiz-rosso', async () => {
+    const { svg, lino } = await currentFaviconSvg();
+    assert.equal(read('public/favicon.svg'), svg, 'run: node scripts/dev/site-icons.mjs (and commit the three icons)');
+    assert.ok(read('src/layouts/BaseLayout.astro').includes(`<meta name="theme-color" content="${lino}" />`), 'theme-color = --tiz-lino');
   });
 });

@@ -24,6 +24,10 @@ Where the build deliberately differs from the design's README:
   ocra, the Contatti block ottanio, the phone menu ocra, the 404 canvas terracotta).
 - The Chi sono bio is her own text (`profilo.bio`), not the design's draft.
 - Fonts are self-hosted; Nanum Brush Script is patched for Italian and renamed TIZ Mano (§4).
+- **The logo is her painted signature** (`src/assets/firma.svg`, §4), not the frames' «TIZ» set in the
+  brush font (changed after the handoff, at the owner's request): in the header (`--tiz-signature`
+  high), in the footers (40 px; on the home 76 / 96 px high, where the frames set 54 / 110 / 140 px
+  type), under her text on Opera (28 / 32 px high, in place of «— TIZ») and in the favicon.
 - No Astro `<ClientRouter />`: native cross-document view transitions, so the vanilla scripts keep
   normal page loads.
 - The contact form posts to Web3Forms; without JS it is a normal POST that comes back to
@@ -76,7 +80,7 @@ phone < 640 · tablet 640–1023 · desktop ≥ 1024.
 |---|---|---|
 | `/` | `src/pages/index.astro` + `components/home/*` | **Hero** (1b / 1c, 800 px high at 1280): the motto in her hand, 150 px desktop, last word in rosso with the beating dot (the artist's name when the motto is empty; a long motto flows at 40 / 56 px), the intro line and «Guarda le opere →»; up to 3 works from `heroSlots` (the first 3 *in evidenza*, filled up with the first published works): the most square → large (with the note «{titolo}, {anno}»; at most 1.25 × its width high), the tallest → narrow, the other → small. Below 1024: motto → the large work → intro. **Series**: «noi, DONNA.» + year in her hand (a name over 40 characters at 84 / 48 px), the line from `SERIE_NOTE`, up to 5 works of the series outside hero and quote, hung by eye without sizes, «Tutte le {n} opere →» («Le ultime opere» when no work has a series). **Quote band** (gesso): the first sentence (20–140 characters) of a work's text, from the last work backwards, outside the hero; key word in rosso; «— Tiziana, su «{titolo}», {misure} →» links to the work; hidden when there is none. Large home footer |
 | `/opere/` | `src/pages/opere/index.astro` | «Opere» (84 / 120 / 150 px) and the note «{n} tele, appese come nello studio» («{n} tele» on phones, «1 tela»), then ONE list of all published works in display order, hung by eye (1d / 1e / 1l). No grouping by series. No works: «Le opere saranno pubblicate presto.» |
-| `/opere/<slug>/` | `src/pages/opere/[slug].astro` | **Opera** (1f / 1g). Desktop: «← Tutte le opere»; grid `minmax(0,1fr) 400px`, gap 64: the stage (720 px high, lower on short screens) with the painting whole (≤ 88 % × 92 %) and its stroke; the column «{nn} / {total} · {collezione}», the title in her hand, `<dl>` Anno / Misure / Tecnica (empty ones skipped), her text + «— TIZ» (block omitted when the text is empty), «Chiedi di quest’opera →» → `/contatti/?opera=<slug>`; a title over 40 characters is 64 px (48 phone). With 2 or more photos all of them as thumbnails under the stage (the one on the stage marked). Previous / next (wrapping; with two works only the other one, once) as two halves with 84 px thumbnails. 640–1023: the same, stacked. Phone: «← Opere» + TIZ in the header, the painting in a 440 px box, «{nn} / {total}», title, «anno · misure» / tecnica, text; a fixed bottom bar ← · «Chiedi di quest’opera» · →. JSON-LD `VisualArtwork` |
+| `/opere/<slug>/` | `src/pages/opere/[slug].astro` | **Opera** (1f / 1g). Desktop: «← Tutte le opere»; grid `minmax(0,1fr) 400px`, gap 64: the stage (720 px high, lower on short screens) with the painting whole (≤ 88 % × 92 %) and its stroke; the column «{nn} / {total} · {collezione}», the title in her hand, `<dl>` Anno / Misure / Tecnica (empty ones skipped), her text + her signature (`Firma`, 28 / 32 px high; block omitted when the text is empty), «Chiedi di quest’opera →» → `/contatti/?opera=<slug>`; a title over 40 characters is 64 px (48 phone). With 2 or more photos all of them as thumbnails under the stage (the one on the stage marked). Previous / next (wrapping; with two works only the other one, once) as two halves with 84 px thumbnails. 640–1023: the same, stacked. Phone: «← Opere» + TIZ in the header, the painting in a 440 px box, «{nn} / {total}», title, «anno · misure» / tecnica, text; a fixed bottom bar ← · «Chiedi di quest’opera» · →. JSON-LD `VisualArtwork` |
 | `/chi-sono/` | `src/pages/chi-sono.astro` | «chi sono» in her hand, her name (h1), the portrait (`profilo.ritratto`, 4:5 crop allowed here only) with an ocra stroke and the note «nello studio» — without a portrait the first hero painting, uncropped, in its own paint, captioned «titolo», anno and linked; the motto (last word in rosso), the bio (`PlainText`, paragraphs 18 px apart), the dark button «Vedi le opere» and «Scrivimi →». Desktop (1h): grid `clamp(430px, 36vw, 460px)` | text, the picture sticky on tall screens; phone (1i): stacked. Under it, after a dashed line, the exhibition block with the film (no frame, see below). JSON-LD `Person` + `VideoObject` |
 | `/contatti/` | `src/pages/contatti.astro` + `components/contatti/*` | **Contatti** (1j / 1k): the ottanio stroke block with «Scrivimi» (h1) and her line; the form (`ContactForm`): optional chip «Mi interessa» + title for `?opera=<slug>`, underline fields «Il tuo nome», «La tua e-mail, per risponderti», «Il tuo messaggio», «Invia →», the privacy note. Sent (1j-sent / 1k-sent): «Grazie!», «Il tuo messaggio è arrivato. Ti rispondo presto.», «Scrivi ancora». Stacked below 1024 |
 | `/contatti/grazie/` | `src/pages/contatti/grazie.astro` | Where Web3Forms sends visitors without JS: the Scrivimi block as a decorative echo, «Grazie!» (h1), the line, «Guarda le opere →» / «Torna alla home». `noindex`, no canonical, not in the sitemap |
@@ -85,12 +89,13 @@ phone < 640 · tablet 640–1023 · desktop ≥ 1024.
 | `/admin/anteprime.json` | `src/pages/admin/anteprime.json.ts` | Not a page: 480 px thumbnails for the admin (CONTRACTS §6). Do not remove |
 | old WordPress URLs | `astro.config.mjs` | Redirect pages generated from `src/data/sito.json` → `redirectVecchioSito` |
 
-**Header** (all pages): «TIZ» (TIZ Mano, rosso) + the name → home; nav Opere · Chi sono · Contatti
+**Header** (all pages): her signature (`Firma`: the «TiZ» of her canvases, rosso, `--tiz-signature` high) + the
+name → home; nav Opere · Chi sono · Contatti
 with the ocra marker on the current section: `aria-current="page"` on the item's own page,
 `aria-current="true"` on a page inside its section (`/opere/<slug>/`, `/contatti/grazie/`). Phone with
 JS: «Menu» opens the full-screen lino menu (1c-menu); without JS the three links form a row.
-**Footer**: dashed top border, «TIZ», «© {year} Tiziana Tschudi Belloli»; on the home the large
-variant with the motto, the nav Opere · Chi sono · Scrivimi and «© {year} Tiziana Tschudi Belloli ·
+**Footer**: dashed top border, her signature (40 px high), «© {year} Tiziana Tschudi Belloli»; on the home the
+large variant with the signature at 76 / 96 px, the motto, the nav Opere · Chi sono · Scrivimi and «© {year} Tiziana Tschudi Belloli ·
 tiz-art.ch». No contact details anywhere.
 
 ### The exhibition block on Chi sono (added after the handoff: no Claude Design frame)
@@ -102,8 +107,8 @@ grid (`.chi__grid`), so the film hangs on the portrait's line and the text on th
 - **Text**: «la mostra» in her hand (the page's «chi sono» label: terracotta, −2deg), the title «noi,
   DONNA.» as an h2 in Bricolage 800 (48 / 56 / 64 px, tight, as the series title on the home), «Atelier
   Attila, Bellinzona · 22 aprile – 7 maggio 2023» in terra-2 (two lines on phones), the exhibition's own
-  sentence in guillemets at the bio's size (18 / 20 px), and in small terra-2 «Il film dura 6 minuti e
-  mezzo, con audio, senza sottotitoli.» (the film has no subtitles yet, CONTRACTS §5.6). From 640 px the
+  sentence in guillemets at the bio's size (18 / 20 px). Nothing more: no line about the film's length,
+  sound or missing subtitles (the owner took it out; the play button's name says the length). From 640 px the
   middle dot between place and dates is drawn by CSS; the text itself has a comma there, hidden from
   the eye, so a screen reader and a copy of the line get one clean sentence.
 - **The film** (`chi/ChiFilm.astro`): a tall tela, 340 × 606 / 320 × 571 / 280 × 499 px (≥ 1024 / ≥ 640 /
@@ -121,7 +126,7 @@ grid (`.chi__grid`), so the film hangs on the portrait's line and the text on th
   controls on a light poster.
 - **Layout**: ≥ 1024 the film left, the text right, title and words meeting at half the film's height
   (the label beside a painting); below 1024 one column: «la mostra» + title + place and dates → the film
-  → the sentence and the line about the film.
+  → the sentence.
 - **Motion**: the tela settles and its stroke wipes in when it scrolls into view (`data-reveal` on the
   frame), the note is written in; nothing with reduced motion. The film never starts by itself.
 
@@ -136,6 +141,7 @@ the details; this is the map.
 |---|---|---|
 | `SiteHeader.astro` | Header and phone menu (§2, behaviour in §6). Its root `<header>` must stay a direct child of `<body>` | `back?` (`{ href, label }`: the phone back link instead of Menu; BaseLayout `headerBack`) |
 | `SiteFooter.astro` | Footer, default or the large home one | `variant?` (`default` / `home`; BaseLayout `footerVariant`) |
+| `Firma.astro` | Her signature, the site's logo: an `<svg>` that `<use>`s the `<symbol id="tiz-firma">` BaseLayout carries once per page (`lib/firma.ts` reads `src/assets/firma.svg`). The parent sets `height` (the width follows) and `color` | `label?` (accessible name, e.g. `SITE.firma`; without it `aria-hidden`), `class?` |
 | `Stroke.astro` | Decorative brushstroke behind a painting (`aria-hidden`, z-index −1; the parent needs `position: relative; isolation: isolate`). Wipes in on load, or when its `[data-reveal]` parent is revealed. Rough edge = `#tiz-rough` | `color` (normally `operaPaintVar(opera, published)`), `top` / `left` / `width` / `height` or `inset`, `rotate?` (−5deg), `delay?`, `shape?` (1 / 2), `class?` |
 | `HungWorks.astro` | Works hung by eye at real scale: painting `min(cm × --tiz-k, 100%)` (k 2.3 / 2.0 / 2.2; 100 cm when `larghezza` is missing, then no size line), the item (caption) at least 120 px wide; MT margin cycle from 640, AL align cycle below, strokes on even indexes in the work's paint, laid out on the painting plus a 60 px caption allowance (`.tiz-hung__stroke-box`); caption title + «{w} × {h} cm» above the stroke with a lino halo; the link is named by its caption (`aria-labelledby`); reveal and hover lift, `view-transition-name: opera-<slug>`. Put it in a `.container` (it reaches into the gutter and clips there). Gaps from the parent: `--hung-gap` (phone, 52px), `--hung-gap-row` / `--hung-gap-col` (from 640, 48px / 56px) | `opere`, `offset?`, `headingLevel?` (2 / 3 / 4, default 3), `priorityCount?`, `transitionNames?` (default true; false for a second list of the same works), `label?`, `showSize?` (default true) |
 | `ResponsivePicture.astro` | `<picture>` AVIF + WebP, width/height attributes, never crops; unstyled | `image`, `alt`, `preset` (`card` / `artwork` / `thumb`), `sizes`, `priority?` |
@@ -184,6 +190,7 @@ by `scripts/test/design-sync.test.mjs`.
 | `home.ts` | Home / Opere copy and sizes: `HOME_INTRO`, `HERO_SIZES`, `QUOTE_SIZES`, `heroNote`, `longestLine`, `MOTTO_FLOW_CHARS`, `mottoFlows`, `allWorksLabel`, `firstName`, `quoteAttribution`, `opereCountNote` |
 | `opera.ts` | Opera page layout numbers (keep in step with the CSS of ArtworkGallery / ArtworkPager): `STAGE`, `stageSizes`, `thumbSizes`, `pagerThumbSizes`, `neighbourIndexes` (wrap-around; two works: one neighbour each), `operaCounter` («01 / 12», spoken «Opera 1 di 12») |
 | `chi.ts` | Chi sono picture boxes (400 × 500 / 360 × 450 / 280 × 350) and `chiSizes` (keep in step with ChiFigure; it takes other `boxes` for the film) |
+| `firma.ts` | Her signature: `FIRMA` (`id` of the `<symbol>`, `viewBox`, the shapes of `src/assets/firma.svg` as markup) |
 | `film.ts` | The film of the exhibition: `FILM` (file, pixel size, the black side bars, seconds, bytes, upload date; `scripts/test/film.test.mjs` compares the committed file with it), `FILM_PATH`, `FILM_MAX_BYTES`, `MOSTRA` (title, place, dates, its sentence), `isoDuration` («PT6M38S»), `durationLabel` («6 minuti e mezzo»), `megabytes`, `FILM_BOXES` and `filmSizes` (keep in step with ChiFilm) |
 | `contatti.ts` | Contact form rules and texts: endpoint, `SUBJECT`, `FROM_NAME`, `MIN_MESSAGE`, `LIMITS`, `MESSAGES`, `fieldError`, `subjectFor`, `operaLine`, `buildPayload`, `withoutOpera`, `isSent` |
 | `opere.ts` | Queries (`getPublishedOpere`, `getAllOpere`, `getProfilo`, `firstHeroWork` (the first hero work: the sharing image of pages without one, Chi sono without a portrait), `groupByCollezione`, `neighbours`), text helpers (`formatDimensions` → «100 × 140 cm» with no-break spaces, `altText`, `paragraphs`, `excerpt`, `operaDescription`), `operaPaint` / `operaPaintVar` (the work's paint) and `composable()` (works → the shapes the composition rules take) |
@@ -202,10 +209,11 @@ that format).
 
 - **`src/styles/tokens.css`**, all `--tiz-*`: colours (lino, gesso, filo, terra,
   terra-2 / -3, rosso, ocra, terracotta, ottanio, blu, and the roles `--tiz-error`, `--tiz-viewer-bg`),
-  the two fonts, the type scale (`--tiz-mano-l` / `-s`, `--tiz-h1-name`, `--tiz-lead`, `--tiz-body`,
-  `--tiz-small`, `--tiz-mano-caption`, `--tiz-signature`; the handoff's `--tiz-mano-xl`, `--tiz-mano-m`
-  and `--tiz-display` are kept at their design values but not read: the home motto, the quote and
-  «Opere» use the frames' fixed steps per breakpoint), spacing `--tiz-s1…8` and `--tiz-gutter`
+  the two fonts, the type scale (`--tiz-mano-l`, `--tiz-h1-name`, `--tiz-lead`, `--tiz-body`,
+  `--tiz-small`, `--tiz-mano-caption`, and `--tiz-signature`, the height of her signature in the header;
+  the handoff's `--tiz-mano-xl`, `--tiz-mano-m`, `--tiz-mano-s` and `--tiz-display` are kept at their
+  design values but not read: the home motto, the quote and «Opere» use the frames' fixed steps per
+  breakpoint, and the signature under her text on Opera is the drawing, not type), spacing `--tiz-s1…8` and `--tiz-gutter`
   (20 / 32 / 48), layout (`--tiz-page-max` 1440,
   `--tiz-measure`, `--tiz-hit` 44px, header heights, `--tiz-bar-h` 88px, `--tiz-divider`,
   `--tiz-z-header`), shapes, shadows (`--tiz-shadow-tela` for paintings, `--tiz-shadow-tela-l` for the
@@ -234,7 +242,7 @@ that format).
   - **TIZ Mano** (`--tiz-font-mano`) = Nanum Brush Script, latin subset, patched with the glyphs Italian
     needs (àèéìòù ÀÈÌÒÙ áéíóú « » ‹ › … – — ·) and renamed, because "Nanum" is an OFL Reserved Font
     Name. Rebuild it with `scripts/dev/make-mano-font.py` (fontTools + brotli). Her hand: titles, motto,
-    signature, notes; never below 28px, never for paragraphs.
+    notes; never below 28px, never for paragraphs. (Her signature is not set in it: see below.)
   - **Bricolage Grotesque** (`--tiz-font-voce`): one variable file, latin, wght 200–800, opsz 12–96.
   - **Until TIZ Mano has loaded** (swap): `'TIZ Mano fallback'`, a local Arial (or Liberation Sans /
     Arimo) with `size-adjust: 71%` and TIZ Mano's ascent / descent / line gap, so the motto and the
@@ -244,10 +252,17 @@ that format).
     Bricolage in `--tiz-font-voce`: that is the arrow the frames show on a Mac (their stacks end at
     Bricolage); without Lucida Grande the system font draws them.
   - Licences: `public/fonts/OFL-tiz-mano.txt`, `public/fonts/OFL-bricolage-grotesque.txt`.
-- `theme-color` in `BaseLayout.astro` and the colours in `public/favicon.svg` («TIZ» in rosso strokes
-  on lino) repeat `--tiz-lino` / `--tiz-rosso` (they cannot read CSS variables): update them together,
-  then regenerate `public/favicon-32.png` and `public/apple-touch-icon.png` with
-  `node scripts/dev/site-icons.mjs` and commit them.
+- **Her signature** (`src/assets/firma.svg`) is the logo: the «TiZ» she paints with the edge of a palette
+  knife in a corner of her canvases (one long bar over the T's stem, the «i» and the Z), traced from her paint
+  in the photo of «Il risveglio di Madre Natura». One path, `currentColor`, ragged edges and dry slits kept on
+  purpose: it must look painted, never redrawn as smooth vector shapes. `python3 scripts/dev/firma/make.py`
+  (Pillow + numpy) rebuilds it byte for byte from the photo; its docstring says what differs from the canvas.
+  Never below about 24 px high.
+- `theme-color` in `BaseLayout.astro` and the colours in `public/favicon.svg` (her signature in rosso
+  on lino) repeat `--tiz-lino` / `--tiz-rosso` (they cannot read CSS variables). `node
+  scripts/dev/site-icons.mjs` writes `public/favicon.svg`, `favicon-32.png` and `apple-touch-icon.png`
+  from `src/assets/firma.svg` and those two tokens: run it after changing the drawing or the colours and
+  commit the three files (`design-sync` fails while favicon.svg or theme-color lag behind).
 
 ## 5. Images
 

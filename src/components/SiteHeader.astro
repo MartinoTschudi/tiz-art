@@ -1,8 +1,9 @@
 ---
 /**
- * Site header: "TIZ" + name (→ home) and the navigation Opere · Chi sono · Contatti. The current
- * section gets the ocra marker: aria-current="page" when the URL is exactly the item's page,
- * aria-current="true" on a page inside its section (/opere/<slug>/ → Opere, /contatti/grazie/ → Contatti).
+ * Site header: her signature (Firma, named "TIZ") + name (→ home) and the navigation Opere · Chi sono ·
+ * Contatti. The current section gets the ocra marker: aria-current="page" when the URL is exactly the
+ * item's page, aria-current="true" on a page inside its section (/opere/<slug>/ → Opere,
+ * /contatti/grazie/ → Contatti).
  *
  * - ≥ 640 px: the nav on the right.
  * - < 640 px with JS: a "Menu" button opens a full-screen lino overlay (ocra stroke, big links, the
@@ -16,6 +17,7 @@
  * The root <header> must stay a direct child of <body> (the script makes its siblings inert).
  */
 import Stroke from './Stroke.astro';
+import Firma from './Firma.astro';
 import { SITE, routes } from './lib/site';
 import { getProfilo } from './lib/opere';
 import { splitLastWord } from './lib/composition';
@@ -48,7 +50,7 @@ const motto = splitLastWord((await getProfilo()).motto);
       )
     }
     <a class="tiz-header__brand" href={routes.home} aria-current={current === routes.home ? 'page' : undefined}>
-      <span class="tiz-header__tiz">{SITE.firma}</span>{' '}
+      <Firma class="tiz-header__tiz" label={SITE.firma} />
       <span class="tiz-header__name">{SITE.nome}</span>
     </a>
     {
@@ -194,8 +196,8 @@ const motto = splitLastWord((await getProfilo()).motto);
   }
 
   .tiz-header__tiz {
+    height: var(--tiz-signature);
     color: var(--tiz-rosso);
-    font: 400 var(--tiz-signature) / 1 var(--tiz-font-mano);
   }
 
   .tiz-header__name {

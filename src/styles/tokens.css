@@ -70,7 +70,7 @@
   --tiz-terra: #2a1c15; /* text, dark buttons — never pure black */
   --tiz-terra-2: #6b5546; /* captions, measurements, secondary text (≈ 6:1 on lino) */
   --tiz-terra-3: #4a3a30; /* long secondary paragraphs */
-  --tiz-rosso: #c3262b; /* TIZ signature, "cuore", primary action. Repeated in public/favicon.svg */
+  --tiz-rosso: #c3262b; /* her signature, "cuore", primary action. Repeated in public/favicon.svg (scripts/dev/site-icons.mjs) */
   --tiz-ocra: #d6982b; /* brushstrokes, marker underline */
   --tiz-terracotta: #b5532f; /* handwritten notes, warm strokes */
   --tiz-ottanio: #1d7377; /* cold counterpoint (Contatti) */
@@ -81,18 +81,19 @@
   --tiz-viewer-bg: var(--tiz-lino); /* full-screen image viewer */
 
   /* ── Fonts ───────────────────────────────────────────────── */
-  --tiz-font-mano: 'TIZ Mano', 'TIZ Mano fallback', 'Bricolage Grotesque', system-ui, sans-serif; /* her hand: titles, motto, signature, notes. Never < 28px, never paragraphs */
+  --tiz-font-mano: 'TIZ Mano', 'TIZ Mano fallback', 'Bricolage Grotesque', system-ui, sans-serif; /* her hand: titles, motto, notes. Never < 28px, never paragraphs */
   --tiz-font-voce: 'Bricolage Grotesque', 'TIZ Frecce', system-ui, sans-serif; /* everything else */
 
   /* ── Type scale (desktop → phone via clamp) ──────────────── */
-  /* The handoff's scale. Three of its steps are not read by the site, because those pages size the
-     text in the frames' fixed steps per breakpoint: --tiz-mano-xl (the home motto: HomeHero, from the
-     length of its longest line), --tiz-mano-m (the home quote: HomeQuote 48 / 56 / 76px) and
-     --tiz-display («Opere»: 84 / 120 / 150px). Kept as the design system's values; do not tune them. */
+  /* The handoff's scale. Four of its steps are not read by the site. Three because those pages size
+     the text in the frames' fixed steps per breakpoint: --tiz-mano-xl (the home motto: HomeHero, from
+     the length of its longest line), --tiz-mano-m (the home quote: HomeQuote 48 / 56 / 76px) and
+     --tiz-display («Opere»: 84 / 120 / 150px); and --tiz-mano-s, which set the «— TIZ» under her text on
+     an Opera page, now her drawn signature (Firma). Kept as the design system's values; do not tune them. */
   --tiz-mano-xl: clamp(92px, 11vw, 150px); /* line-height .82 — home motto (design scale, unused) */
   --tiz-mano-l: clamp(64px, 7vw, 92px); /* line-height .88 — opera title */
   --tiz-mano-m: clamp(40px, 5vw, 76px); /* quotes (design scale, unused) */
-  --tiz-mano-s: clamp(28px, 2.4vw, 34px); /* captions, notes */
+  --tiz-mano-s: clamp(28px, 2.4vw, 34px); /* captions, notes (design scale, unused) */
   --tiz-display: clamp(64px, 11vw, 150px); /* weight 800, ls -0.05em, lh .8 (design scale, unused) */
   --tiz-h1-name: clamp(52px, 7vw, 88px); /* weight 800, ls -0.04em */
   --tiz-lead: clamp(19px, 1.6vw, 22px); /* lh 1.5 */
@@ -100,7 +101,7 @@
   --tiz-small: 14px; /* lh 1.4 */
   /* site */
   --tiz-mano-caption: 30px; /* work titles under paintings in lists: 30 phone, 32 from 640 */
-  --tiz-signature: 42px; /* "TIZ" in the header: 42 phone, 48 from 640 */
+  --tiz-signature: 42px; /* height of her signature (Firma) in the header: 42 phone, 48 from 640 */
   --tiz-line-body: 1.55;
   --tiz-line-small: 1.4;
 

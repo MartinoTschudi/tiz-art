@@ -61,7 +61,8 @@ scripts/test/admin-*.test.mjs    admin agent       scripts/test/content-*.test.m
 scripts/test/{composition,home,opera,chi,film,contatti,design-sync}.test.mjs   site agent (the site's design rules; `film` also checks the committed film)
 scripts/dev/make-mano-font.py, src/assets/fonts/   site agent (the self-hosted fonts, docs/DESIGN-HANDOFF.md §4)
 scripts/test/fixtures/repo/      admin agent (small committed copy of src/content for the tests, section 8)
-scripts/dev/site-icons.mjs       site agent (renders favicon-32.png / apple-touch-icon.png from favicon.svg)
+scripts/dev/site-icons.mjs       site agent (writes favicon.svg, favicon-32.png / apple-touch-icon.png from src/assets/firma.svg)
+src/assets/firma.svg, scripts/dev/firma/   site agent (her signature, the site's logo, and the scripts that trace it from her paint)
 .github/workflows/deploy.yml     infra agent
 docs/DESIGN-HANDOFF.md           site agent
 docs/GUIDA-ADMIN.md              admin agent (Italian, for Tiziana)
@@ -158,7 +159,7 @@ package.json, CONTRACTS.md       fixed — do not edit (report needed changes in
 |---|---|
 | `/` | **Hero composition**: the motto (last word in rosso; the artist's name when the motto is empty) and up to 3 works = the first 3 published `inEvidenza` works in display order, filled up with the first published works not already picked when fewer than 3. Slots by aspect ratio: the most square → large (ties: larger canvas, then display order), the tallest of the rest → narrow, the other → small; the handwritten note "{titolo}, {anno}" under the large one; the intro paragraph with "Guarda le opere →". Below 1024 px: motto → the large work → paragraph. Then the **series section**: the `collezione` of the first hero work (else the most common non-empty one) with the highest `anno` of its works and up to 5 of its published works that are not in the hero or the quote ("Le ultime opere" and the first 5 such works when no work has a series), and the link "Tutte le {n} opere →". Then the **quote band**: the first sentence (20–140 chars) of a published work's text outside the hero, searched from the last work in display order backwards, with that painting; hidden when there is none; the attribution links to the work. Then the large home footer. No bio teaser, no contact call-to-action |
 | `/opere/` | ONE list of all published works in display order (`ordine`), hung at real relative scale ("{n} tele, appese come nello studio"; "1 tela"). No grouping or filtering by `collezione` |
-| `/opere/<slug>/` | the cover on a stage with the work's brushstroke behind it (whole painting); with 2 or more photos all of them as thumbnails under it, the one on the stage marked (tap = swap the stage image; without JS a link to the full-size JPEG); tap on the stage = full-screen viewer with zoom, keyboard + swipe; "{nn} / {total} · {collezione}" (series part omitted when empty), title, `<dl>` Anno / Misure / Tecnica (empty ones skipped), her text + "— TIZ" (the block is omitted when the text is empty), "Chiedi di quest’opera →" → `/contatti/?opera=<slug>`, previous/next work (wrapping around; with two published works only the other one, as next on the first and previous on the second). Phone: a fixed bottom bar with ← · the button · → |
+| `/opere/<slug>/` | the cover on a stage with the work's brushstroke behind it (whole painting); with 2 or more photos all of them as thumbnails under it, the one on the stage marked (tap = swap the stage image; without JS a link to the full-size JPEG); tap on the stage = full-screen viewer with zoom, keyboard + swipe; "{nn} / {total} · {collezione}" (series part omitted when empty), title, `<dl>` Anno / Misure / Tecnica (empty ones skipped), her text + her signature (the block is omitted when the text is empty), "Chiedi di quest’opera →" → `/contatti/?opera=<slug>`, previous/next work (wrapping around; with two published works only the other one, as next on the first and previous on the second). Phone: a fixed bottom bar with ← · the button · → |
 | `/chi-sono/` | `profilo.ritratto` (4:5 crop allowed here only: it is a photo, not a painting) with an ocra brushstroke and the note "nello studio"; without a portrait the first hero painting, uncropped, captioned «titolo», anno. Name, motto (last word in rosso), bio (`profilo.bio`, plain text), "Vedi le opere" and "Scrivimi →". Under it, as a block of its own: the exhibition «noi, DONNA.» (2023) with its film (5.6) |
 | `/contatti/` | contact form (5.4) |
 | `/contatti/grazie/` | the form's success page for visitors without JS (5.4); `noindex`, not in the sitemap |
@@ -167,11 +168,12 @@ package.json, CONTRACTS.md       fixed — do not edit (report needed changes in
 | `/admin/anteprime.json` | section 6 |
 | `/sitemap-index.xml`, `/robots.txt` | sitemap of public pages only (not `/contatti/grazie/`); robots allows all except `/admin/` (preview: disallow all) |
 
-Header: "TIZ" + name → home; nav Opere · Chi sono · Contatti with the marker on the current section:
+Header: her signature (the «TiZ» she paints on her canvases, drawn from her paint: `src/assets/firma.svg`;
+an image named "TIZ") + name → home; nav Opere · Chi sono · Contatti with the marker on the current section:
 `aria-current="page"` on its own page, `aria-current="true"` on a page inside it (`/opere/<slug>/`,
 `/contatti/grazie/`). On phones a "Menu" button opens a full-screen menu ("Chiudi" closes it); without JS the
 three links show as a row.
-Footer: "TIZ" and "© {year} Tiziana Tschudi Belloli"; the home page has a larger footer with the motto, the
+Footer: her signature and "© {year} Tiziana Tschudi Belloli"; the home page has a larger footer with the motto, the
 nav Opere · Chi sono · Scrivimi (= Contatti) and "© {year} Tiziana Tschudi Belloli · tiz-art.ch".
 **No address, phone, e-mail or social links anywhere.**
 
@@ -230,9 +232,10 @@ single frame stay as px in the component that uses them.
 
 One film: the exhibition «noi, DONNA.» (Atelier Attila, Bellinzona, 22 aprile – 7 maggio 2023), shown on
 `/chi-sono/` in a `<section>` of its own under the bio: "la mostra", the title (h2), place and dates, the
-exhibition's own sentence («Un tributo alla femminilità…»), one line on the film («Il film dura 6 minuti e
-mezzo, con audio, senza sottotitoli.»), and the film hung like a tall painting (tela shadow, a brushstroke
-behind it, the note "il film della mostra"). No credit line and no names of the people in it. It is **site copy, not admin data**: nothing of it is in section 4, and the admin
+exhibition's own sentence («Un tributo alla femminilità…»), and the film hung like a tall painting (tela
+shadow, a brushstroke behind it, the note "il film della mostra"). No line of text about the film's length,
+sound or subtitles (the owner took it out; the play button's accessible name still gives the length and
+"con audio"). No credit line and no names of the people in it. It is **site copy, not admin data**: nothing of it is in section 4, and the admin
 does not know it.
 
 - **Files**: `public/video/noi-donna-2023.mp4` (served as it is; its URL is built from the base path) and
@@ -253,10 +256,10 @@ does not know it.
   controls back and moves the focus to the video. In full screen the whole picture shows
   (`object-fit: contain`), never a cut-out of it.
 - **Subtitles: none yet.** The film has voices and neither captions nor a transcript (WCAG 1.2.2 is not
-  met; an audit flags the missing `<track>`), so the page says «senza sottotitoli». They need the
-  spoken Italian written down as WebVTT by the owner: `public/video/noi-donna-2023.it.vtt`, a
-  `<track kind="captions" srclang="it" label="Italiano">` with a base-path URL in the `<video>`, and
-  then the line on the page without «senza sottotitoli» (`docs/SETUP.md` §8).
+  met; an audit flags the missing `<track>`). The page does not say so. They need the
+  spoken Italian written down as WebVTT by the owner: `public/video/noi-donna-2023.it.vtt` and a
+  `<track kind="captions" srclang="it" label="Italiano">` with a base-path URL in the `<video>`
+  (`docs/SETUP.md` §8).
 - **Poster**: the `poster` attribute cannot be lazy and is fetched with the page, so it is one light WebP
   (as wide as the phone box, 280 px; quality 60). The sharp one (AVIF / WebP, responsive, lazy) is the
   picture inside the play button; it waits in a `<template>` that the script unpacks, so without JS
