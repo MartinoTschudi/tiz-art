@@ -1,6 +1,6 @@
 /**
  * "Nuova opera" / "Modifica opera": one scrolling form.
- *   Foto (1–8) · Titolo · Anno · Misure · Tecnica · Collezione · Colore della pennellata · Testo ·
+ *   Foto (1–8, each new one with «Raddrizza») · Titolo · Anno · Misure · Tecnica · Collezione · Colore della pennellata · Testo ·
  *   In evidenza · Visibile
  * plus, when editing, "Vedi sul sito" and "Elimina opera".
  *
@@ -10,10 +10,11 @@
  * reopened: a back swipe, a reload or an expired key never throws them away.
  */
 import { h, icon, topbar, stickyBar, confirmSheet, toast, progress, siteButton } from '../ui.js';
-import { MAX_IMMAGINI, LIMITS, COLORI, parseOperaForm, formatNumber } from '../model.js';
+import { MAX_IMMAGINI, LIMITS, COLORI, parseOperaForm, parseMisura, formatNumber } from '../model.js';
 import { workKey } from '../drafts.js';
-import { existingPhoto, readyPhoto, newPhoto, releasePhoto, toSavePhoto, photosReady } from '../photos.js';
+import { existingPhoto, readyPhoto, newPhoto, releasePhoto, toSavePhoto, photosReady, canStraighten, isStraightened, restoreWhole } from '../photos.js';
 import { pickerButtons, photoMedia } from './photo-ui.js';
+import { straightenScreen } from './straighten-ui.js';
 
 const FIELD_ORDER = ['foto', 'titolo', 'anno', 'larghezza', 'altezza', 'tecnica', 'collezione', 'colore', 'testo'];
 
@@ -188,6 +189,8 @@ export function renderForm(app, { opera, draft, restored = false }) {
 
   const photoGrid = h('div', { class: 'photo-grid' });
   const photoCount = h('span', { class: 'field-count' });
+  const straightenHint = h('p', { class: 'hint photo-hint', hidden: true }, 'Si vede il muro, o il quadro è un po’ storto? Tocca «Raddrizza» sulla foto del quadro intero. Per le foto dei dettagli non serve.');
+  const onlineHint = h('p', { class: 'hint photo-hint', hidden: true }, 'Per raddrizzare una foto già online: aggiungila di nuovo, raddrizzala e togli la vecchia con ×. Se era la copertina, tocca «Fai copertina» sulla nuova.');
   const picker = pickerButtons({ multiple: true, onFiles: addFiles });
 
   function addFiles(files) {
@@ -214,24 +217,73 @@ export function renderForm(app, { opera, draft, restored = false }) {
     changed();
   }
 
+  /** The canvas' size in cm when she has written both measurements (they help «Raddrizza» get the shape right). */
+  function measures() {
+    const larghezza = parseMisura(draft.fields.larghezza);
+    const altezza = parseMisura(draft.fields.altezza);
+    return !larghezza.error && !altezza.error && larghezza.value && altezza.value ? { larghezza: larghezza.value, altezza: altezza.value } : null;
+  }
+
+  /** Focus goes back to the photo's own button (the tiles are rebuilt on every change). */
+  function focusTile(photo) {
+    const tile = [...photoGrid.children].find((el) => el.dataset.key === photo.key);
+    const target = tile && tile.querySelector('.tile-straighten');
+    if (target) target.focus({ preventScroll: true });
+  }
+
+  /** «Raddrizza»: she marks the corners of the canvas and keeps the flat picture, or leaves the photo as it was. */
+  async function straighten(photo) {
+    const outcome = await straightenScreen(photo, { measures: measures() });
+    if (outcome) {
+      renderPhotos();
+      changed();
+      if (outcome === 'kept') toast('Foto raddrizzata.');
+    }
+    focusTile(photo);
+  }
+
+  function wholePhoto(photo) {
+    restoreWhole(photo);
+    renderPhotos();
+    changed();
+    toast('La foto è tornata com’era.');
+    focusTile(photo);
+  }
+
   function photoTile(photo, index) {
     const n = index + 1;
     const sources = photo.kind === 'existing' ? app.store.operaImageSources(draft.slug, photo.ref) : [];
     return h(
       'div',
       { class: `photo-tile${index === 0 ? ' is-cover' : ''}`, dataset: { key: photo.key } },
-      photoMedia(photo, sources, `Foto ${n}`),
-      h('button', { type: 'button', class: 'tile-remove', 'aria-label': `Togli la foto ${n}`, onClick: () => removePhoto(photo) }, icon('close')),
-      // The current cover reads "★ Copertina"; on the others the action is a verb, so not every photo says "Copertina".
-      index === 0
-        ? h('span', { class: 'tile-badge' }, icon('star'), 'Copertina')
-        : h('button', { type: 'button', class: 'tile-cover', 'aria-label': `Usa la foto ${n} come copertina`, onClick: () => makeCover(photo) }, 'Fai copertina'),
+      h(
+        'div',
+        { class: 'tile-frame' }, // the picture with the buttons that sit on it
+        photoMedia(photo, sources, `Foto ${n}`),
+        h('button', { type: 'button', class: 'tile-remove', 'aria-label': `Togli la foto ${n}`, onClick: () => removePhoto(photo) }, icon('close')),
+        // The current cover reads "★ Copertina"; on the others the action is a verb, so not every photo says "Copertina".
+        index === 0
+          ? h('span', { class: 'tile-badge' }, icon('star'), 'Copertina')
+          : h('button', { type: 'button', class: 'tile-cover', 'aria-label': `Usa la foto ${n} come copertina`, onClick: () => makeCover(photo) }, 'Fai copertina'),
+      ),
+      canStraighten(photo)
+        ? h(
+            'div',
+            { class: 'tile-tools' },
+            h('button', { type: 'button', class: 'tile-straighten', 'aria-label': `Raddrizza la foto ${n}`, onClick: () => straighten(photo) }, icon('straighten'), 'Raddrizza'),
+            isStraightened(photo)
+              ? h('button', { type: 'button', class: 'tile-whole', 'aria-label': `Torna alla foto ${n} originale`, onClick: () => wholePhoto(photo) }, 'Torna alla foto originale')
+              : null,
+          )
+        : null,
     );
   }
 
   function renderPhotos() {
     photoGrid.replaceChildren(...draft.photos.map(photoTile));
     photoGrid.hidden = draft.photos.length === 0;
+    straightenHint.hidden = !draft.photos.some(canStraighten);
+    onlineHint.hidden = !draft.photos.some((p) => p.kind === 'existing');
     photoCount.textContent = `${draft.photos.length}/${MAX_IMMAGINI}`;
     picker.setDisabled(draft.photos.length >= MAX_IMMAGINI);
   }
@@ -247,6 +299,8 @@ export function renderForm(app, { opera, draft, restored = false }) {
     h('p', { class: 'hint' }, 'Da 1 a 8 foto. La prima è la copertina (★): con «Fai copertina» scegli un’altra foto.'),
     picker.el,
     photoGrid,
+    straightenHint,
+    onlineHint,
     errorEl('foto'),
   );
 

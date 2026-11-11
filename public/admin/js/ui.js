@@ -1,6 +1,6 @@
 /**
- * UI building blocks: element helper, icons, images with fallbacks, bottom sheets, toasts,
- * the blocking progress overlay and the bars. Text is always set with textContent / DOM nodes
+ * UI building blocks: element helper, icons, images with fallbacks, bottom sheets, the history entry
+ * of a full-screen step, toasts, the blocking progress overlay and the bars. Text is always set with textContent / DOM nodes
  * (never innerHTML), so data from the repository cannot inject HTML.
  */
 
@@ -59,6 +59,7 @@ const ICONS = {
   user: '<circle cx="12" cy="8.5" r="3.8"/><path d="M4.5 20c.8-4 3.8-6.2 7.5-6.2s6.7 2.2 7.5 6.2"/>',
   frame: '<rect x="4" y="3.5" width="16" height="17" rx="1"/><rect x="7.5" y="7" width="9" height="10"/>',
   alert: '<path d="M12 4l9 16H3z"/><path d="M12 10v4.5M12 17.2v.3"/>',
+  straighten: '<path d="M7.5 5.5l10.5-1.5 1.5 16-13-1z"/><path d="M3.5 3.5v3M2 5h3M20.5 17.5v3M19 19h3"/>',
 };
 
 export function icon(name, className = 'icon') {
@@ -169,6 +170,63 @@ export function errorSheet({ title = 'Qualcosa non ha funzionato', text, canRetr
       ]
     : [{ label: 'Ho capito', value: false, className: 'btn-primary' }];
   return openSheet({ title, text, buttons });
+}
+
+/* ---------- full-screen steps that the back gesture closes ---------- */
+
+let stepClose = null; // closes the step that is open
+let ownBack = false; // the next "popstate" is our own history.back()
+
+/**
+ * Gives a full-screen step over a screen (e.g. «Raddrizza») its own history entry, so that the back
+ * gesture or button closes the step (`onBack`) instead of leaving the screen under it.
+ * Returns `leave()`: call it when the step closes in any other way, to take the entry away again.
+ */
+export function stepEntry(onBack) {
+  stepClose = onBack;
+  history.pushState({ ...(history.state || {}), tizStep: true }, '');
+  return function leave() {
+    if (stepClose !== onBack) return; // already closed by the back gesture
+    stepClose = null;
+    ownBack = true;
+    history.back();
+  };
+}
+
+/**
+ * At start: the page was reloaded while a step was open (iOS does that to a page that used too much
+ * memory). Its history entry is still there, with the same address as the screen: step off it, so
+ * that the first «back» afterwards leaves the screen instead of showing it again.
+ */
+export function dropStaleStep() {
+  if (history.state && history.state.tizStep) {
+    ownBack = true;
+    history.back();
+  }
+}
+
+/**
+ * For the app's "popstate" handler: true when the event only concerned such a step, so there is
+ * nothing to route (the step was closed by the back gesture, we took its entry away ourselves, or a
+ * forward gesture landed on the entry of a step that is no longer open).
+ */
+export function stepHandledBack() {
+  if (ownBack) {
+    ownBack = false;
+    return true;
+  }
+  if (stepClose) {
+    const close = stepClose;
+    stepClose = null;
+    close();
+    return true;
+  }
+  if (history.state && history.state.tizStep) {
+    ownBack = true;
+    history.back();
+    return true;
+  }
+  return false;
 }
 
 /* ---------- toast ---------- */

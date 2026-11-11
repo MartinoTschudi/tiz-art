@@ -22,7 +22,7 @@ import { decryptAuth, isAuthConfig, normalizeEmail } from './crypto.js';
 import { isKeyError, KEY_INVALID_MESSAGE } from './github.js';
 import { Store, browserCache, withSaved, withOrder } from './store.js';
 import { loadDraft, saveDraft, clearDraft, clearAllDrafts, NEW_WORK, PROFILE, workKey } from './drafts.js';
-import { h, toast, topbar, progress, errorSheet } from './ui.js';
+import { h, toast, topbar, progress, errorSheet, stepHandledBack, dropStaleStep } from './ui.js';
 import { renderLogin, renderNotConfigured, renderMessage } from './screens/login.js';
 import { renderList } from './screens/list.js';
 import {
@@ -619,6 +619,7 @@ function boot() {
   }
   if (!history.state || typeof history.state.tizIndex !== 'number') history.replaceState({ tizIndex: 0 }, '');
   navIndex = history.state.tizIndex;
+  dropStaleStep(); // reloaded while a full-screen step (e.g. «Raddrizza») was open
 
   window.addEventListener('hashchange', () => {
     trackHistory();
@@ -626,6 +627,7 @@ function boot() {
   });
   // Back/forward between two entries with the same #hash fires no "hashchange": route anyway.
   window.addEventListener('popstate', () => {
+    if (stepHandledBack()) return; // only a full-screen step (e.g. «Raddrizza») was closed
     if (location.hash === lastRoutedHash) {
       trackHistory();
       route();

@@ -360,7 +360,7 @@ Saving twice must never do harm:
 3. **Nuova / Modifica opera** — Foto (1–8): "Scatta foto" (`capture="environment"`) and "Dalla galleria"
    (multiple); each photo is resized in the browser (≤ 2400 px, JPEG 0.88, orientation applied, EXIF/GPS
    dropped by re-encoding); "Fai copertina" button to make one the first (the first shows "★ Copertina");
-   "×" to remove. Fields: Titolo*,
+   "×" to remove; "Raddrizza" under every new photo (§7.5a). Fields: Titolo*,
    Anno (default current year), Larghezza cm, Altezza cm, Tecnica (datalist from existing values),
    Collezione (datalist from existing values), "Colore della pennellata" (radio buttons drawn as large
    swatches with their names: Automatico (default, `null`) · Ocra · Rosso · Terracotta · Ottanio · Blu),
@@ -376,6 +376,34 @@ Saving twice must never do harm:
    modifiche"); the in-app back arrow still asks "Uscire senza salvare?".
 4. **Profilo** — motto, bio (textarea), portrait photo (add/replace/remove). Save = one commit. Unsaved
    changes are kept like those of a work.
+
+#### 7.5a «Raddrizza» (perspective straightening of a new photo)
+For a canvas photographed a little from the side or with wall around it. Only her own pixels are moved
+(a 4-point perspective warp, `public/admin/js/straighten.js`): nothing is generated, no server, no AI, CSP
+unchanged. Offered under every new, ready photo of a work (not for photos already online, not for the
+portrait); never opened automatically.
+
+- **Step** (full screen over the form, own history entry: the back gesture closes only the step): the
+  whole photo with four points. They start on the canvas' corners when a canvas on a plain wall is
+  recognised, on the points she placed last time when she reopens it, otherwise on the corners of the
+  photo — and then "Raddrizza" stays disabled until she has moved one (an untouched frame never crops).
+  A touch anywhere takes the nearest point and moves it by the finger's movement; a magnifier shows the
+  spot; arrow keys move a focused point. The photo keeps ≥ 28 px from the screen's edges. Points are
+  put in order geometrically (the picture can never come out mirrored); a crossed, tiny or too oblique
+  quad disables the button. Then the flat picture is shown: "Sì, va bene" replaces the photo, "Sposta i
+  punti" goes back. Nothing changes before "Sì, va bene".
+- **Picture**: made from the picked file while the form is open (all its pixels), else from the prepared
+  JPEG (restored draft). Same output rules as every photo: ≤ 2400 px, JPEG 0.88, no metadata, never
+  enlarged. About 0.4 % of the short side (≥ 3 px) is cut inside the marked corners on every side.
+- **Shape** (width ÷ height): her Larghezza/Altezza when both are filled and the photo does not contradict
+  them (within what the photo allows for the lens, at most 12 % from its own estimate); otherwise worked
+  out from the photo (Zhang & He 2007) with the focal length of its Exif tag A405 when it is an uncropped
+  4:3 photo, else 24 mm equivalent.
+- **Draft**: a straightened photo keeps, in memory and in IndexedDB, the photo as it was (`whole`), the
+  points (`corners`) and the focal length (`focal35`) next to `blob`/`preview`/`id`; "Torna alla foto
+  originale" under the photo restores it. None of this is uploaded: the repository gets one JPEG, with
+  the photo's unchanged file-name id. A save repeated after the picture changed writes the new picture
+  into the same folder under the same name.
 
 "Vedi sul sito" = `<site base>/opere/<slug>/` where site base = the admin URL without `admin/…`. After a
 save from this device the button stays disabled ("Vedi sul sito (tra circa 2 minuti)") until the publish

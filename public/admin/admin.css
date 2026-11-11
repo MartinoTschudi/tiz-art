@@ -1221,6 +1221,270 @@ a.opera-row:active {
   inset: -6px;
 }
 
+.photo-grid {
+  align-items: start; /* a tile without «Raddrizza» (online, being prepared) is simply shorter */
+}
+
+.photo-hint {
+  margin-top: 10px;
+}
+
+/* the picture of a work's photo, with «×» and the cover pill on it */
+.tile-frame {
+  position: relative;
+}
+
+/* «Raddrizza» under a new photo */
+.tile-tools {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 6px;
+}
+
+.tile-straighten {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  background: var(--card);
+  color: var(--ink);
+  font-size: 15.5px;
+  font-weight: 600;
+  cursor: pointer;
+  gap: 7px;
+}
+
+.tile-straighten .icon {
+  width: 19px;
+  height: 19px;
+  color: var(--accent);
+}
+
+.tile-straighten:active {
+  background: var(--paper-2);
+}
+
+.tile-whole {
+  width: 100%;
+  min-height: 44px;
+  padding: 6px 4px;
+  border: 0;
+  background: none;
+  color: var(--accent-dark);
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+/* ---------- «Raddrizza»: full-screen step ---------- */
+
+html.is-straightening,
+html.is-straightening body {
+  overflow: hidden;
+}
+
+/* a message about the step («Il telefono non è riuscito…») shows over it, under the progress overlay */
+html.is-straightening .toasts {
+  z-index: 75;
+}
+
+.straighten {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  flex-direction: column;
+  background: #1d1a17;
+  color: #fff;
+  /* no pull-to-refresh, no text selection while a handle is dragged */
+  overscroll-behavior: contain;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.straighten-top {
+  padding: calc(12px + env(safe-area-inset-top, 0px)) var(--gutter) 10px;
+}
+
+.straighten-title {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 22px;
+  font-weight: 600;
+  outline: none;
+}
+
+.straighten-hint {
+  min-height: 4.05em; /* three lines: the photo does not jump when the text changes */
+  margin: 4px 0 0;
+  font-size: 15.5px;
+  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+@media (max-width: 359px) {
+  .straighten-hint {
+    min-height: 5.4em; /* four lines on a narrow phone */
+  }
+}
+
+.straighten-stage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  touch-action: none;
+}
+
+.straighten-box {
+  position: absolute;
+}
+
+.straighten-photo {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.straighten-outline {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.straighten-outline polygon {
+  fill: rgba(255, 255, 255, 0.08);
+  stroke: #fff;
+  stroke-width: 2px;
+  vector-effect: non-scaling-stroke;
+  stroke-linejoin: round;
+  paint-order: stroke;
+  filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.9));
+}
+
+.straighten-outline.is-bad polygon {
+  stroke: #ffb4a8;
+  stroke-dasharray: 6 5;
+}
+
+.straighten-handle {
+  position: absolute;
+  width: 52px;
+  height: 52px;
+  margin: -26px 0 0 -26px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  cursor: grab;
+  touch-action: none;
+}
+
+/* the visible ring is smaller than the touch target and leaves the exact corner in view */
+.straighten-handle span {
+  position: absolute;
+  inset: 12px;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  background: rgba(168, 67, 42, 0.3);
+  box-shadow: 0 0 0 1.5px rgba(0, 0, 0, 0.6), inset 0 0 0 1.5px rgba(0, 0, 0, 0.45), 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+/* held: a wider, empty ring, so the corner under it shows */
+.straighten-handle.is-held span {
+  inset: 6px;
+  background: none;
+}
+
+.straighten-handle:focus-visible {
+  outline: 3px solid #ffd9a0;
+  outline-offset: -6px;
+}
+
+.straighten-loupe {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  width: 124px;
+  height: 124px;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.6);
+  pointer-events: none;
+}
+
+.straighten-loupe.is-right {
+  left: auto;
+  right: 8px;
+}
+
+.straighten-loupe.is-low {
+  top: auto;
+  bottom: 8px;
+}
+
+.straighten-result {
+  position: absolute;
+  inset: 12px;
+  width: calc(100% - 24px);
+  height: calc(100% - 24px);
+  object-fit: contain;
+  pointer-events: none; /* no «save image» menu on a long press */
+}
+
+.straighten-working {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  font-size: 18px;
+}
+
+.straighten-working p {
+  margin: 0;
+}
+
+.straighten [hidden] {
+  display: none;
+}
+
+.straighten-bottom {
+  padding: 12px var(--gutter) calc(14px + var(--safe-bottom));
+}
+
+.straighten-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  max-width: var(--maxw);
+  min-height: var(--tap);
+  margin: 0 auto;
+}
+
+.btn-dark {
+  border-color: rgba(255, 255, 255, 0.55);
+  background: transparent;
+  color: #fff;
+}
+
+.btn-dark:active {
+  background: rgba(255, 255, 255, 0.12);
+}
+
 .portrait-box {
   margin-bottom: 12px;
 }

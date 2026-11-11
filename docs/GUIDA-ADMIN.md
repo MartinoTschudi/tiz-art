@@ -71,6 +71,7 @@ Tocca un’opera per aprirla e modificarla.
    - La **prima foto è la copertina** (ha la stella ★ e la scritta «Copertina»). Per cambiarla tocca
      **Fai copertina** su un’altra foto.
    - Per togliere una foto tocca **×**.
+   - Se nella foto si vede il muro, o il quadro è un po’ storto, tocca **Raddrizza** sotto la foto (vedi § 5a).
 3. **Titolo** e **almeno una foto** sono obbligatori. Tutto il resto puoi lasciarlo vuoto.
 4. **Anno**: c’è già l’anno di oggi. Cambialo se serve.
 5. **Misure in cm**: **Larghezza** e **Altezza**, per esempio `100` e `140` (anche `100,5`).
@@ -111,6 +112,38 @@ Belle foto = un bel sito. Bastano poche attenzioni:
   Il sito mostra l’opera così com’è.
 - **Niente filtri** e niente ritocchi dei colori: chi guarda deve vedere i colori veri.
 - Dopo la foto intera puoi aggiungere **dettagli** (un volto, la materia del colore): sono le foto 2, 3, 4…
+
+## 5a. Raddrizzare la foto di un quadro
+
+Se nella foto si vede il muro intorno al quadro, oppure il quadro è venuto un po’ storto (a trapezio),
+l’admin lo sistema. Usa solo la tua foto: non ridipinge e non inventa niente, e i colori restano quelli.
+
+1. Sotto la foto appena aggiunta tocca **Raddrizza**.
+2. Vedi la foto con **quattro punti**. L’admin prova a metterli da solo sugli angoli del quadro: controllali.
+   Se un punto non è giusto, **trascinalo** sull’angolo. Non serve mettere il dito proprio sul punto:
+   tocca lì vicino e muovi il dito, il punto si sposta insieme. Mentre trascini, una **lente** ti
+   ingrandisce l’angolo.
+3. Se l’admin non trova il quadro da solo, i punti partono dagli angoli della foto: portali tu sui
+   quattro angoli del quadro.
+4. Tocca **Raddrizza**. Dopo qualche secondo vedi il quadro dritto, da solo, senza muro.
+5. Guarda i bordi. Se va bene tocca **Sì, va bene**. Se si vede ancora del muro o manca un pezzo di
+   tela tocca **Sposta i punti** e correggi.
+
+Da sapere:
+
+- **Serve solo per la foto del quadro intero.** Per le foto dei dettagli non serve: tocca **Annulla**.
+- **Finché non salvi puoi tornare indietro**: sotto una foto raddrizzata c’è **Torna alla foto originale**,
+  e puoi anche toccare di nuovo **Raddrizza** per spostare i punti. Dopo **Salva** resta solo la foto
+  raddrizzata e questi due pulsanti non ci sono più: controlla bene i bordi prima di salvare.
+- **Le misure aiutano.** Se hai già scritto larghezza e altezza del quadro, l’admin le usa per dare al
+  quadro la forma giusta. Se il quadro raddrizzato ti sembra troppo largo o troppo stretto, scrivi le
+  misure e raddrizza di nuovo.
+- **Meglio una foto presa bene.** **Raddrizza** corregge una foto un po’ storta, non una presa molto di
+  lato: più sei davanti al quadro, più il risultato è nitido. I riflessi della luce restano: per quelli
+  serve un’altra foto.
+- Lungo i bordi viene tolto un filo di tela (pochi millimetri), per non lasciare strisce di muro.
+- Per una **foto già online** il pulsante non c’è: aggiungi di nuovo la foto, raddrizzala e togli la
+  vecchia con **×**. Se la vecchia era la copertina, tocca **Fai copertina** sulla nuova.
 
 ## 6. Modificare un’opera
 
@@ -228,6 +261,8 @@ Niente panico: quello che hai salvato non si perde. Quasi sempre basta **Riprova
 | «GitHub ha ricevuto troppe richieste. Riprova tra … minuti» | Aspetta i minuti indicati. |
 | Una foto mostra «Non riesco a leggere questa foto» | Toglila con **×** e scegline un’altra, oppure rifalla con **Scatta foto**. |
 | Le foto restano su «Preparo…» | Aspetta un momento. Se non va avanti, chiudi le altre app e aggiungi meno foto alla volta. |
+| «Il telefono non è riuscito a raddrizzare la foto» | La foto è rimasta com’era. Chiudi le altre app e tocca di nuovo **Raddrizza**. |
+| «I punti si incrociano o sono troppo vicini», «I quattro punti non formano un quadro» oppure il pulsante **Raddrizza** resta spento | Metti un punto su ciascun angolo del quadro. Il pulsante si accende quando la linea bianca tra i punti è intera (non tratteggiata) e hai spostato almeno un punto. |
 | «Problema nell’ultima pubblicazione» | Le tue modifiche sono salvate. Chiama Martino: lui vede il problema con **Dettagli**. |
 | «Pubblicazione in corso…» per più di 15 minuti | Chiama Martino. |
 | L’app resta bianca o dice che non c’è connessione | Chiudi l’app (scorri verso l’alto dal fondo dello schermo e spingila via) e riaprila quando hai di nuovo rete. |
