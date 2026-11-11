@@ -66,7 +66,10 @@ or assets, also the `/tiz-art/` build above. These are the same checks Deploy ru
   put untrusted strings into `innerHTML` (use `textContent`/DOM APIs). Phone first: 375 px wide, touch
   targets ≥ 44 px. It reads data only from the GitHub API, never from the deployed site.
 - **Deploy**: keep the file name `deploy.yml` (the admin reads its runs by name), `permissions` minimal, the
-  official actions on their newest major version. Dependencies: only `astro`, `@astrojs/sitemap`, `sharp`;
+  official actions on their newest major version. `.github/workflows/image-cache.yml` reads the
+  Astro image cache every day so GitHub does not delete it after 7 quiet days (a cold build takes 3–5
+  minutes instead of about 1); its cache key step, path and runner must equal deploy.yml's
+  (`scripts/test/workflows.test.mjs`). Dependencies: only `astro`, `@astrojs/sitemap`, `sharp`;
   ask before adding one.
 
 ## Where things are
@@ -78,8 +81,9 @@ or assets, also the `/tiz-art/` build above. These are the same checks Deploy ru
 | Name, repository, Web3Forms key, old WordPress redirects | `src/data/sito.json` |
 | The film of the exhibition on Chi sono | `public/video/` (the MP4), `src/assets/video/` (its poster frame), `src/components/lib/film.ts` (facts, texts, box sizes), `src/components/chi/ChiFilm.astro` (player) |
 | Site address and base path, redirects, sitemap | `astro.config.mjs` (from `SITE_URL` / `BASE_PATH`) |
+| Deploy, image cache keep-alive | `.github/workflows/deploy.yml` (test, build, publish), `.github/workflows/image-cache.yml` (restores deploy.yml's Astro image cache every day; same key, path and runner, checked by `scripts/test/workflows.test.mjs`) |
 | Admin | `public/admin/` (`js/` modules, `setup/` page); local mock: `scripts/dev/admin-dev.mjs` |
 | Content validator | `scripts/check-content.mjs` |
-| Tests | `scripts/test/` (`admin-*.test.mjs`, `content-*.test.mjs`, the site's design rules `composition`, `home`, `opera`, `chi`, `film` (also checks the committed film against its constants), `contatti`, and `design-sync`, which checks the values the CSS, the `sizes` helpers, the admin and CONTRACTS share; `npm test` runs every `scripts/test/*.test.mjs` through the glob in `package.json`, there is no index file). The admin tests use the committed fixture `scripts/test/fixtures/repo/`, never the live `src/content` (Deploy runs `npm test` after every save of Tiziana) |
+| Tests | `scripts/test/` (`admin-*.test.mjs`, `content-*.test.mjs`, the site's design rules `composition`, `home`, `opera`, `chi`, `film` (also checks the committed film against its constants), `contatti`, `workflows` (image-cache.yml restores exactly deploy.yml's image cache), and `design-sync`, which checks the values the CSS, the `sizes` helpers, the admin and CONTRACTS share; `npm test` runs every `scripts/test/*.test.mjs` through the glob in `package.json`, there is no index file). The admin tests use the committed fixture `scripts/test/fixtures/repo/`, never the live `src/content` (Deploy runs `npm test` after every save of Tiziana) |
 | Docs | `docs/SETUP.md` (owner), `docs/GUIDA-ADMIN.md` (Tiziana, Italian), `docs/DESIGN-HANDOFF.md` (the site's design as built) |
 | Site icons | `public/favicon.svg` → `node scripts/dev/site-icons.mjs` renders `favicon-32.png` and `apple-touch-icon.png` |
