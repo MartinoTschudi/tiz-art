@@ -14,7 +14,8 @@
  *
  * Reveal on scroll: put data-reveal on an element (data-reveal="write" for handwriting). BaseLayout's
  * script adds .is-in when it enters the viewport; elements that enter together are staggered by
- * --tiz-stagger (skipped when the element sets its own --tiz-reveal-delay inline). Without JS, with
+ * --tiz-stagger (skipped when the element sets its own --tiz-reveal-delay inline). Until then the
+ * element is hidden by opacity (never by clip-path: the observer would not see it). Without JS, with
  * reduced motion and in print everything is simply visible. Strokes inside a [data-reveal] element
  * wait for it (see Stroke.astro).
  */
@@ -276,13 +277,12 @@ a:hover {
 
 /* ── Reveal on scroll ([data-reveal]) ───────────────────── */
 @media screen and (prefers-reduced-motion: no-preference) {
+  /* Handwriting ("write") waits hidden the same way, by opacity: Chrome's IntersectionObserver never
+     reports an element that its own clip-path has clipped away, so a line hidden with the wipe's
+     first frame would stay hidden for good once it starts below the fold. The wipe still begins
+     closed: tiz-write fills backwards through its delay. */
   .js [data-reveal]:not(.is-in) {
     opacity: 0;
-  }
-
-  .js [data-reveal='write']:not(.is-in) {
-    opacity: 1;
-    clip-path: inset(-30% 100% -30% -5%);
   }
 
   .js [data-reveal].is-in {

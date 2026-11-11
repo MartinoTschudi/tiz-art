@@ -1,9 +1,11 @@
 /**
  * schema.org JSON-LD (CONTRACTS 5.3): `Person` on the home and "Chi sono" pages, `VisualArtwork` on
- * every artwork page. BaseLayout prints whatever a page passes in its `jsonLd` prop.
+ * every artwork page, `VideoObject` for the film of the exhibition on "Chi sono". BaseLayout prints
+ * whatever a page passes in its `jsonLd` prop.
  */
 import { SITE, absoluteUrl, routes } from './site';
 import { formatDimensions, type Opera } from './opere';
+import { FILM, MOSTRA, isoDuration } from './film';
 
 export type JsonLd = Record<string, unknown>;
 
@@ -39,6 +41,24 @@ export function artworkJsonLd(opera: Opera, { images, description }: { images: s
     ...(data.anno ? { dateCreated: String(data.anno) } : {}),
     ...(formatDimensions(data) ? { width: centimetres(data.larghezza!), height: centimetres(data.altezza!) } : {}),
     ...(data.collezione ? { isPartOf: { '@type': 'CreativeWorkSeries', name: data.collezione } } : {}),
+  };
+}
+
+/**
+ * The film of the exhibition (CONTRACTS 5.6). Both URLs absolute: `contentUrl` = the MP4 itself,
+ * `thumbnailUrl` = a JPEG of its poster. No author: the film carries no credit on the site.
+ */
+export function filmJsonLd({ contentUrl, thumbnailUrl }: { contentUrl: string; thumbnailUrl: string }): JsonLd {
+  return {
+    '@type': 'VideoObject',
+    name: `Il film della mostra «${MOSTRA.titolo}»`,
+    description: `La mostra «${MOSTRA.titolo}» di ${SITE.nome}: ${MOSTRA.luogo}, ${MOSTRA.date}. ${MOSTRA.tributo}`,
+    thumbnailUrl,
+    contentUrl,
+    encodingFormat: FILM.type,
+    duration: isoDuration(FILM.seconds),
+    uploadDate: FILM.uploadDate,
+    inLanguage: SITE.lingua,
   };
 }
 

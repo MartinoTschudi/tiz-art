@@ -43,6 +43,8 @@ Where the build deliberately differs from the design's README:
   with two published works the Opera page shows one neighbour, not the same one twice.
 - The arrows ← → (neither font has them) are drawn in Lucida Grande, the font the frames fall back to
   on a Mac; elsewhere the system font.
+- **Added after the handoff, without a frame**: the exhibition «noi, DONNA.» with its film on Chi sono
+  (§2 «The exhibition block»). It is derived from frames 1h / 1i above it; nothing else on that page changed.
 
 ## 1. Run it locally
 
@@ -75,7 +77,7 @@ phone < 640 · tablet 640–1023 · desktop ≥ 1024.
 | `/` | `src/pages/index.astro` + `components/home/*` | **Hero** (1b / 1c, 800 px high at 1280): the motto in her hand, 150 px desktop, last word in rosso with the beating dot (the artist's name when the motto is empty; a long motto flows at 40 / 56 px), the intro line and «Guarda le opere →»; up to 3 works from `heroSlots` (the first 3 *in evidenza*, filled up with the first published works): the most square → large (with the note «{titolo}, {anno}»; at most 1.25 × its width high), the tallest → narrow, the other → small. Below 1024: motto → the large work → intro. **Series**: «noi, DONNA.» + year in her hand (a name over 40 characters at 84 / 48 px), the line from `SERIE_NOTE`, up to 5 works of the series outside hero and quote, hung by eye without sizes, «Tutte le {n} opere →» («Le ultime opere» when no work has a series). **Quote band** (gesso): the first sentence (20–140 characters) of a work's text, from the last work backwards, outside the hero; key word in rosso; «— Tiziana, su «{titolo}», {misure} →» links to the work; hidden when there is none. Large home footer |
 | `/opere/` | `src/pages/opere/index.astro` | «Opere» (84 / 120 / 150 px) and the note «{n} tele, appese come nello studio» («{n} tele» on phones, «1 tela»), then ONE list of all published works in display order, hung by eye (1d / 1e / 1l). No grouping by series. No works: «Le opere saranno pubblicate presto.» |
 | `/opere/<slug>/` | `src/pages/opere/[slug].astro` | **Opera** (1f / 1g). Desktop: «← Tutte le opere»; grid `minmax(0,1fr) 400px`, gap 64: the stage (720 px high, lower on short screens) with the painting whole (≤ 88 % × 92 %) and its stroke; the column «{nn} / {total} · {collezione}», the title in her hand, `<dl>` Anno / Misure / Tecnica (empty ones skipped), her text + «— TIZ» (block omitted when the text is empty), «Chiedi di quest’opera →» → `/contatti/?opera=<slug>`; a title over 40 characters is 64 px (48 phone). With 2 or more photos all of them as thumbnails under the stage (the one on the stage marked). Previous / next (wrapping; with two works only the other one, once) as two halves with 84 px thumbnails. 640–1023: the same, stacked. Phone: «← Opere» + TIZ in the header, the painting in a 440 px box, «{nn} / {total}», title, «anno · misure» / tecnica, text; a fixed bottom bar ← · «Chiedi di quest’opera» · →. JSON-LD `VisualArtwork` |
-| `/chi-sono/` | `src/pages/chi-sono.astro` | «chi sono» in her hand, her name (h1), the portrait (`profilo.ritratto`, 4:5 crop allowed here only) with an ocra stroke and the note «nello studio» — without a portrait the first hero painting, uncropped, in its own paint, captioned «titolo», anno and linked; the motto (last word in rosso), the bio (`PlainText`, paragraphs 18 px apart), the dark button «Vedi le opere» and «Scrivimi →». Desktop (1h): grid `clamp(430px, 36vw, 460px)` | text, the picture sticky on tall screens; phone (1i): stacked |
+| `/chi-sono/` | `src/pages/chi-sono.astro` | «chi sono» in her hand, her name (h1), the portrait (`profilo.ritratto`, 4:5 crop allowed here only) with an ocra stroke and the note «nello studio» — without a portrait the first hero painting, uncropped, in its own paint, captioned «titolo», anno and linked; the motto (last word in rosso), the bio (`PlainText`, paragraphs 18 px apart), the dark button «Vedi le opere» and «Scrivimi →». Desktop (1h): grid `clamp(430px, 36vw, 460px)` | text, the picture sticky on tall screens; phone (1i): stacked. Under it, after a dashed line, the exhibition block with the film (no frame, see below). JSON-LD `Person` + `VideoObject` |
 | `/contatti/` | `src/pages/contatti.astro` + `components/contatti/*` | **Contatti** (1j / 1k): the ottanio stroke block with «Scrivimi» (h1) and her line; the form (`ContactForm`): optional chip «Mi interessa» + title for `?opera=<slug>`, underline fields «Il tuo nome», «La tua e-mail, per risponderti», «Il tuo messaggio», «Invia →», the privacy note. Sent (1j-sent / 1k-sent): «Grazie!», «Il tuo messaggio è arrivato. Ti rispondo presto.», «Scrivi ancora». Stacked below 1024 |
 | `/contatti/grazie/` | `src/pages/contatti/grazie.astro` | Where Web3Forms sends visitors without JS: the Scrivimi block as a decorative echo, «Grazie!» (h1), the line, «Guarda le opere →» / «Torna alla home». `noindex`, no canonical, not in the sitemap |
 | `/404.html` | `src/pages/404.astro` | «pagina non trovata», «Qui la tela è ancora bianca.» (h1, one line), one line of text, «Guarda le opere →» / «Torna alla home» (as on Grazie), a blank canvas with a terracotta stroke. Served by GitHub Pages at any depth, so every URL is absolute with the base path; no canonical, noindex |
@@ -90,6 +92,38 @@ JS: «Menu» opens the full-screen lino menu (1c-menu); without JS the three lin
 **Footer**: dashed top border, «TIZ», «© {year} Tiziana Tschudi Belloli»; on the home the large
 variant with the motto, the nav Opere · Chi sono · Scrivimi and «© {year} Tiziana Tschudi Belloli ·
 tiz-art.ch». No contact details anywhere.
+
+### The exhibition block on Chi sono (added after the handoff: no Claude Design frame)
+
+Built in November 2026 from the page above it, not from a frame; rules in CONTRACTS §5.6. A `<section
+id="mostra">` after the portrait / bio grid, set apart by a dashed line (`--tiz-divider`), on the same
+grid (`.chi__grid`), so the film hangs on the portrait's line and the text on the bio's.
+
+- **Text**: «la mostra» in her hand (the page's «chi sono» label: terracotta, −2deg), the title «noi,
+  DONNA.» as an h2 in Bricolage 800 (48 / 56 / 64 px, tight, as the series title on the home), «Atelier
+  Attila, Bellinzona · 22 aprile – 7 maggio 2023» in terra-2 (two lines on phones), the exhibition's own
+  sentence in guillemets at the bio's size (18 / 20 px), and in small terra-2 «Il film dura 6 minuti e
+  mezzo, con audio, senza sottotitoli.» (the film has no subtitles yet, CONTRACTS §5.6). From 640 px the
+  middle dot between place and dates is drawn by CSS; the text itself has a comma there, hidden from
+  the eye, so a screen reader and a copy of the line get one clean sentence.
+- **The film** (`chi/ChiFilm.astro`): a tall tela, 340 × 606 / 320 × 571 / 280 × 499 px (≥ 1024 / ≥ 640 /
+  phone), with the portrait's indent, `--tiz-shadow-tela`,
+  an **ottanio** stroke across its lower half (shape 2, +5deg: the cold counterpoint to the warm frame and
+  to the portrait's ocra) and the note «il film della mostra» in her hand (−3deg), as «nello studio» above.
+  The tela has the ratio of the picture without the thin black bars at its sides (`FILM.bars`, 4 of 720
+  px each) and film and posters fill it (`object-fit: cover`), so the bars are cut off; in full screen
+  the whole picture shows (`contain`). On a short screen the tela gets smaller so that the film stays
+  whole, down to 200 px wide (the play button is about 180 px): below about 360 px of screen height it
+  is taller than the screen.
+- **Play**: with JS the poster carries the site's rosso button «▶ Guarda il film» (`.tiz-btn`), low on the
+  tela, clear of the painted face; the whole tela is the button. Its focus ring is the site's (2px rosso,
+  3px offset) on a lino gap. After the press the browser's own controls take over. Without JS: the native
+  controls on a light poster.
+- **Layout**: ≥ 1024 the film left, the text right, title and words meeting at half the film's height
+  (the label beside a painting); below 1024 one column: «la mostra» + title + place and dates → the film
+  → the sentence and the line about the film.
+- **Motion**: the tela settles and its stroke wipes in when it scrolls into view (`data-reveal` on the
+  frame), the note is written in; nothing with reduced motion. The film never starts by itself.
 
 ## 3. Components and helpers
 
@@ -130,6 +164,7 @@ the details; this is the map.
 | File | Purpose | Props |
 |---|---|---|
 | `chi/ChiFigure.astro` | The Chi sono picture with its stroke and handwritten note: the portrait 4:5 (`object-fit: cover`, the only crop on the site) or a painting at its own ratio | `kind` (`ritratto` / `opera`), `image`, `alt`, `caption`, `paint`, `href?`, `transitionName?` |
+| `chi/ChiFilm.astro` | The film of the exhibition (no frame): the tela with its stroke and note, the native `<video>` (`preload="none"`, light `poster`), the JS play button with the sharp lazy poster picture, kept in a `<template>` until the script runs (§6) | `poster` (a frame of the film), `caption?` («il film della mostra»), `paint?` (ottanio) |
 | `contatti/Pagina.astro` | The two columns of the contact pages: Scrivimi block left (on top below 1024), the slot right | `titleId?` (makes «Scrivimi» the h1) |
 | `contatti/Scrivimi.astro` | The ottanio stroke block with «Scrivimi» and her line (lino text with an ottanio halo for contrast); decorative echo without `titleId` | `titleId?` |
 | `contatti/Grazie.astro` | «Grazie!» in rosso, the line, a slot for the actions | `level?` (1 / 2), `id?`, `focusable?` |
@@ -137,7 +172,7 @@ the details; this is the map.
 
 ### Helpers (`src/components/lib/`, TypeScript, no markup)
 
-`composition.ts`, `home.ts`, `opera.ts`, `chi.ts` and `contatti.ts` are pure (no `astro:*` imports,
+`composition.ts`, `home.ts`, `opera.ts`, `chi.ts`, `film.ts` and `contatti.ts` are pure (no `astro:*` imports,
 erasable TypeScript only): `scripts/test/<name>.test.mjs` imports them directly through Node's type
 stripping. Between themselves they import with the explicit `.ts` extension (`import { PAGE_MAX } from
 './composition.ts'`), which both Vite and Node resolve. Their layout numbers are checked against the CSS
@@ -148,12 +183,13 @@ by `scripts/test/design-sync.test.mjs`.
 | `composition.ts` | The design's rules: `PAINTS`, `PAINT_CYCLE`, `paintName`, `paintVar`; `MT` / `AL` / `SWL` / `SWT` / `SWR` with `hungAt` / `strokeAt`; the page frame `PAGE_MAX`, `GUTTERS`, `gutterAt` (the only copy: opera.ts and chi.ts import them); `REAL_SCALE`, `DEFAULT_CM`, `realScaleSizes`; `mottoParts`, `splitLastWord`; `heroSlots`; `firstSentence`, `pickQuote`; `pickSeries`; `LONG_TITLE`, `isLongTitle` |
 | `home.ts` | Home / Opere copy and sizes: `HOME_INTRO`, `HERO_SIZES`, `QUOTE_SIZES`, `heroNote`, `longestLine`, `MOTTO_FLOW_CHARS`, `mottoFlows`, `allWorksLabel`, `firstName`, `quoteAttribution`, `opereCountNote` |
 | `opera.ts` | Opera page layout numbers (keep in step with the CSS of ArtworkGallery / ArtworkPager): `STAGE`, `stageSizes`, `thumbSizes`, `pagerThumbSizes`, `neighbourIndexes` (wrap-around; two works: one neighbour each), `operaCounter` («01 / 12», spoken «Opera 1 di 12») |
-| `chi.ts` | Chi sono picture boxes (400 × 500 / 360 × 450 / 280 × 350) and `chiSizes` (keep in step with ChiFigure) |
+| `chi.ts` | Chi sono picture boxes (400 × 500 / 360 × 450 / 280 × 350) and `chiSizes` (keep in step with ChiFigure; it takes other `boxes` for the film) |
+| `film.ts` | The film of the exhibition: `FILM` (file, pixel size, the black side bars, seconds, bytes, upload date; `scripts/test/film.test.mjs` compares the committed file with it), `FILM_PATH`, `FILM_MAX_BYTES`, `MOSTRA` (title, place, dates, its sentence), `isoDuration` («PT6M38S»), `durationLabel` («6 minuti e mezzo»), `megabytes`, `FILM_BOXES` and `filmSizes` (keep in step with ChiFilm) |
 | `contatti.ts` | Contact form rules and texts: endpoint, `SUBJECT`, `FROM_NAME`, `MIN_MESSAGE`, `LIMITS`, `MESSAGES`, `fieldError`, `subjectFor`, `operaLine`, `buildPayload`, `withoutOpera`, `isSent` |
 | `opere.ts` | Queries (`getPublishedOpere`, `getAllOpere`, `getProfilo`, `firstHeroWork` (the first hero work: the sharing image of pages without one, Chi sono without a portrait), `groupByCollezione`, `neighbours`), text helpers (`formatDimensions` → «100 × 140 cm» with no-break spaces, `altText`, `paragraphs`, `excerpt`, `operaDescription`), `operaPaint` / `operaPaintVar` (the work's paint) and `composable()` (works → the shapes the composition rules take) |
 | `site.ts` | `SITE`, `BASE`, `routes.*` (every internal URL with the base path, incl. `contattiOpera(slug)` and `contattiGrazie`), `withBase()`, `absoluteUrl()`, `IS_PREVIEW`, `SERIE_NOTE` |
 | `images.ts` | Width presets and image helpers (§5) |
-| `structured-data.ts` | JSON-LD `Person` and `VisualArtwork` |
+| `structured-data.ts` | JSON-LD `Person`, `VisualArtwork` and the film's `VideoObject` |
 
 Data available on an artwork (`opera.data`): `titolo`, `anno` (number or null), `larghezza` /
 `altezza` (cm or null), `tecnica`, `collezione`, `colore` (paint or null = automatic), `testo`,
@@ -226,10 +262,12 @@ numbers as the CSS (most of them from the real-scale widths, cm × k):
 | Home hero | `card` | `HERO_SIZES` (home.ts): 400 / 150 / 230 px at 1280, shrinking with the wall from 1024, 290 px on phones |
 | Home quote | `card` | `QUOTE_SIZES` (home.ts): 340 px ≥ 1024, 204 px at 640–1023 |
 | Chi sono picture | `card` | `chiSizes` (chi.ts) |
+| Chi sono film: the poster in the play button (JS only: in a `<template>` until the script runs, then lazy) | `card` | `filmSizes` (film.ts): 340 / 320 / 280 px |
+| Chi sono film: the `poster` attribute | One WebP as wide as the phone box (280 px), quality 60 (`posterUrl`): fetched with the page, so kept light | — |
 | Opera stage | `artwork`: 540, 720, 960, 1280, 1600 | `stageSizes(ratio)` (opera.ts) |
 | Opera photo thumbnails, pager | `thumb`: 360, 540, 720 | `thumbSizes` (84 / 64 px high), `pagerThumbSizes` (84 px high) |
 | Full-screen viewer | WebP 1280, 1920 + a **full-size JPEG** (quality 90) as the largest candidate; also the no-JS link target and the JSON-LD `image` | — |
-| Open Graph / Twitter | JPEG inside 1200 × 1200, quality 75 | — |
+| Open Graph / Twitter; the film's JSON-LD `thumbnailUrl` | JPEG inside 1200 × 1200, quality 75 | — |
 | Contact chip | One WebP at twice the size it is drawn at (`CONTACT_THUMB_SCALE`), the painting fitted into 96 × 64 (7/8 on phones) | — |
 | Admin `anteprime.json` | WebP 480 | — |
 
@@ -258,7 +296,10 @@ All vanilla TypeScript in Astro `<script>`s; everything is readable without JS.
   `document.documentElement.dataset.reveal` / `.menu = 'ready'` (keep those writes).
 - **Reveal**: `[data-reveal]` (settle) and `[data-reveal="write"]` (handwriting wipe) get `.is-in` when
   they enter the viewport; elements that enter together are staggered by `--tiz-stagger`, unless they
-  set `--tiz-reveal-delay`. Do not put plain `data-reveal` on an element with its own `transform`, nor
+  set `--tiz-reveal-delay`. Until then both kinds are hidden by `opacity` only, never by `clip-path`:
+  Chrome's IntersectionObserver does not report an element that its own clip-path has clipped away, so
+  such a line would never appear once it starts below the fold (`scripts/test/design-sync.test.mjs`
+  guards it). Do not put plain `data-reveal` on an element with its own `transform`, nor
   the named Opera stage inside a `[data-reveal]` element.
 - **View transitions**: native cross-document (`@view-transition`, 700 ms, only without reduced
   motion). Painting boxes carry `view-transition-name: opera-<slug>` in the lists, the hero, the quote
@@ -285,6 +326,13 @@ All vanilla TypeScript in Astro `<script>`s; everything is readable without JS.
   3»). A thumbnail swaps the stage photo with the slides' CSS crossfade (`--tiz-dur-fade`, 700 ms; at
   once with reduced motion: the script reads the transition time from the computed style); clicking
   the stage opens the viewer at that photo. Without JS every link opens the full-size JPEG.
+- **Film** (`chi/ChiFilm.astro`): `[data-film]` holds the `<video>` (in the markup with `controls`: that
+  is the page without JS) and the hidden `[data-film-play]` button with the poster picture in a
+  `template[data-film-picture]` (inert: without JS nothing of it is fetched). The script unpacks the
+  template, shows the button and takes `controls` off (one play symbol, also on iOS Safari); a press
+  copies the picture's URL to `video.poster` if it has loaded, hides the button, puts `controls` back,
+  focuses the video and calls `play()`. The film is not fetched before that (`preload="none"`), never
+  loops or starts muted.
 - **Contact form** (`ContactForm.astro`, `contact-form.ts`, rules in `lib/contatti.ts`):
   - Hooks: `[data-contact]` (root), `form[data-contact-form]` (`data-active`), the works as JSON in
     `script[data-contact-opere]`, the chip `[data-opera-chip]` (`data-slug`, `[data-opera-thumb]`,
@@ -321,7 +369,7 @@ All vanilla TypeScript in Astro `<script>`s; everything is readable without JS.
 - **Quality bar**: semantic HTML, keyboard accessible, visible focus (`--tiz-focus`), touch
   targets ≥ 44 px, `prefers-reduced-motion`, everything readable without JS (only the form's fetch,
   the `?opera` chip — without JS «Chiedi di quest’opera» opens the form without the work —, the
-  viewer, the phone menu overlay, the photo swap and the animations need it), mobile-first, no
+  viewer, the phone menu overlay, the photo swap, the film's play button and the animations need it), mobile-first, no
   horizontal scroll at 320 px, no layout shift (also while the fonts load).
 - **No new dependencies**, no framework, no Tailwind, no CDN or third-party scripts.
 - **SEO** is handled in `BaseLayout.astro` (title «Titolo — Tiziana Tschudi Belloli», description,
@@ -331,8 +379,9 @@ All vanilla TypeScript in Astro `<script>`s; everything is readable without JS.
 
 - `npm test`, `npm run check:content`, `npm run build` and the `/tiz-art/` build (§1) must pass.
   `scripts/test/design-sync.test.mjs` fails when a layout number in the CSS (stage, boxes, gutters,
-  k, the hero wall) no longer matches the helper that computes `sizes` from it, or when the paint
+  k, the hero wall, the film's box) no longer matches the helper that computes `sizes` from it, or when the paint
   names / colours of site, admin, validator and CONTRACTS differ: change both sides together.
+  `scripts/test/film.test.mjs` fails when the committed film differs from `FILM` in lib/film.ts.
 - Look at every page at 320, 390, 800, 1280 and 1440 px, also without JS and with reduced motion: the
   phone menu, the viewer, the photo swap, the contact form with `?opera=sorellanza`, sending, and
   `/contatti/grazie/`. Compare with the frames (§ intro).
@@ -344,6 +393,10 @@ All vanilla TypeScript in Astro `<script>`s; everything is readable without JS.
   - Fewer than 3 works *in evidenza* (the hero fills up), no work with a series («Le ultime opere»), no
     text that makes a quote (band hidden), only the hero works published.
   - No portrait (Chi sono shows the first hero painting), an empty motto (the artist's name) or bio.
+  - The film on Chi sono: without JS (native controls on the light poster), by keyboard (the button,
+    then the player), in full screen (the whole picture, black beside it), on a short screen (a phone
+    held sideways: the film stays whole down to about 360 px of screen height), with the play
+    button pressed before the sharp poster has loaded.
   - `colore` missing (a file of an older admin: automatic) or set to any of the five paints: the
     stroke behind that work changes on every page, home included.
   - `?opera=` with an unknown or hidden slug (no chip), an empty Web3Forms key.

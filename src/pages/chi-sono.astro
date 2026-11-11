@@ -8,15 +8,22 @@
  * Desktop (≥ 1024): picture left (it stays in view while the long bio scrolls, when the window is tall
  * enough), text right (max 620px). Below 1024 everything stacks: "chi sono" + name, the picture, then
  * the motto, the bio and the links. Empty motto or bio: that block is left out.
+ *
+ * Under it, as a block of its own, the exhibition «noi, DONNA.» (2023) with its film (CONTRACTS §5.6;
+ * added after the design handoff, no frame): the same two columns, the film under the portrait and
+ * its title, place, dates and own words under the bio; stacked below 1024: title → film → words.
  */
 import BaseLayout from '../layouts/BaseLayout.astro';
 import ChiFigure from '../components/chi/ChiFigure.astro';
+import ChiFilm from '../components/chi/ChiFilm.astro';
 import PlainText from '../components/PlainText.astro';
-import { SITE, routes } from '../components/lib/site';
+import { SITE, absoluteUrl, routes, withBase } from '../components/lib/site';
 import { altText, excerpt, firstHeroWork, getProfilo, getPublishedOpere, operaPaintVar } from '../components/lib/opere';
 import { mottoParts, splitLastWord } from '../components/lib/composition';
 import { socialImage } from '../components/lib/images';
-import { personJsonLd } from '../components/lib/structured-data';
+import { filmJsonLd, personJsonLd } from '../components/lib/structured-data';
+import { FILM, FILM_PATH, MOSTRA, durationLabel } from '../components/lib/film';
+import filmPoster from '../assets/video/noi-donna-2023.jpg';
 
 const [profilo, published] = await Promise.all([getProfilo(), getPublishedOpere()]);
 
@@ -32,6 +39,10 @@ const description = excerpt(profilo.bio || profilo.motto || `${SITE.nome} (${SIT
 const motto = mottoParts(profilo.motto).lines.length > 0 ? splitLastWord(profilo.motto) : null;
 const hasBio = profilo.bio.trim() !== '';
 const hasPicture = Boolean(profilo.ritratto || work);
+
+// The film's JSON-LD thumbnail: a JPEG of the poster (search engines do not all read AVIF / WebP).
+const filmThumb = await socialImage(filmPoster, `Un fotogramma del film della mostra «${MOSTRA.titolo}»`);
+const filmUrl = absoluteUrl(withBase(FILM_PATH));
 ---
 
 <BaseLayout
@@ -39,7 +50,10 @@ const hasPicture = Boolean(profilo.ritratto || work);
   description={description}
   path="chi-sono/"
   ogImage={portraitShare ?? workShare}
-  jsonLd={[personJsonLd({ description: profilo.motto || undefined, image: portraitShare?.url })]}
+  jsonLd={[
+    personJsonLd({ description: profilo.motto || undefined, image: portraitShare?.url }),
+    filmJsonLd({ contentUrl: filmUrl, thumbnailUrl: filmThumb.url }),
+  ]}
 >
   <div class="chi">
     <div class:list={['chi__grid container', !hasPicture && 'chi__grid--solo']}>
@@ -93,6 +107,28 @@ const hasPicture = Boolean(profilo.ritratto || work);
         </p>
       </div>
     </div>
+
+    <section class="chi__grid chi__grid--mostra container" id="mostra" aria-labelledby="mostra-titolo">
+      <hgroup class="chi__head">
+        <p class="chi__label">la mostra</p>
+        <h2 class="chi__mostra-title" id="mostra-titolo">{MOSTRA.titolo}</h2>
+        {/* One sentence for a screen reader and for whoever copies it: the comma and the space are in
+            the text, the middle dot of the wide layout is drawn by CSS. */}
+        <p class="chi__mostra-where">
+          <span class="chi__mostra-fact">{MOSTRA.luogo}<span class="visually-hidden">,</span></span> <span class="chi__mostra-fact">{MOSTRA.date}</span>
+        </p>
+      </hgroup>
+
+      <div class="chi__film">
+        <ChiFilm poster={filmPoster} />
+      </div>
+
+      <div class="chi__text">
+        <p class="chi__tributo">«{MOSTRA.tributo}»</p>
+        {/* The film has voices and no subtitles yet (CONTRACTS §5.6): say so before anyone starts it. */}
+        <p class="chi__film-hint">Il film dura {durationLabel(FILM.seconds)}, con audio, senza sottotitoli.</p>
+      </div>
+    </section>
   </div>
 </BaseLayout>
 
@@ -163,7 +199,8 @@ const hasPicture = Boolean(profilo.ritratto || work);
   }
 
   /* 18px text on phones (frame 1i), 20px from 640; paragraphs 18px apart as in both frames. */
-  .chi__bio {
+  .chi__bio,
+  .chi__tributo {
     --plain-text-gap: 18px;
     font-size: 18px;
     line-height: 1.6;
@@ -205,7 +242,8 @@ const hasPicture = Boolean(profilo.ritratto || work);
       font-size: 56px;
     }
 
-    .chi__bio {
+    .chi__bio,
+    .chi__tributo {
       font-size: 20px;
     }
   }
@@ -264,6 +302,117 @@ const hasPicture = Boolean(profilo.ritratto || work);
     .chi__picture {
       position: sticky;
       top: 40px;
+    }
+  }
+
+  /* ── The exhibition and its film (CONTRACTS §5.6; no frame: it repeats the grid, the label and the
+     text sizes of the block above, and the film hangs on the portrait's line). These rules come after
+     the block's own, so they win over .chi__grid at every width. ── */
+
+  /* A dashed line sets it apart from the bio; the space above it is the first grid's bottom padding. */
+  .chi__grid--mostra {
+    grid-template-areas:
+      'rule'
+      'head'
+      'picture'
+      'text';
+    padding-top: 0;
+  }
+
+  .chi__grid--mostra::before {
+    content: '';
+    grid-area: rule;
+    margin-bottom: 40px;
+    border-top: var(--tiz-divider);
+  }
+
+  /* The series name as on the home page (HomeSeries): Bricolage 800, tight. */
+  .chi__mostra-title {
+    margin-top: var(--tiz-s2);
+    font-size: 48px;
+    line-height: 0.9;
+    letter-spacing: -0.04em;
+  }
+
+  .chi__mostra-where {
+    margin-top: var(--tiz-s3);
+    color: var(--tiz-terra-2);
+    font-size: 15px;
+    font-weight: 500;
+    line-height: var(--tiz-line-small);
+  }
+
+  /* Phone: the place and the dates on a line each; from 640 one line, a middle dot between them. */
+  .chi__mostra-fact {
+    display: block;
+  }
+
+  .chi__film {
+    grid-area: picture;
+    margin-top: var(--tiz-s5);
+  }
+
+  .chi__film-hint {
+    color: var(--tiz-terra-2);
+    font-size: var(--tiz-small);
+    line-height: var(--tiz-line-small);
+  }
+
+  @media (min-width: 640px) {
+    .chi__grid--mostra::before {
+      margin-bottom: 56px;
+    }
+
+    .chi__mostra-title {
+      font-size: 56px;
+    }
+
+    .chi__mostra-where {
+      font-size: var(--tiz-body);
+    }
+
+    .chi__mostra-fact {
+      display: inline;
+    }
+
+    /* The dot is generated: it is not copied with the line («Atelier Attila, Bellinzona, 22 aprile –
+       7 maggio 2023») and, where the browser knows the empty alternative text, not read aloud. */
+    .chi__mostra-fact + .chi__mostra-fact::before {
+      content: '· ';
+      content: '· ' / '';
+    }
+
+    .chi__film {
+      margin-top: 40px;
+    }
+  }
+
+  /* Desktop: the film in the portrait's column, the text in the bio's. The film is taller than its
+     text: title and words meet at half its height, like the label beside a painting. */
+  @media (min-width: 1024px) {
+    .chi__grid--mostra {
+      grid-template-rows: auto 1fr 1fr;
+      grid-template-areas:
+        'rule rule'
+        'picture head'
+        'picture text';
+    }
+
+    .chi__grid--mostra::before {
+      margin-bottom: 72px;
+    }
+
+    .chi__grid--mostra .chi__head {
+      align-self: end;
+    }
+
+    .chi__mostra-title {
+      margin-top: var(--tiz-s3);
+      font-size: 64px;
+    }
+
+    .chi__film {
+      margin-top: 0;
     }
   }
 </style>

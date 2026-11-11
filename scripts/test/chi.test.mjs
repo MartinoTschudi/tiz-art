@@ -58,6 +58,16 @@ describe('chiSizes', () => {
     assert.equal(chiSizes(60 / 130), '(min-width: 1024px) 231px, (min-width: 640px) 208px, (min-width: 242px) 162px, calc(100vw - 80px)');
   });
 
+  test('another set of boxes in the same column (the film under the bio, lib/film.ts)', () => {
+    const boxes = [
+      { minWidth: 1024, w: 340, h: 600, indent: 30, gutter: 48 },
+      { minWidth: 0, w: 280, h: 494, indent: 40, gutter: 20 },
+    ];
+    assert.equal(chiSizes(340 / 600, { boxes }), '(min-width: 1024px) 340px, (min-width: 360px) 280px, calc(100vw - 80px)');
+    // The default boxes are untouched.
+    assert.equal(chiSizes(1, { boxes: CHI_BOXES }), chiSizes(1));
+  });
+
   test('every entry but the last has a media condition', () => {
     for (const ratio of [0.3, 0.8, 1, 1.25, 3]) {
       const parts = chiSizes(ratio).split(', ');
