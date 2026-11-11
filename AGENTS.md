@@ -61,7 +61,7 @@ or assets, also the `/tiz-art/` build above. These are the same checks Deploy ru
   (MP4 H.264 + AAC, 720 px wide, ≤ 50 MB, faststart; never re-encode or rename it in passing) with its facts
   and texts in `src/components/lib/film.ts`. Replace the file and those constants together (`npm test`
   compares them; steps in `docs/SETUP.md` §8). A native `<video>`: `preload="none"`, no autoplay, usable
-  without JS, no third-party player. It has no subtitles yet and the page says so (§5.6).
+  without JS, no third-party player. It has no subtitles yet (§5.6).
 - **Admin**: plain ES modules, no build step, no CDN, no external fonts; strict CSP in `index.html`. Never
   put untrusted strings into `innerHTML` (use `textContent`/DOM APIs). Phone first: 375 px wide, touch
   targets ≥ 44 px. It reads data only from the GitHub API, never from the deployed site.
@@ -86,4 +86,5 @@ or assets, also the `/tiz-art/` build above. These are the same checks Deploy ru
 | Content validator | `scripts/check-content.mjs` |
 | Tests | `scripts/test/` (`admin-*.test.mjs`, `content-*.test.mjs`, the site's design rules `composition`, `home`, `opera`, `chi`, `film` (also checks the committed film against its constants), `contatti`, `workflows` (image-cache.yml restores exactly deploy.yml's image cache), and `design-sync`, which checks the values the CSS, the `sizes` helpers, the admin and CONTRACTS share; `npm test` runs every `scripts/test/*.test.mjs` through the glob in `package.json`, there is no index file). The admin tests use the committed fixture `scripts/test/fixtures/repo/`, never the live `src/content` (Deploy runs `npm test` after every save of Tiziana) |
 | Docs | `docs/SETUP.md` (owner), `docs/GUIDA-ADMIN.md` (Tiziana, Italian), `docs/DESIGN-HANDOFF.md` (the site's design as built) |
-| Site icons | `public/favicon.svg` → `node scripts/dev/site-icons.mjs` renders `favicon-32.png` and `apple-touch-icon.png` |
+| Her signature (the logo) | `src/assets/firma.svg`: the «TiZ» she paints on her canvases, traced from her paint (one colour, `currentColor`). `src/components/Firma.astro` shows it (header, footer, under her text on an Opera page); BaseLayout carries the drawing once per page as a `<symbol>` (`src/components/lib/firma.ts`). Rebuild from the photo: `python3 scripts/dev/firma/make.py` (Pillow + numpy) |
+| Site icons | `node scripts/dev/site-icons.mjs` writes `public/favicon.svg`, `favicon-32.png` and `apple-touch-icon.png` from `src/assets/firma.svg` and the colours in `tokens.css`; never edit them by hand (`design-sync` compares) |

@@ -87,7 +87,8 @@ scripts/admin-setup.mjs        creates public/admin/auth.json from the terminal 
 scripts/dev/admin-dev.mjs      local mock of the GitHub API for the admin (npm run admin:dev)
 scripts/test/                  node:test suites, no network: npm test runs every scripts/test/*.test.mjs (glob in package.json);
                                fixtures/repo/ = small copy of src/content for the admin tests (never the live content)
-scripts/dev/site-icons.mjs     renders public/favicon-32.png + apple-touch-icon.png from public/favicon.svg
+scripts/dev/site-icons.mjs     writes public/favicon.svg, favicon-32.png + apple-touch-icon.png from her signature
+                               (src/assets/firma.svg; scripts/dev/firma/make.py rebuilds that drawing from her paint)
 docs/                          SETUP (owner), GUIDA-ADMIN (Tiziana), DESIGN-HANDOFF (the site's design)
 CONTRACTS.md                   the binding spec: data formats, pages, admin behaviour, deploy
 ```

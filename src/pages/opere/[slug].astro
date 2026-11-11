@@ -3,7 +3,7 @@
  * One artwork (frames 1f desktop, 1g phone). Only published works get a page.
  *
  * - ≥ 1024: "← Tutte le opere"; grid `minmax(0,1fr) 400px`, gap 64: the stage (ArtworkGallery) and
- *   the column "{nn} / {total} · {collezione}", title, Anno / Misure / Tecnica, her text + "— TIZ"
+ *   the column "{nn} / {total} · {collezione}", title, Anno / Misure / Tecnica, her text + her signature (assets/firma.svg)
  *   (no block at all when the text is empty), "Chiedi di quest’opera →"; then previous / next.
  * - 640–1023: the same, stacked.
  * - < 640: the header shows "← Opere" + TIZ (BaseLayout headerBack); the painting in a 440 px box,
@@ -17,6 +17,7 @@ import ArtworkFacts from '../../components/ArtworkFacts.astro';
 import ArtworkPager from '../../components/ArtworkPager.astro';
 import OperaBar from '../../components/opera/OperaBar.astro';
 import PlainText from '../../components/PlainText.astro';
+import Firma from '../../components/Firma.astro';
 import { SITE, absoluteUrl, routes } from '../../components/lib/site';
 import { altText, getPublishedOpere, neighbours, operaDescription, operaPaintVar, type Opera } from '../../components/lib/opere';
 import { fullImageUrl, socialImage } from '../../components/lib/images';
@@ -91,7 +92,9 @@ const jsonLd = artworkJsonLd(opera, { images: fullImages.map((url) => absoluteUr
           hasText && (
             <div class="opera__text">
               <PlainText text={data.testo} />
-              <p class="opera__sign">— {SITE.firma}</p>
+              <p class="opera__sign">
+                <Firma class="opera__firma" label={SITE.firma} />
+              </p>
             </div>
           )
         }
@@ -160,9 +163,12 @@ const jsonLd = artworkJsonLd(opera, { images: fullImages.map((url) => absoluteUr
   }
 
   .opera__sign {
-    margin-top: 10px;
+    margin-top: 14px;
     color: var(--tiz-rosso);
-    font: 400 var(--tiz-mano-s) / 1 var(--tiz-font-mano);
+  }
+
+  .opera__firma {
+    height: 28px;
   }
 
   /* Phone: the button is in the fixed bar. */
@@ -257,8 +263,8 @@ const jsonLd = artworkJsonLd(opera, { images: fullImages.map((url) => absoluteUr
       font-size: 22px;
     }
 
-    .opera__sign {
-      font-size: 34px;
+    .opera__firma {
+      height: 32px;
     }
   }
 

@@ -1,12 +1,14 @@
 ---
 /**
  * Site footer.
- * - default: dashed filo top border, "TIZ" (54px, rosso) and "© {year} Tiziana Tschudi Belloli".
- * - variant="home": "TIZ" at 140px with the motto, and the nav on the right ("Scrivimi" in place of
- *   Contatti) above the © line. On phones (frame 1c) only "TIZ" (110px) and the © line.
+ * - default: dashed filo top border, her signature (Firma, 40px high, rosso) and
+ *   "© {year} Tiziana Tschudi Belloli".
+ * - variant="home": the signature 96px high with the motto, and the nav on the right ("Scrivimi" in
+ *   place of Contatti) above the © line. On phones (frame 1c) only the signature (76px) and the © line.
  * By design there is no address, phone, e-mail or social link anywhere on the site (CONTRACTS 5.1).
  */
 import sito from '../data/sito.json';
+import Firma from './Firma.astro';
 import { SITE, routes } from './lib/site';
 import { getProfilo } from './lib/opere';
 
@@ -26,9 +28,7 @@ const domain = new URL(sito.dominio).host;
     <footer class="tiz-footer tiz-footer--home">
       <div class="tiz-footer__inner container">
         <div class="tiz-footer__sign">
-          <p class="tiz-footer__tiz" aria-hidden="true">
-            {SITE.firma}
-          </p>
+          <Firma class="tiz-footer__tiz" />
           {motto && <p class="tiz-footer__motto">{motto}</p>}
         </div>
         <div class="tiz-footer__end">
@@ -54,9 +54,7 @@ const domain = new URL(sito.dominio).host;
   ) : (
     <footer class="tiz-footer">
       <div class="tiz-footer__inner container">
-        <p class="tiz-footer__tiz" aria-hidden="true">
-          {SITE.firma}
-        </p>
+        <Firma class="tiz-footer__tiz" />
         <p class="tiz-footer__copy">
           © {year} {SITE.nome}
         </p>
@@ -80,8 +78,8 @@ const domain = new URL(sito.dominio).host;
   }
 
   .tiz-footer__tiz {
+    height: 40px;
     color: var(--tiz-rosso);
-    font: 400 54px/1 var(--tiz-font-mano);
   }
 
   .tiz-footer__copy {
@@ -111,8 +109,7 @@ const domain = new URL(sito.dominio).host;
   }
 
   .tiz-footer--home .tiz-footer__tiz {
-    font-size: 110px;
-    line-height: 0.8;
+    height: 76px;
   }
 
   .tiz-footer__motto,
@@ -134,7 +131,7 @@ const domain = new URL(sito.dominio).host;
     }
 
     .tiz-footer--home .tiz-footer__tiz {
-      font-size: 140px;
+      height: 96px;
     }
 
     .tiz-footer__motto {
